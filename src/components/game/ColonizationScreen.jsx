@@ -27,6 +27,8 @@ export default function ColonizationScreen() {
   const [showEstablish, setShowEstablish] = useState(false);
   const [selectedBody, setSelectedBody] = useState(null);
   const [selectedType, setSelectedType] = useState('agricultural');
+  const [targetType, setTargetType] = useState('body');
+  const [selectedPort, setSelectedPort] = useState(null);
 
   // Get colonizable bodies (landable planets, not already colonized)
   const colonizableBodies = useMemo(() => {
@@ -40,10 +42,17 @@ export default function ColonizationScreen() {
     );
   }, [systemData, state.colonies]);
 
+  const colonizablePorts = useMemo(() => {
+    if (!systemData) return [];
+    const colonizedStationIds = state.colonies.filter(c => c.isPort).map(c => c.stationId);
+    return systemData.stations.filter(s => !colonizedStationIds.includes(s.id));
+  }, [systemData, state.colonies]);
+
   const ESTABLISHMENT_COST = 5000000;
 
   const handleEstablish = () => {
-    if (!selectedBody) return;
+    const target = targetType === 'body' ? selectedBody : selectedPort;
+    if (!target) return;
     if (state.credits < ESTABLISHMENT_COST) {
       alert('INSUFFICIENT CREDITS FOR COLONIZATION');
       return;
@@ -52,15 +61,18 @@ export default function ColonizationScreen() {
     const colonyType = COLONY_TYPES[selectedType];
     const colony = {
       id: `colony_${Date.now()}`,
-      bodyId: selectedBody.id,
-      bodyName: selectedBody.designation,
+      bodyId: targetType === 'body' ? target.id : null,
+      stationId: targetType === 'port' ? target.id : null,
+      bodyName: targetType === 'body' ? target.designation : target.name,
+      isPort: targetType === 'port',
+      portType: targetType === 'port' ? target.type : null,
       systemName: state.currentSystem.name,
       systemSeed: state.currentSystem.seed,
       type: selectedType,
       typeName: colonyType.name,
       stage: 0,
       population: 50,
-      growthRate: randInt(1, 5) / 10, // per cycle
+      growthRate: randInt(1, 5) / 10,
       happiness: 80,
       infrastructure: 10,
       lastUpdate: Date.now(),
@@ -72,6 +84,7 @@ export default function ColonizationScreen() {
     addColony(colony);
     setShowEstablish(false);
     setSelectedBody(null);
+    setSelectedPort(null);
   };
 
   // Simulate colony growth (called when viewing)
@@ -138,34 +151,76 @@ export default function ColonizationScreen() {
         <div className="border border-orange-900 p-4 space-y-3">
           <h3 className="text-orange-400 text-sm font-bold uppercase">Establish New Colony</h3>
 
-          {/* Select body */}
-          <div>
-            <div className="text-orange-700 text-[10px] uppercase mb-1">Select Habitable Body in {state.currentSystem.name}</div>
-            {colonizableBodies.length === 0 ? (
-              <div className="text-orange-700 text-xs">No suitable bodies for colonization in this system.</div>
-            ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {colonizableBodies.map(body => (
-                  <button
-                    key={body.id}
-                    onClick={() => setSelectedBody(body)}
-                    className={`border p-2 text-xs text-left ${
-                      selectedBody?.id === body.id
-                        ? 'border-orange-500 bg-orange-950/30'
-                        : 'border-orange-900 hover:border-orange-700'
-                    }`}
-                  >
-                    <div className="text-orange-400">{body.designation}</div>
-                    <div className="text-orange-700 text-[10px]">{body.planetTypeName}</div>
-                    {body.habitable && <div className="text-green-600 text-[9px]">HABITABLE</div>}
-                  </button>
-                ))}
-              </div>
-            )}
+          {/* Target type toggle */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => { setTargetType('body'); setSelectedPort(null); }}
+              className={`flex-1 py-1.5 border text-xs font-bold ${targetType === 'body' ? 'border-orange-500 bg-orange-950/30 text-orange-300' : 'border-orange-900 text-orange-700'}`}
+            >
+              PLANETARY BODY
+            </button>
+            <button
+              onClick={() => { setTargetType('port'); setSelectedBody(null); }}
+              className={`flex-1 py-1.5 border text-xs font-bold ${targetType === 'port' ? 'border-orange-500 bg-orange-950/30 text-orange-300' : 'border-orange-900 text-orange-700'}`}
+            >
+              STATION PORT
+            </button>
           </div>
 
+          {/* Select body or port */}
+          {targetType === 'body' ? (
+            <div>
+              <div className="text-orange-700 text-[10px] uppercase mb-1">Select Habitable Body in {state.currentSystem.name}</div>
+              {colonizableBodies.length === 0 ? (
+                <div className="text-orange-700 text-xs">No suitable bodies for colonization in this system.</div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {colonizableBodies.map(body => (
+                    <button
+                      key={body.id}
+                      onClick={() => setSelectedBody(body)}
+                      className={`border p-2 text-xs text-left ${
+                        selectedBody?.id === body.id
+                          ? 'border-orange-500 bg-orange-950/30'
+                          : 'border-orange-900 hover:border-orange-700'
+                      }`}
+                    >
+                      <div className="text-orange-400">{body.designation}</div>
+                      <div className="text-orange-700 text-[10px]">{body.planetTypeName}</div>
+                      {body.habitable && <div className="text-green-600 text-[9px]">HABITABLE</div>}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div>
+              <div className="text-orange-700 text-[10px] uppercase mb-1">Select Station Port in {state.currentSystem.name}</div>
+              {colonizablePorts.length === 0 ? (
+                <div className="text-orange-700 text-xs">No available ports for colonization in this system.</div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {colonizablePorts.map(port => (
+                    <button
+                      key={port.id}
+                      onClick={() => setSelectedPort(port)}
+                      className={`border p-2 text-xs text-left ${
+                        selectedPort?.id === port.id
+                          ? 'border-orange-500 bg-orange-950/30'
+                          : 'border-orange-900 hover:border-orange-700'
+                      }`}
+                    >
+                      <div className="text-orange-400">{port.name}</div>
+                      <div className="text-orange-700 text-[10px] uppercase">{port.type} · {port.isOrbital ? 'Orbital' : 'Surface'}</div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Select colony type */}
-          {selectedBody && (
+          {(selectedBody || selectedPort) && (
             <div>
               <div className="text-orange-700 text-[10px] uppercase mb-1">Colony Type</div>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -190,7 +245,7 @@ export default function ColonizationScreen() {
             </div>
           )}
 
-          {selectedBody && (
+          {(selectedBody || selectedPort) && (
             <button
               onClick={handleEstablish}
               disabled={state.credits < ESTABLISHMENT_COST}

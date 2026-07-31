@@ -4,6 +4,7 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import * as THREE from 'three';
 import { useGameState } from '@/lib/gameState';
 import { BODY_TYPES } from '@/lib/system';
+import { buildStationModel } from '@/lib/stationModelBuilder';
 
 export default function SystemOrrery({ onSelectBody, selectedBodyId }) {
   const mountRef = useRef(null);
@@ -15,6 +16,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId }) {
   const orbitLinesRef = useRef([]);
   const raycasterRef = useRef(new THREE.Raycaster());
   const selectedMarkerRef = useRef(null);
+  const stationMeshesRef = useRef([]);
 
   const { state, getSystemData, scanBody, dockAtStation } = useGameState();
   const [selectedBody, setSelectedBody] = useState(null);
@@ -69,18 +71,30 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId }) {
       rs.distance += (rs.targetDistance - rs.distance) * 0.1;
       updateCameraPosition(camera, rs);
 
-      // Update body positions
+      // Update body positions (slow, realistic orbital motion)
       for (const bm of bodyMeshesRef.current) {
         if (bm.body.orbitRadius > 0) {
-          const angle = t * (1 / Math.sqrt(bm.body.orbitRadius)) * 50 + bm.phaseOffset;
+          const angle = t * (1 / Math.sqrt(bm.body.orbitRadius)) * 3 + bm.phaseOffset;
           bm.group.position.x = Math.cos(angle) * bm.body.orbitRadius;
           bm.group.position.z = Math.sin(angle) * bm.body.orbitRadius;
           bm.group.position.y = 0;
         }
-        // Rotate body on its axis
+        // Rotate body on its axis (slow)
         if (bm.mesh) {
-          bm.mesh.rotation.y += 0.01;
+          bm.mesh.rotation.y += 0.002;
         }
+      }
+
+      // Update orbital station positions
+      for (const sm of stationMeshesRef.current) {
+        const st = Date.now() * 0.0001;
+        const planetRadius = Math.max(0.3, Math.min(4, sm.parentBody.radius * 1.5));
+        const orbitR = planetRadius * 2.5;
+        const angle = st * 2 / Math.sqrt(orbitR) + sm.phaseOffset;
+        sm.model.position.x = Math.cos(angle) * orbitR;
+        sm.model.position.z = Math.sin(angle) * orbitR;
+        sm.model.position.y = 0;
+        sm.model.rotation.y += 0.003;
       }
 
       // Pulse selected marker
@@ -138,6 +152,15 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId }) {
     }
     bodyMeshesRef.current = [];
     orbitLinesRef.current = [];
+
+    // Clear old station meshes
+    for (const sm of stationMeshesRef.current) {
+      sm.model.traverse(child => {
+        if (child.geometry) child.geometry.dispose();
+        if (child.material) child.material.dispose();
+      });
+    }
+    stationMeshesRef.current = [];
 
     // Create bodies
     const allBodies = systemData.bodies;
@@ -253,6 +276,38 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId }) {
         mesh,
         phaseOffset: Math.random() * Math.PI * 2,
       });
+    }
+
+    // Build station wireframe models
+    for (const station of systemData.stations) {
+      const parentBody = allBodies.find(b => b.id === station.parentId);
+      if (!parentBody) continue;
+      const parentEntry = bodyMeshesRef.current.find(bm => bm.body.id === station.parentId);
+      if (!parentEntry) continue;
+
+      const stationModel = buildStationModel(station.type);
+      const planetVisualRadius = Math.max(0.3, Math.min(4, parentBody.radius * 1.5));
+      const stationScale = Math.max(0.15, planetVisualRadius * 0.25);
+      stationModel.scale.setScalar(stationScale);
+
+      if (station.isOrbital) {
+        // Orbital station — child of planet's group, orbits the planet
+        parentEntry.group.add(stationModel);
+        stationMeshesRef.current.push({
+          station,
+          model: stationModel,
+          parentBody,
+          phaseOffset: Math.random() * Math.PI * 2,
+        });
+      } else {
+        // Planetary port — on planet surface, child of planet's mesh so it rotates with the planet
+        stationModel.position.set(planetVisualRadius * 0.9, 0, 0);
+        if (parentEntry.mesh) {
+          parentEntry.mesh.add(stationModel);
+        } else {
+          parentEntry.group.add(stationModel);
+        }
+      }
     }
 
     // Auto-fit camera to system

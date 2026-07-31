@@ -30,6 +30,10 @@ export default function GalaxyMap({ onJumpToSystem }) {
     targetAzimuth: 0,
     targetPolar: Math.PI / 3,
     targetDistance: 200,
+    panX: 0,
+    panZ: 0,
+    targetPanX: 0,
+    targetPanZ: 0,
   });
 
   // Generate stars around player
@@ -78,6 +82,8 @@ export default function GalaxyMap({ onJumpToSystem }) {
       rs.azimuth += (rs.targetAzimuth - rs.azimuth) * 0.1;
       rs.polar += (rs.targetPolar - rs.polar) * 0.1;
       rs.distance += (rs.targetDistance - rs.distance) * 0.1;
+      rs.panX += (rs.targetPanX - rs.panX) * 0.1;
+      rs.panZ += (rs.targetPanZ - rs.panZ) * 0.1;
       updateCameraPosition(camera, rs);
 
       // Pulse player marker
@@ -189,7 +195,7 @@ export default function GalaxyMap({ onJumpToSystem }) {
     rotState.current.targetDistance = 120;
   }, [stars, state.currentSystem]);
 
-  // Pointer interaction
+  // Mouse + touch interaction — rotate, pinch, two-finger pan, tap to select
   useEffect(() => {
     const canvas = rendererRef.current?.domElement;
     if (!canvas) return;
@@ -197,28 +203,65 @@ export default function GalaxyMap({ onJumpToSystem }) {
     let isDragging = false;
     let lastX = 0, lastY = 0;
     let pinchDist = 0;
+    let lastCentroidX = 0, lastCentroidY = 0;
+    let dragStartX = 0, dragStartY = 0;
+    let touchMoved = false;
+    let lastTapTime = 0;
+    let isMultiTouch = false;
 
-    const onPointerDown = (e) => {
+    const handleStarTap = (clientX, clientY) => {
+      const now = Date.now();
+      if (now - lastTapTime < 300) return;
+      lastTapTime = now;
+
+      const rect = canvas.getBoundingClientRect();
+      const mouse = new THREE.Vector2(
+        ((clientX - rect.left) / rect.width) * 2 - 1,
+        -((clientY - rect.top) / rect.height) * 2 + 1
+      );
+      raycasterRef.current.setFromCamera(mouse, cameraRef.current);
+      raycasterRef.current.params.Points.threshold = 15;
+
+      if (pointsRef.current) {
+        const intersects = raycasterRef.current.intersectObject(pointsRef.current);
+        if (intersects.length > 0) {
+          intersects.sort((a, b) => a.distanceToRay - b.distanceToRay);
+          const idx = intersects[0].index;
+          const star = stars[idx];
+          if (star) {
+            handleSelectStar(star);
+          }
+        }
+      }
+    };
+
+    // Mouse handlers
+    const onMouseDown = (e) => {
       isDragging = true;
       lastX = e.clientX;
       lastY = e.clientY;
+      dragStartX = e.clientX;
+      dragStartY = e.clientY;
     };
 
-    const onPointerMove = (e) => {
-      if (!isDragging) return;
+    const onMouseMove = (e) => {
+      if (!isDragging || isMultiTouch) return;
       const dx = e.clientX - lastX;
       const dy = e.clientY - lastY;
       lastX = e.clientX;
       lastY = e.clientY;
-
       const rs = rotState.current;
       rs.targetAzimuth -= dx * 0.005;
       rs.targetPolar -= dy * 0.005;
       rs.targetPolar = Math.max(0.1, Math.min(Math.PI - 0.1, rs.targetPolar));
     };
 
-    const onPointerUp = () => {
+    const onMouseUp = (e) => {
+      const moveDist = Math.hypot(e.clientX - dragStartX, e.clientY - dragStartY);
       isDragging = false;
+      if (moveDist < 5) {
+        handleStarTap(e.clientX, e.clientY);
+      }
     };
 
     const onWheel = (e) => {
@@ -228,18 +271,25 @@ export default function GalaxyMap({ onJumpToSystem }) {
       rs.targetDistance = Math.max(20, Math.min(500, rs.targetDistance));
     };
 
-    // Touch handling for pinch zoom
+    // Touch handlers — one finger rotate, two finger pinch+pan, tap to select
     const onTouchStart = (e) => {
       if (e.touches.length === 2) {
+        isMultiTouch = true;
         isDragging = false;
         pinchDist = Math.hypot(
           e.touches[0].clientX - e.touches[1].clientX,
           e.touches[0].clientY - e.touches[1].clientY
         );
+        lastCentroidX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+        lastCentroidY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
       } else if (e.touches.length === 1) {
+        isMultiTouch = false;
         isDragging = true;
         lastX = e.touches[0].clientX;
         lastY = e.touches[0].clientY;
+        dragStartX = lastX;
+        dragStartY = lastY;
+        touchMoved = false;
       }
     };
 
@@ -250,16 +300,40 @@ export default function GalaxyMap({ onJumpToSystem }) {
           e.touches[0].clientX - e.touches[1].clientX,
           e.touches[0].clientY - e.touches[1].clientY
         );
+        const newCentroidX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+        const newCentroidY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+
+        // Pinch zoom
         const delta = pinchDist - newDist;
         pinchDist = newDist;
         const rs = rotState.current;
         rs.targetDistance += delta * 0.8;
         rs.targetDistance = Math.max(20, Math.min(500, rs.targetDistance));
+
+        // Two-finger pan (content follows fingers)
+        const cdx = newCentroidX - lastCentroidX;
+        const cdy = newCentroidY - lastCentroidY;
+        lastCentroidX = newCentroidX;
+        lastCentroidY = newCentroidY;
+        const cam = cameraRef.current;
+        if (cam && (Math.abs(cdx) > 0.5 || Math.abs(cdy) > 0.5)) {
+          const forward = new THREE.Vector3();
+          cam.getWorldDirection(forward);
+          forward.y = 0;
+          forward.normalize();
+          const right = new THREE.Vector3().crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
+          const panScale = rs.distance * 0.0015;
+          rs.targetPanX -= (cdx * right.x + cdy * forward.x) * panScale;
+          rs.targetPanZ -= (cdx * right.z + cdy * forward.z) * panScale;
+        }
       } else if (e.touches.length === 1 && isDragging) {
         const dx = e.touches[0].clientX - lastX;
         const dy = e.touches[0].clientY - lastY;
         lastX = e.touches[0].clientX;
         lastY = e.touches[0].clientY;
+        if (Math.abs(e.touches[0].clientX - dragStartX) > 5 || Math.abs(e.touches[0].clientY - dragStartY) > 5) {
+          touchMoved = true;
+        }
         const rs = rotState.current;
         rs.targetAzimuth -= dx * 0.005;
         rs.targetPolar -= dy * 0.005;
@@ -267,52 +341,42 @@ export default function GalaxyMap({ onJumpToSystem }) {
       }
     };
 
-    const onTouchEnd = () => {
-      isDragging = false;
-      pinchDist = 0;
-    };
-
-    // Click to select star
-    const onCanvasClick = (e) => {
-      if (Math.abs(e.movementX || 0) > 3 || Math.abs(e.movementY || 0) > 3) return;
-      const rect = canvas.getBoundingClientRect();
-      const mouse = new THREE.Vector2(
-        ((e.clientX - rect.left) / rect.width) * 2 - 1,
-        -((e.clientY - rect.top) / rect.height) * 2 + 1
-      );
-      raycasterRef.current.setFromCamera(mouse, cameraRef.current);
-      raycasterRef.current.params.Points.threshold = 5;
-
-      if (pointsRef.current) {
-        const intersects = raycasterRef.current.intersectObject(pointsRef.current);
-        if (intersects.length > 0) {
-          const idx = intersects[0].index;
-          const star = stars[idx];
-          if (star) {
-            handleSelectStar(star);
-          }
+    const onTouchEnd = (e) => {
+      if (e.touches.length === 0) {
+        if (isDragging && !touchMoved && !isMultiTouch) {
+          const touch = e.changedTouches[0];
+          handleStarTap(touch.clientX, touch.clientY);
         }
+        isDragging = false;
+        isMultiTouch = false;
+        pinchDist = 0;
+      } else if (e.touches.length === 1) {
+        isMultiTouch = false;
+        isDragging = true;
+        lastX = e.touches[0].clientX;
+        lastY = e.touches[0].clientY;
+        dragStartX = lastX;
+        dragStartY = lastY;
+        touchMoved = true;
       }
     };
 
-    canvas.addEventListener('pointerdown', onPointerDown);
-    canvas.addEventListener('pointermove', onPointerMove);
-    canvas.addEventListener('pointerup', onPointerUp);
+    canvas.addEventListener('mousedown', onMouseDown);
+    canvas.addEventListener('mousemove', onMouseMove);
+    canvas.addEventListener('mouseup', onMouseUp);
     canvas.addEventListener('wheel', onWheel, { passive: false });
     canvas.addEventListener('touchstart', onTouchStart, { passive: false });
     canvas.addEventListener('touchmove', onTouchMove, { passive: false });
     canvas.addEventListener('touchend', onTouchEnd);
-    canvas.addEventListener('click', onCanvasClick);
 
     return () => {
-      canvas.removeEventListener('pointerdown', onPointerDown);
-      canvas.removeEventListener('pointermove', onPointerMove);
-      canvas.removeEventListener('pointerup', onPointerUp);
+      canvas.removeEventListener('mousedown', onMouseDown);
+      canvas.removeEventListener('mousemove', onMouseMove);
+      canvas.removeEventListener('mouseup', onMouseUp);
       canvas.removeEventListener('wheel', onWheel);
       canvas.removeEventListener('touchstart', onTouchStart);
       canvas.removeEventListener('touchmove', onTouchMove);
       canvas.removeEventListener('touchend', onTouchEnd);
-      canvas.removeEventListener('click', onCanvasClick);
     };
   }, [stars]);
 
@@ -392,7 +456,7 @@ export default function GalaxyMap({ onJumpToSystem }) {
       <div className="absolute top-2 left-2 text-orange-600 text-xs space-y-0.5 pointer-events-none">
         <div>GALACTIC POSITION: {state.currentSystem.x.toFixed(0)}, {state.currentSystem.y.toFixed(0)}, {state.currentSystem.z.toFixed(0)}</div>
         <div>STARS IN RANGE: {stars.length}</div>
-        <div className="text-orange-800">DRAG TO ROTATE · PINCH/SCROLL TO ZOOM · TAP STAR TO SELECT</div>
+        <div className="text-orange-800">DRAG TO ROTATE · 2-FINGER PAN/PINCH · SCROLL TO ZOOM · TAP STAR TO SELECT</div>
       </div>
 
       {/* Star legend - top right */}
@@ -461,6 +525,6 @@ function updateCameraPosition(camera, rs) {
   const x = rs.distance * Math.sin(rs.polar) * Math.cos(rs.azimuth);
   const y = rs.distance * Math.cos(rs.polar);
   const z = rs.distance * Math.sin(rs.polar) * Math.sin(rs.azimuth);
-  camera.position.set(x, y, z);
-  camera.lookAt(0, 0, 0);
+  camera.position.set(x + rs.panX, y, z + rs.panZ);
+  camera.lookAt(rs.panX, 0, rs.panZ);
 }

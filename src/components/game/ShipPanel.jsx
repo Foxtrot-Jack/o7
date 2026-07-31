@@ -152,7 +152,7 @@ function Shipyard({ currentShip, credits, onBuy }) {
   return (
     <div className="space-y-2">
       <h3 className="text-orange-500 text-sm font-bold uppercase mb-2">Shipyard — Available Vessels</h3>
-      {SHIP_TYPES.map(ship => {
+      {[...SHIP_TYPES].sort((a, b) => a.cost - b.cost).map(ship => {
         const isCurrent = ship.id === currentShip;
         const canAfford = credits >= ship.cost;
         return (

@@ -411,19 +411,22 @@ function generateStations(rng, seed, bodies) {
 
   for (let i = 0; i < stationCount; i++) {
     const body = suitableBodies[i];
-    stations.push({
-      id: `station_${i}`,
-      name: generateStationName(seed, i),
-      parentId: body.id,
-      parentName: body.name,
-      type: pickWeighted(rng, [
+    const stationType = pickWeighted(rng, [
         { value: 'coriolis', weight: 30 },
         { value: 'orbis', weight: 20 },
         { value: 'outpost', weight: 25 },
         { value: 'planetary', weight: 15 },
         { value: 'megaship', weight: 5 },
         { value: 'asteroid', weight: 5 },
-      ]),
+      ]);
+    stations.push({
+      id: `station_${i}`,
+      name: generateStationName(seed, i),
+      parentId: body.id,
+      parentName: body.name,
+      type: stationType,
+      isOrbital: stationType !== 'planetary',
+      stationOrbitRadius: stationType !== 'planetary' ? randFloat(rng, 2, 5) * (body.radius + 1) : 0,
       distanceFromStar: body.orbitRadius,
       economy: pickWeighted(rng, ECONOMY_TYPES.map(e => ({ value: e, weight: 1 }))),
       services: {
