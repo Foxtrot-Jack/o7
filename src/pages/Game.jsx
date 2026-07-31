@@ -117,7 +117,7 @@ function GameContent() {
           </div>
           {/* Footer status bar */}
           <div className="border-t border-orange-900/50 px-3 py-1 flex items-center justify-between text-[10px] text-orange-800 bg-black">
-            <span>STARFARER COMMAND v1.0 · {state.ship.name}</span>
+            <span>DOGSTAR INTERSTELLAR v1.0 · {state.ship.name}</span>
             <span className="hidden sm:inline">GALAXY: 4,000,000,000+ SYSTEMS</span>
             <span>JUMPS: {state.totalJumps}</span>
           </div>
