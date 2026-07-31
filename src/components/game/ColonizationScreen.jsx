@@ -72,7 +72,7 @@ export default function ColonizationScreen() {
       typeName: colonyType.name,
       stage: 0,
       population: 50,
-      growthRate: randInt(1, 5) / 10,
+      growthRate: (1 + Math.floor(Math.random() * 5)) / 10,
       happiness: 80,
       infrastructure: 10,
       lastUpdate: Date.now(),
