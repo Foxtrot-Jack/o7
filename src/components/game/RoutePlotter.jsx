@@ -12,7 +12,7 @@ const MAX_SEGMENTS = 1000;
 const MAX_JUMPS = 2000;
 
 export default function RoutePlotter() {
-  const { state } = useGameState();
+  const { state, setCurrentSystem } = useGameState();
   const [searchName, setSearchName] = useState('');
   const [destination, setDestination] = useState(null);
   const [route, setRoute] = useState(null);
@@ -33,19 +33,6 @@ export default function RoutePlotter() {
     setRoute(null);
     setProgress(5);
     setProgressLabel('Initializing search...');
-
-    // Sandbox: direct search for Sol
-    if (state.saveMode === 'sandbox' && searchName.trim().toLowerCase() === 'sol') {
-      setDestination(SOL_SYSTEM);
-      setProgressLabel('Plotting optimized route to Sol...');
-      setProgress(60);
-      setTimeout(() => {
-        plotRoute(state.currentSystem, SOL_SYSTEM, jumpRange, useNeutron);
-        setProgress(100);
-        setSearching(false);
-      }, 50);
-      return;
-    }
 
     const searchRing = (radius) => {
       const center = state.currentSystem;
@@ -135,6 +122,22 @@ export default function RoutePlotter() {
       </div>
 
       {/* Route results */}
+      {/* Sandbox teleport */}
+      {state.saveMode === 'sandbox' && destination && (
+        <div className="border border-yellow-700 p-3 space-y-2">
+          <div className="text-yellow-300 font-bold uppercase text-[10px] flex items-center gap-1">
+            <Zap className="w-3 h-3" /> SANDBOX TELEPORT
+          </div>
+          <div className="text-yellow-600 text-[10px]">Instantly jump to {destination.name} — bypasses fuel, range, and route.</div>
+          <button
+            onClick={() => { setCurrentSystem({ ...destination, visited: true }); setRoute(null); setDestination(null); setSearchName(''); }}
+            className="w-full py-1.5 border border-yellow-500 text-yellow-300 hover:bg-yellow-950/30 text-xs font-bold"
+          >
+            ⚡ TELEPORT TO {destination.name.toUpperCase()}
+          </button>
+        </div>
+      )}
+
       {route && (
         <div className="space-y-2">
           <div className="border border-orange-700 p-3 text-xs space-y-1">
