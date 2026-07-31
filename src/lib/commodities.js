@@ -1,5 +1,6 @@
 // Commodity definitions for the trading system
 // Legally distinct from Elite Dangerous but inspired by its economy model
+// 230+ commodities across 13 categories
 
 export const COMMODITY_CATEGORIES = {
   MINERALS: 'Minerals',
@@ -13,19 +14,35 @@ export const COMMODITY_CATEGORIES = {
   SALVAGE: 'Salvage',
   LEGAL_DRUGS: 'Legal Drugs',
   RAW: 'Raw Materials',
+  TEXTILES: 'Textiles',
+  WEAPONS: 'Weapons',
 };
 
-// Each commodity: id, name, category, basePrice, avgSupply, avgDemand, legality (0=legal, 1=restricted)
+// Each commodity: id, name, category, basePrice, legality (0=legal, 1=restricted)
 export const COMMODITIES = [
-  // Minerals
+  // ═══ Minerals (20) ═══
   { id: 'water', name: 'Water', category: COMMODITY_CATEGORIES.MINERALS, basePrice: 120, legality: 0 },
   { id: 'liquid_oxygen', name: 'Liquid Oxygen', category: COMMODITY_CATEGORIES.MINERALS, basePrice: 180, legality: 0 },
   { id: 'hydrogen_fuel', name: 'Hydrogen Fuel', category: COMMODITY_CATEGORIES.MINERALS, basePrice: 90, legality: 0 },
   { id: 'helium', name: 'Helium', category: COMMODITY_CATEGORIES.MINERALS, basePrice: 150, legality: 0 },
   { id: 'silicon', name: 'Silicon', category: COMMODITY_CATEGORIES.MINERALS, basePrice: 200, legality: 0 },
   { id: 'rock_salt', name: 'Rock Salt', category: COMMODITY_CATEGORIES.MINERALS, basePrice: 80, legality: 0 },
+  { id: 'methane', name: 'Methane', category: COMMODITY_CATEGORIES.MINERALS, basePrice: 140, legality: 0 },
+  { id: 'ammonia', name: 'Ammonia', category: COMMODITY_CATEGORIES.MINERALS, basePrice: 210, legality: 0 },
+  { id: 'carbon_dioxide', name: 'Carbon Dioxide', category: COMMODITY_CATEGORIES.MINERALS, basePrice: 110, legality: 0 },
+  { id: 'nitrogen', name: 'Liquid Nitrogen', category: COMMODITY_CATEGORIES.MINERALS, basePrice: 160, legality: 0 },
+  { id: 'argon', name: 'Argon', category: COMMODITY_CATEGORIES.MINERALS, basePrice: 230, legality: 0 },
+  { id: 'neon', name: 'Neon', category: COMMODITY_CATEGORIES.MINERALS, basePrice: 350, legality: 0 },
+  { id: 'krypton', name: 'Krypton', category: COMMODITY_CATEGORIES.MINERALS, basePrice: 480, legality: 0 },
+  { id: 'xenon', name: 'Xenon', category: COMMODITY_CATEGORIES.MINERALS, basePrice: 620, legality: 0 },
+  { id: 'sulfur', name: 'Sulfur', category: COMMODITY_CATEGORIES.MINERALS, basePrice: 130, legality: 0 },
+  { id: 'phosphorus', name: 'Phosphorus', category: COMMODITY_CATEGORIES.MINERALS, basePrice: 190, legality: 0 },
+  { id: 'chlorine', name: 'Chlorine', category: COMMODITY_CATEGORIES.MINERALS, basePrice: 170, legality: 0 },
+  { id: 'fluorine', name: 'Fluorine', category: COMMODITY_CATEGORIES.MINERALS, basePrice: 260, legality: 0 },
+  { id: 'bromine', name: 'Bromine', category: COMMODITY_CATEGORIES.MINERALS, basePrice: 290, legality: 0 },
+  { id: 'iodine', name: 'Iodine', category: COMMODITY_CATEGORIES.MINERALS, basePrice: 340, legality: 0 },
 
-  // Metals
+  // ═══ Metals (28) ═══
   { id: 'iron', name: 'Iron', category: COMMODITY_CATEGORIES.METALS, basePrice: 170, legality: 0 },
   { id: 'copper', name: 'Copper', category: COMMODITY_CATEGORIES.METALS, basePrice: 250, legality: 0 },
   { id: 'aluminium', name: 'Aluminium', category: COMMODITY_CATEGORIES.METALS, basePrice: 300, legality: 0 },
@@ -37,23 +54,64 @@ export const COMMODITIES = [
   { id: 'bertrandite', name: 'Bertrandite', category: COMMODITY_CATEGORIES.METALS, basePrice: 1800, legality: 0 },
   { id: 'coltan', name: 'Coltan', category: COMMODITY_CATEGORIES.METALS, basePrice: 1500, legality: 0 },
   { id: 'gallite', name: 'Gallite', category: COMMODITY_CATEGORIES.METALS, basePrice: 2200, legality: 0 },
+  { id: 'steel', name: 'Steel', category: COMMODITY_CATEGORIES.METALS, basePrice: 220, legality: 0 },
+  { id: 'tungsten', name: 'Tungsten', category: COMMODITY_CATEGORIES.METALS, basePrice: 550, legality: 0 },
+  { id: 'cobalt', name: 'Cobalt', category: COMMODITY_CATEGORIES.METALS, basePrice: 420, legality: 0 },
+  { id: 'nickel', name: 'Nickel', category: COMMODITY_CATEGORIES.METALS, basePrice: 280, legality: 0 },
+  { id: 'zinc', name: 'Zinc', category: COMMODITY_CATEGORIES.METALS, basePrice: 310, legality: 0 },
+  { id: 'tin', name: 'Tin', category: COMMODITY_CATEGORIES.METALS, basePrice: 240, legality: 0 },
+  { id: 'lead', name: 'Lead', category: COMMODITY_CATEGORIES.METALS, basePrice: 160, legality: 0 },
+  { id: 'silver', name: 'Silver', category: COMMODITY_CATEGORIES.METALS, basePrice: 900, legality: 0 },
+  { id: 'gold', name: 'Gold', category: COMMODITY_CATEGORIES.METALS, basePrice: 1500, legality: 0 },
+  { id: 'rhodium', name: 'Rhodium', category: COMMODITY_CATEGORIES.METALS, basePrice: 5200, legality: 0 },
+  { id: 'osmium', name: 'Osmium', category: COMMODITY_CATEGORIES.METALS, basePrice: 4100, legality: 0 },
+  { id: 'ruthenium', name: 'Ruthenium', category: COMMODITY_CATEGORIES.METALS, basePrice: 3800, legality: 0 },
+  { id: 'tantalum', name: 'Tantalum', category: COMMODITY_CATEGORIES.METALS, basePrice: 1100, legality: 0 },
+  { id: 'niobium', name: 'Niobium', category: COMMODITY_CATEGORIES.METALS, basePrice: 850, legality: 0 },
+  { id: 'vanadium', name: 'Vanadium', category: COMMODITY_CATEGORIES.METALS, basePrice: 680, legality: 0 },
+  { id: 'chromium', name: 'Chromium', category: COMMODITY_CATEGORIES.METALS, basePrice: 520, legality: 0 },
+  { id: 'molybdenum', name: 'Molybdenum', category: COMMODITY_CATEGORIES.METALS, basePrice: 740, legality: 0 },
 
-  // Chemicals
+  // ═══ Chemicals (20) ═══
   { id: 'explosives', name: 'Explosives', category: COMMODITY_CATEGORIES.CHEMICALS, basePrice: 400, legality: 0 },
   { id: 'polymers', name: 'Polymers', category: COMMODITY_CATEGORIES.CHEMICALS, basePrice: 320, legality: 0 },
   { id: 'semiconductors', name: 'Semiconductors', category: COMMODITY_CATEGORIES.CHEMICALS, basePrice: 700, legality: 0 },
   { id: 'superconductors', name: 'Superconductors', category: COMMODITY_CATEGORIES.CHEMICALS, basePrice: 3500, legality: 0 },
   { id: 'hydrogen_peroxide', name: 'Hydrogen Peroxide', category: COMMODITY_CATEGORIES.CHEMICALS, basePrice: 260, legality: 0 },
-  { id: 'agricultural_med', name: 'Agri-Medicines', category: COMMODITY_CATEGORIES.CHEMICALS, basePrice: 600, legality: 0 },
+  { id: 'agri_medicines', name: 'Agri-Medicines', category: COMMODITY_CATEGORIES.CHEMICALS, basePrice: 600, legality: 0 },
+  { id: 'coolants', name: 'Coolants', category: COMMODITY_CATEGORIES.CHEMICALS, basePrice: 280, legality: 0 },
+  { id: 'lubricants', name: 'Lubricants', category: COMMODITY_CATEGORIES.CHEMICALS, basePrice: 190, legality: 0 },
+  { id: 'adhesives', name: 'Industrial Adhesives', category: COMMODITY_CATEGORIES.CHEMICALS, basePrice: 210, legality: 0 },
+  { id: 'resins', name: 'Synthetic Resins', category: COMMODITY_CATEGORIES.CHEMICALS, basePrice: 340, legality: 0 },
+  { id: 'solvents', name: 'Solvents', category: COMMODITY_CATEGORIES.CHEMICALS, basePrice: 180, legality: 0 },
+  { id: 'acids', name: 'Industrial Acids', category: COMMODITY_CATEGORIES.CHEMICALS, basePrice: 300, legality: 0 },
+  { id: 'alkalis', name: 'Alkalis', category: COMMODITY_CATEGORIES.CHEMICALS, basePrice: 270, legality: 0 },
+  { id: 'catalysts', name: 'Chemical Catalysts', category: COMMODITY_CATEGORIES.CHEMICALS, basePrice: 890, legality: 0 },
+  { id: 'stabilizers', name: 'Chemical Stabilizers', category: COMMODITY_CATEGORIES.CHEMICALS, basePrice: 450, legality: 0 },
+  { id: 'propellants', name: 'Propellants', category: COMMODITY_CATEGORIES.CHEMICALS, basePrice: 380, legality: 0 },
+  { id: 'oxidizers', name: 'Oxidizers', category: COMMODITY_CATEGORIES.CHEMICALS, basePrice: 310, legality: 0 },
+  { id: 'fertilizers', name: 'Fertilizers', category: COMMODITY_CATEGORIES.CHEMICALS, basePrice: 150, legality: 0 },
+  { id: 'pesticides', name: 'Pesticides', category: COMMODITY_CATEGORIES.CHEMICALS, basePrice: 240, legality: 0 },
+  { id: 'herbicides', name: 'Herbicides', category: COMMODITY_CATEGORIES.CHEMICALS, basePrice: 230, legality: 0 },
 
-  // Consumer Items
+  // ═══ Consumer Items (15) ═══
   { id: 'domestic_appliances', name: 'Domestic Appliances', category: COMMODITY_CATEGORIES.CONSUMER, basePrice: 480, legality: 0 },
   { id: 'clothing', name: 'Clothing', category: COMMODITY_CATEGORIES.CONSUMER, basePrice: 200, legality: 0 },
-  { id: 'consumer_tech', name: 'Consumer Technology', category: COMMODITY_CATEGORIES.CONSUMER, basePrice: 3700, legality: 0 },
+  { id: 'consumer_technology', name: 'Consumer Technology', category: COMMODITY_CATEGORIES.CONSUMER, basePrice: 3700, legality: 0 },
   { id: 'geology_equipment', name: 'Geology Equipment', category: COMMODITY_CATEGORIES.CONSUMER, basePrice: 1200, legality: 0 },
   { id: 'aquaponic_systems', name: 'Aquaponic Systems', category: COMMODITY_CATEGORIES.CONSUMER, basePrice: 1800, legality: 0 },
+  { id: 'personal_electronics', name: 'Personal Electronics', category: COMMODITY_CATEGORIES.CONSUMER, basePrice: 950, legality: 0 },
+  { id: 'luxury_goods', name: 'Luxury Goods', category: COMMODITY_CATEGORIES.CONSUMER, basePrice: 5200, legality: 0 },
+  { id: 'jewelry', name: 'Jewelry', category: COMMODITY_CATEGORIES.CONSUMER, basePrice: 4100, legality: 0 },
+  { id: 'art', name: 'Art and Antiques', category: COMMODITY_CATEGORIES.CONSUMER, basePrice: 6800, legality: 0 },
+  { id: 'books', name: 'Books and Media', category: COMMODITY_CATEGORIES.CONSUMER, basePrice: 180, legality: 0 },
+  { id: 'entertainment_media', name: 'Entertainment Media', category: COMMODITY_CATEGORIES.CONSUMER, basePrice: 420, legality: 0 },
+  { id: 'toys', name: 'Toys and Games', category: COMMODITY_CATEGORIES.CONSUMER, basePrice: 260, legality: 0 },
+  { id: 'cosmetics', name: 'Cosmetics', category: COMMODITY_CATEGORIES.CONSUMER, basePrice: 680, legality: 0 },
+  { id: 'furniture', name: 'Furniture', category: COMMODITY_CATEGORIES.CONSUMER, basePrice: 540, legality: 0 },
+  { id: 'sporting_goods', name: 'Sporting Goods', category: COMMODITY_CATEGORIES.CONSUMER, basePrice: 390, legality: 0 },
 
-  // Foods
+  // ═══ Foods (20) ═══
   { id: 'basic_food', name: 'Basic Foodstuffs', category: COMMODITY_CATEGORIES.FOODS, basePrice: 100, legality: 0 },
   { id: 'fish', name: 'Fish', category: COMMODITY_CATEGORIES.FOODS, basePrice: 250, legality: 0 },
   { id: 'grain', name: 'Grain', category: COMMODITY_CATEGORIES.FOODS, basePrice: 130, legality: 0 },
@@ -61,39 +119,108 @@ export const COMMODITIES = [
   { id: 'fruit_veg', name: 'Fruit and Vegetables', category: COMMODITY_CATEGORIES.FOODS, basePrice: 180, legality: 0 },
   { id: 'synthetic_meat', name: 'Synthetic Meat', category: COMMODITY_CATEGORIES.FOODS, basePrice: 220, legality: 0 },
   { id: 'coffee', name: 'Coffee', category: COMMODITY_CATEGORIES.FOODS, basePrice: 400, legality: 0 },
+  { id: 'algae', name: 'Algae Paste', category: COMMODITY_CATEGORIES.FOODS, basePrice: 90, legality: 0 },
+  { id: 'spices', name: 'Spices', category: COMMODITY_CATEGORIES.FOODS, basePrice: 520, legality: 0 },
+  { id: 'chocolate', name: 'Chocolate', category: COMMODITY_CATEGORIES.FOODS, basePrice: 480, legality: 0 },
+  { id: 'sugar', name: 'Refined Sugar', category: COMMODITY_CATEGORIES.FOODS, basePrice: 140, legality: 0 },
+  { id: 'honey', name: 'Honey', category: COMMODITY_CATEGORIES.FOODS, basePrice: 380, legality: 0 },
+  { id: 'dairy', name: 'Dairy Products', category: COMMODITY_CATEGORIES.FOODS, basePrice: 210, legality: 0 },
+  { id: 'poultry', name: 'Poultry', category: COMMODITY_CATEGORIES.FOODS, basePrice: 230, legality: 0 },
+  { id: 'livestock', name: 'Livestock', category: COMMODITY_CATEGORIES.FOODS, basePrice: 290, legality: 0 },
+  { id: 'nuts', name: 'Nuts and Seeds', category: COMMODITY_CATEGORIES.FOODS, basePrice: 310, legality: 0 },
+  { id: 'fruit_preserves', name: 'Fruit Preserves', category: COMMODITY_CATEGORIES.FOODS, basePrice: 340, legality: 0 },
+  { id: 'grain_varieties', name: 'Heritage Grains', category: COMMODITY_CATEGORIES.FOODS, basePrice: 460, legality: 0 },
+  { id: 'animal_feed', name: 'Animal Feed', category: COMMODITY_CATEGORIES.FOODS, basePrice: 110, legality: 0 },
+  { id: 'gourmet_food', name: 'Gourmet Food', category: COMMODITY_CATEGORIES.FOODS, basePrice: 2800, legality: 0 },
 
-  // Industrial Materials
+  // ═══ Industrial Materials (20) ═══
   { id: 'ceramic_composites', name: 'Ceramic Composites', category: COMMODITY_CATEGORIES.INDUSTRIAL, basePrice: 350, legality: 0 },
   { id: 'insulating_membrane', name: 'Insulating Membrane', category: COMMODITY_CATEGORIES.INDUSTRIAL, basePrice: 410, legality: 0 },
   { id: 'structural_regulators', name: 'Structural Regulators', category: COMMODITY_CATEGORIES.INDUSTRIAL, basePrice: 900, legality: 0 },
   { id: 'power_generators', name: 'Power Generators', category: COMMODITY_CATEGORIES.INDUSTRIAL, basePrice: 1500, legality: 0 },
-  { id: 'thermal_laquers', name: 'Thermal Laquers', category: COMMODITY_CATEGORIES.INDUSTRIAL, basePrice: 280, legality: 0 },
+  { id: 'thermal_lacquers', name: 'Thermal Lacquers', category: COMMODITY_CATEGORIES.INDUSTRIAL, basePrice: 280, legality: 0 },
+  { id: 'building_modules', name: 'Building Modules', category: COMMODITY_CATEGORIES.INDUSTRIAL, basePrice: 620, legality: 0 },
+  { id: 'cable_reels', name: 'Cable Reels', category: COMMODITY_CATEGORIES.INDUSTRIAL, basePrice: 190, legality: 0 },
+  { id: 'data_drives', name: 'Data Drives', category: COMMODITY_CATEGORIES.INDUSTRIAL, basePrice: 880, legality: 0 },
+  { id: 'atmospheric_processors', name: 'Atmospheric Processors', category: COMMODITY_CATEGORIES.INDUSTRIAL, basePrice: 1200, legality: 0 },
+  { id: 'crop_harvesters', name: 'Crop Harvesters', category: COMMODITY_CATEGORIES.INDUSTRIAL, basePrice: 980, legality: 0 },
+  { id: 'mining_equipment', name: 'Mining Equipment', category: COMMODITY_CATEGORIES.INDUSTRIAL, basePrice: 1100, legality: 0 },
+  { id: 'energy_grid_components', name: 'Energy Grid Components', category: COMMODITY_CATEGORIES.INDUSTRIAL, basePrice: 1400, legality: 0 },
+  { id: 'hull_plates', name: 'Hull Plates', category: COMMODITY_CATEGORIES.INDUSTRIAL, basePrice: 560, legality: 0 },
+  { id: 'conductive_ceramics', name: 'Conductive Ceramics', category: COMMODITY_CATEGORIES.INDUSTRIAL, basePrice: 720, legality: 0 },
+  { id: 'electromagnetic_components', name: 'Electromagnetic Components', category: COMMODITY_CATEGORIES.INDUSTRIAL, basePrice: 850, legality: 0 },
+  { id: 'thermal_generators', name: 'Thermal Generators', category: COMMODITY_CATEGORIES.INDUSTRIAL, basePrice: 1300, legality: 0 },
+  { id: 'pneumatic_parts', name: 'Pneumatic Parts', category: COMMODITY_CATEGORIES.INDUSTRIAL, basePrice: 340, legality: 0 },
+  { id: 'hydraulic_systems', name: 'Hydraulic Systems', category: COMMODITY_CATEGORIES.INDUSTRIAL, basePrice: 760, legality: 0 },
+  { id: 'filtration_systems', name: 'Filtration Systems', category: COMMODITY_CATEGORIES.INDUSTRIAL, basePrice: 680, legality: 0 },
+  { id: 'radiation_shielding', name: 'Radiation Shielding', category: COMMODITY_CATEGORIES.INDUSTRIAL, basePrice: 1600, legality: 0 },
 
-  // Medical
+  // ═══ Medical (15) ═══
   { id: 'medicines', name: 'Medicines', category: COMMODITY_CATEGORIES.MEDICAL, basePrice: 800, legality: 0 },
   { id: 'performance_enhancers', name: 'Performance Enhancers', category: COMMODITY_CATEGORIES.MEDICAL, basePrice: 2200, legality: 1 },
   { id: 'progenitor_cells', name: 'Progenitor Cells', category: COMMODITY_CATEGORIES.MEDICAL, basePrice: 3400, legality: 0 },
+  { id: 'vaccines', name: 'Vaccines', category: COMMODITY_CATEGORIES.MEDICAL, basePrice: 950, legality: 0 },
+  { id: 'antibiotics', name: 'Antibiotics', category: COMMODITY_CATEGORIES.MEDICAL, basePrice: 680, legality: 0 },
+  { id: 'painkillers', name: 'Painkillers', category: COMMODITY_CATEGORIES.MEDICAL, basePrice: 320, legality: 0 },
+  { id: 'combat_stabilizers', name: 'Combat Stabilizers', category: COMMODITY_CATEGORIES.MEDICAL, basePrice: 1400, legality: 0 },
+  { id: 'dietary_supplements', name: 'Dietary Supplements', category: COMMODITY_CATEGORIES.MEDICAL, basePrice: 420, legality: 0 },
+  { id: 'genetic_research', name: 'Genetic Research Materials', category: COMMODITY_CATEGORIES.MEDICAL, basePrice: 2800, legality: 0 },
+  { id: 'pathogen_culture', name: 'Pathogen Cultures', category: COMMODITY_CATEGORIES.MEDICAL, basePrice: 1900, legality: 1 },
+  { id: 'blood_serum', name: 'Blood Serum', category: COMMODITY_CATEGORIES.MEDICAL, basePrice: 760, legality: 0 },
+  { id: 'neural_implants', name: 'Neural Implants', category: COMMODITY_CATEGORIES.MEDICAL, basePrice: 4200, legality: 0 },
+  { id: 'prosthetics', name: 'Prosthetics', category: COMMODITY_CATEGORIES.MEDICAL, basePrice: 2400, legality: 0 },
+  { id: 'cryogenic_supplies', name: 'Cryogenic Supplies', category: COMMODITY_CATEGORIES.MEDICAL, basePrice: 1600, legality: 0 },
+  { id: 'medical_equipment', name: 'Medical Equipment', category: COMMODITY_CATEGORIES.MEDICAL, basePrice: 1800, legality: 0 },
 
-  // Technology
+  // ═══ Technology (20) ═══
   { id: 'computer_components', name: 'Computer Components', category: COMMODITY_CATEGORIES.TECHNOLOGY, basePrice: 500, legality: 0 },
   { id: 'robotics', name: 'Robotics', category: COMMODITY_CATEGORIES.TECHNOLOGY, basePrice: 1900, legality: 0 },
   { id: 'advanced_catalysers', name: 'Advanced Catalysers', category: COMMODITY_CATEGORIES.TECHNOLOGY, basePrice: 1100, legality: 0 },
   { id: 'micro_weave_cooling_hoses', name: 'Micro-Weave Cooling Hoses', category: COMMODITY_CATEGORIES.TECHNOLOGY, basePrice: 340, legality: 0 },
   { id: 'hn_shock_mounts', name: 'HN Shock Mounts', category: COMMODITY_CATEGORIES.TECHNOLOGY, basePrice: 380, legality: 0 },
+  { id: 'ai_processors', name: 'AI Processors', category: COMMODITY_CATEGORIES.TECHNOLOGY, basePrice: 3200, legality: 0 },
+  { id: 'quantum_chips', name: 'Quantum Chips', category: COMMODITY_CATEGORIES.TECHNOLOGY, basePrice: 5800, legality: 0 },
+  { id: 'memory_cores', name: 'Memory Cores', category: COMMODITY_CATEGORIES.TECHNOLOGY, basePrice: 1400, legality: 0 },
+  { id: 'sensor_arrays', name: 'Sensor Arrays', category: COMMODITY_CATEGORIES.TECHNOLOGY, basePrice: 2200, legality: 0 },
+  { id: 'shield_emitters', name: 'Shield Emitters', category: COMMODITY_CATEGORIES.TECHNOLOGY, basePrice: 3600, legality: 0 },
+  { id: 'fsd_components', name: 'FSD Components', category: COMMODITY_CATEGORIES.TECHNOLOGY, basePrice: 4800, legality: 0 },
+  { id: 'power_couplings', name: 'Power Couplings', category: COMMODITY_CATEGORIES.TECHNOLOGY, basePrice: 920, legality: 0 },
+  { id: 'data_cores', name: 'Data Cores', category: COMMODITY_CATEGORIES.TECHNOLOGY, basePrice: 2600, legality: 0 },
+  { id: 'nanobots', name: 'Medical Nanobots', category: COMMODITY_CATEGORIES.TECHNOLOGY, basePrice: 4400, legality: 0 },
+  { id: 'plasma_cores', name: 'Plasma Cores', category: COMMODITY_CATEGORIES.TECHNOLOGY, basePrice: 3900, legality: 0 },
+  { id: 'optical_lenses', name: 'Precision Optical Lenses', category: COMMODITY_CATEGORIES.TECHNOLOGY, basePrice: 1200, legality: 0 },
+  { id: 'transmitters', name: 'Subspace Transmitters', category: COMMODITY_CATEGORIES.TECHNOLOGY, basePrice: 1800, legality: 0 },
+  { id: 'environmental_sensors', name: 'Environmental Sensors', category: COMMODITY_CATEGORIES.TECHNOLOGY, basePrice: 680, legality: 0 },
+  { id: 'targeting_systems', name: 'Targeting Systems', category: COMMODITY_CATEGORIES.TECHNOLOGY, basePrice: 2400, legality: 0 },
+  { id: 'holo_displays', name: 'Holographic Displays', category: COMMODITY_CATEGORIES.TECHNOLOGY, basePrice: 1600, legality: 0 },
 
-  // Salvage
+  // ═══ Salvage (12) ═══
   { id: 'scrap_metal', name: 'Scrap Metal', category: COMMODITY_CATEGORIES.SALVAGE, basePrice: 60, legality: 0 },
   { id: 'biowaste', name: 'Biowaste', category: COMMODITY_CATEGORIES.SALVAGE, basePrice: 110, legality: 0 },
   { id: 'ancient_artifacts', name: 'Ancient Artifacts', category: COMMODITY_CATEGORIES.SALVAGE, basePrice: 8000, legality: 0 },
   { id: 'occupation_certs', name: 'Occupation Certificates', category: COMMODITY_CATEGORIES.SALVAGE, basePrice: 2500, legality: 0 },
+  { id: 'black_box_data', name: 'Black Box Data', category: COMMODITY_CATEGORIES.SALVAGE, basePrice: 1800, legality: 0 },
+  { id: 'ship_wreckage', name: 'Ship Wreckage', category: COMMODITY_CATEGORIES.SALVAGE, basePrice: 320, legality: 0 },
+  { id: 'failed_components', name: 'Failed Components', category: COMMODITY_CATEGORIES.SALVAGE, basePrice: 280, legality: 0 },
+  { id: 'encrypted_data', name: 'Encrypted Data Chips', category: COMMODITY_CATEGORIES.SALVAGE, basePrice: 3200, legality: 1 },
+  { id: 'antique_weapons', name: 'Antique Weapons', category: COMMODITY_CATEGORIES.SALVAGE, basePrice: 4200, legality: 0 },
+  { id: 'space_debris', name: 'Space Debris', category: COMMODITY_CATEGORIES.SALVAGE, basePrice: 40, legality: 0 },
+  { id: 'derelict_tech', name: 'Derelict Technology', category: COMMODITY_CATEGORIES.SALVAGE, basePrice: 5500, legality: 0 },
+  { id: 'damaged_canisters', name: 'Damaged Canisters', category: COMMODITY_CATEGORIES.SALVAGE, basePrice: 90, legality: 0 },
 
-  // Legal Drugs
+  // ═══ Legal Drugs (10) ═══
   { id: 'tobacco', name: 'Tobacco', category: COMMODITY_CATEGORIES.LEGAL_DRUGS, basePrice: 700, legality: 0 },
   { id: 'wine', name: 'Wine', category: COMMODITY_CATEGORIES.LEGAL_DRUGS, basePrice: 500, legality: 0 },
   { id: 'beer', name: 'Beer', category: COMMODITY_CATEGORIES.LEGAL_DRUGS, basePrice: 300, legality: 0 },
   { id: 'narcotics', name: 'Narcotics', category: COMMODITY_CATEGORIES.LEGAL_DRUGS, basePrice: 5000, legality: 1 },
+  { id: 'spirits', name: 'Spirits', category: COMMODITY_CATEGORIES.LEGAL_DRUGS, basePrice: 650, legality: 0 },
+  { id: 'luxury_wines', name: 'Luxury Wines', category: COMMODITY_CATEGORIES.LEGAL_DRUGS, basePrice: 1800, legality: 0 },
+  { id: 'stimulants', name: 'Stimulants', category: COMMODITY_CATEGORIES.LEGAL_DRUGS, basePrice: 1200, legality: 0 },
+  { id: 'relaxants', name: 'Relaxants', category: COMMODITY_CATEGORIES.LEGAL_DRUGS, basePrice: 880, legality: 0 },
+  { id: 'synthetic_alcohol', name: 'Synthetic Alcohol', category: COMMODITY_CATEGORIES.LEGAL_DRUGS, basePrice: 220, legality: 0 },
+  { id: 'rare_tobacco', name: 'Rare Tobacco', category: COMMODITY_CATEGORIES.LEGAL_DRUGS, basePrice: 1400, legality: 0 },
 
-  // Raw (mining yield)
+  // ═══ Raw Materials (20) ═══
   { id: 'pristine_diamond', name: 'Pristine Diamond', category: COMMODITY_CATEGORIES.RAW, basePrice: 6000, legality: 0 },
   { id: 'painite', name: 'Painite', category: COMMODITY_CATEGORIES.RAW, basePrice: 12000, legality: 0 },
   { id: 'alexandrite', name: 'Alexandrite', category: COMMODITY_CATEGORIES.RAW, basePrice: 9000, legality: 0 },
@@ -104,6 +231,40 @@ export const COMMODITIES = [
   { id: 'core_minerals', name: 'Core Minerals', category: COMMODITY_CATEGORIES.RAW, basePrice: 2000, legality: 0 },
   { id: 'water_geode', name: 'Water Geode', category: COMMODITY_CATEGORIES.RAW, basePrice: 3000, legality: 0 },
   { id: 'rough_opals', name: 'Rough Opals', category: COMMODITY_CATEGORIES.RAW, basePrice: 4500, legality: 0 },
+  { id: 'serendibite', name: 'Serendibite', category: COMMODITY_CATEGORIES.RAW, basePrice: 11000, legality: 0 },
+  { id: 'grandidierite', name: 'Grandidierite', category: COMMODITY_CATEGORIES.RAW, basePrice: 9500, legality: 0 },
+  { id: 'musgravite', name: 'Musgravite', category: COMMODITY_CATEGORIES.RAW, basePrice: 14000, legality: 0 },
+  { id: 'taaffeite', name: 'Taaffeite', category: COMMODITY_CATEGORIES.RAW, basePrice: 8500, legality: 0 },
+  { id: 'rare_earth_elements', name: 'Rare Earth Elements', category: COMMODITY_CATEGORIES.RAW, basePrice: 6500, legality: 0 },
+  { id: 'meteoric_iron', name: 'Meteoric Iron', category: COMMODITY_CATEGORIES.RAW, basePrice: 3800, legality: 0 },
+  { id: 'deep_core_minerals', name: 'Deep Core Minerals', category: COMMODITY_CATEGORIES.RAW, basePrice: 7500, legality: 0 },
+  { id: 'crystal_shards', name: 'Crystal Shards', category: COMMODITY_CATEGORIES.RAW, basePrice: 5200, legality: 0 },
+  { id: 'luminescent_minerals', name: 'Luminescent Minerals', category: COMMODITY_CATEGORIES.RAW, basePrice: 4800, legality: 0 },
+  { id: 'phase_change_materials', name: 'Phase Change Materials', category: COMMODITY_CATEGORIES.RAW, basePrice: 5600, legality: 0 },
+
+  // ═══ Textiles (10) ═══
+  { id: 'synthetic_fabrics', name: 'Synthetic Fabrics', category: COMMODITY_CATEGORIES.TEXTILES, basePrice: 280, legality: 0 },
+  { id: 'natural_cloth', name: 'Natural Cloth', category: COMMODITY_CATEGORIES.TEXTILES, basePrice: 350, legality: 0 },
+  { id: 'advanced_textiles', name: 'Advanced Textiles', category: COMMODITY_CATEGORIES.TEXTILES, basePrice: 890, legality: 0 },
+  { id: 'thermal_fabrics', name: 'Thermal Fabrics', category: COMMODITY_CATEGORIES.TEXTILES, basePrice: 620, legality: 0 },
+  { id: 'ballistic_fabrics', name: 'Ballistic Fabrics', category: COMMODITY_CATEGORIES.TEXTILES, basePrice: 1100, legality: 0 },
+  { id: 'luxury_silks', name: 'Luxury Silks', category: COMMODITY_CATEGORIES.TEXTILES, basePrice: 2400, legality: 0 },
+  { id: 'industrial_mesh', name: 'Industrial Mesh', category: COMMODITY_CATEGORIES.TEXTILES, basePrice: 420, legality: 0 },
+  { id: 'radiation_suits', name: 'Radiation Suits', category: COMMODITY_CATEGORIES.TEXTILES, basePrice: 1800, legality: 0 },
+  { id: 'pressure_suits', name: 'Pressure Suits', category: COMMODITY_CATEGORIES.TEXTILES, basePrice: 2200, legality: 0 },
+  { id: 'smart_fabrics', name: 'Smart Fabrics', category: COMMODITY_CATEGORIES.TEXTILES, basePrice: 1600, legality: 0 },
+
+  // ═══ Weapons (10) ═══
+  { id: 'small_arms', name: 'Small Arms', category: COMMODITY_CATEGORIES.WEAPONS, basePrice: 1200, legality: 0 },
+  { id: 'ammunition', name: 'Ammunition', category: COMMODITY_CATEGORIES.WEAPONS, basePrice: 450, legality: 0 },
+  { id: 'personal_shields', name: 'Personal Shields', category: COMMODITY_CATEGORIES.WEAPONS, basePrice: 2800, legality: 0 },
+  { id: 'tactical_equipment', name: 'Tactical Equipment', category: COMMODITY_CATEGORIES.WEAPONS, basePrice: 1900, legality: 0 },
+  { id: 'military_hardware', name: 'Military Hardware', category: COMMODITY_CATEGORIES.WEAPONS, basePrice: 4200, legality: 0 },
+  { id: 'defensive_systems', name: 'Defensive Systems', category: COMMODITY_CATEGORIES.WEAPONS, basePrice: 3600, legality: 0 },
+  { id: 'target_lock_modules', name: 'Target Lock Modules', category: COMMODITY_CATEGORIES.WEAPONS, basePrice: 2400, legality: 0 },
+  { id: 'weapon_components', name: 'Weapon Components', category: COMMODITY_CATEGORIES.WEAPONS, basePrice: 980, legality: 0 },
+  { id: 'combat_drones', name: 'Combat Drones', category: COMMODITY_CATEGORIES.WEAPONS, basePrice: 5200, legality: 1 },
+  { id: 'explosive_devices', name: 'Explosive Devices', category: COMMODITY_CATEGORIES.WEAPONS, basePrice: 1800, legality: 0 },
 ];
 
 export const COMMODITY_MAP = COMMODITIES.reduce((map, c) => { map[c.id] = c; return map; }, {});
@@ -112,12 +273,12 @@ export const COMMODITY_MAP = COMMODITIES.reduce((map, c) => { map[c.id] = c; ret
 export const ECONOMY_TYPES = [
   { id: 'extraction', name: 'Extraction', produces: ['MINERALS', 'METALS', 'RAW'], consumes: ['CONSUMER', 'FOODS', 'MEDICAL', 'TECHNOLOGY'] },
   { id: 'refinery', name: 'Refinery', produces: ['METALS', 'CHEMICALS'], consumes: ['MINERALS', 'INDUSTRIAL', 'FOODS'] },
-  { id: 'industrial', name: 'Industrial', produces: ['INDUSTRIAL', 'TECHNOLOGY', 'CHEMICALS'], consumes: ['METALS', 'MINERALS', 'FOODS', 'CONSUMER'] },
-  { id: 'agriculture', name: 'Agriculture', produces: ['FOODS', 'LEGAL_DRUGS'], consumes: ['INDUSTRIAL', 'TECHNOLOGY', 'MEDICAL'] },
+  { id: 'industrial', name: 'Industrial', produces: ['INDUSTRIAL', 'TECHNOLOGY', 'CHEMICALS', 'TEXTILES'], consumes: ['METALS', 'MINERALS', 'FOODS', 'CONSUMER'] },
+  { id: 'agriculture', name: 'Agriculture', produces: ['FOODS', 'LEGAL_DRUGS', 'TEXTILES'], consumes: ['INDUSTRIAL', 'TECHNOLOGY', 'MEDICAL'] },
   { id: 'high_tech', name: 'High Tech', produces: ['TECHNOLOGY', 'MEDICAL', 'CONSUMER'], consumes: ['METALS', 'CHEMICALS', 'INDUSTRIAL'] },
   { id: 'service', name: 'Service', produces: ['CONSUMER', 'SALVAGE'], consumes: ['FOODS', 'TECHNOLOGY', 'MEDICAL'] },
-  { id: 'military', name: 'Military', produces: ['INDUSTRIAL', 'TECHNOLOGY'], consumes: ['FOODS', 'MEDICAL', 'CONSUMER'] },
-  { id: 'colony', name: 'Colony', produces: ['FOODS', 'SALVAGE'], consumes: ['TECHNOLOGY', 'MEDICAL', 'INDUSTRIAL', 'CONSUMER'] },
+  { id: 'military', name: 'Military', produces: ['WEAPONS', 'INDUSTRIAL', 'TECHNOLOGY'], consumes: ['FOODS', 'MEDICAL', 'CONSUMER', 'METALS'] },
+  { id: 'colony', name: 'Colony', produces: ['FOODS', 'SALVAGE', 'TEXTILES'], consumes: ['TECHNOLOGY', 'MEDICAL', 'INDUSTRIAL', 'CONSUMER'] },
   { id: 'tourism', name: 'Tourism', produces: ['CONSUMER', 'LEGAL_DRUGS'], consumes: ['FOODS', 'TECHNOLOGY'] },
 ];
 

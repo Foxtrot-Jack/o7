@@ -34,6 +34,8 @@ const DELIVERY_EFFECTS = {
   [COMMODITY_CATEGORIES.LEGAL_DRUGS]: { happiness: 6, infrastructure: 0, growth: 0, label: '+6 Happiness/T' },
   [COMMODITY_CATEGORIES.SALVAGE]: { happiness: 0, infrastructure: 1, growth: 0, label: '+1 Infra/T' },
   [COMMODITY_CATEGORIES.RAW]: { happiness: 0, infrastructure: 1, growth: 0, label: '+1 Infra/T' },
+  [COMMODITY_CATEGORIES.TEXTILES]: { happiness: 2, infrastructure: 1, growth: 0.01, label: '+1 Infra, +2 Happiness/T' },
+  [COMMODITY_CATEGORIES.WEAPONS]: { happiness: 0, infrastructure: 3, growth: 0, label: '+3 Infra/T' },
 };
 
 export default function ColonizationScreen() {

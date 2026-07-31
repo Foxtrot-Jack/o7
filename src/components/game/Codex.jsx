@@ -233,24 +233,29 @@ Outfitting levels range from Basic (level 1) to Elite (level 5). Higher-tech eco
     entries: [
       {
         title: 'Buying & Selling Commodities',
-        body: `The Market screen (available when docked) lists all commodities available at the current station. Prices fluctuate based on the station's economy type.
+        body: `The Market screen (available when docked) lists all commodities available at the current station. There are over 230 commodities across 13 categories: Minerals, Metals, Chemicals, Consumer Items, Foods, Industrial Materials, Medical, Technology, Salvage, Legal Drugs, Raw Materials, Textiles, and Weapons.
 
-Each commodity has a base price modified by supply and demand. Buy low in producing economies and sell high in consuming economies for maximum profit.
+Prices fluctuate based on the station's economy type. Each commodity has a base price modified by supply and demand. Buy low in producing economies and sell high in consuming economies for maximum profit.
+
+Some commodities are RESTRICTED (marked in red) — these can only be traded at stations in low-security or anarchy systems. Smuggling restricted goods into high-security systems carries risk but offers higher profit margins.
 
 Your cargo capacity limits how much you can carry at once.`,
       },
       {
         title: 'Economy Types',
-        body: `Stations have different economy types that determine what they produce and consume:
+        body: `Stations have different economy types that determine what they produce and consume across 13 commodity categories:
 
-• EXTRACTION — Produces minerals and raw materials.
-• INDUSTRIAL — Produces manufactured goods, consumes raw materials.
-• REFINERY — Produces metals, consumes minerals.
-• HIGH TECH — Produces technology, consumes industrial goods.
-• AGRICULTURE — Produces food, consumes machinery.
-• TOURISM — Consumes luxury goods.
+• EXTRACTION — Produces minerals, metals, and raw materials. Consumes consumer goods, food, medical, and tech.
+• REFINERY — Produces metals and chemicals. Consumes minerals, industrial goods, and food.
+• INDUSTRIAL — Produces industrial materials, technology, chemicals, and textiles. Consumes metals, minerals, food, and consumer goods.
+• AGRICULTURE — Produces foods, legal drugs, and textiles. Consumes industrial, tech, and medical goods.
+• HIGH TECH — Produces technology, medical, and consumer goods. Consumes metals, chemicals, and industrial materials.
+• SERVICE — Produces consumer goods and salvage. Consumes food, tech, and medical.
+• MILITARY — Produces weapons, industrial, and tech. Consumes food, medical, consumer, and metals.
+• COLONY — Produces food, salvage, and textiles. Consumes tech, medical, industrial, and consumer goods.
+• TOURISM — Produces consumer goods and legal drugs. Consumes food and technology.
 
-Matching buy/sell economies maximizes profit margins.`,
+Matching buy/sell economies maximizes profit margins. The Trade Tools screen helps find the best routes automatically.`,
       },
       {
         title: 'Trade Routes (Inara-style)',
@@ -273,6 +278,60 @@ Results show the best commodity, buy system, sell system, and expected profit.`,
 • Neutron star boosts can supercharge your FSD for 4x jump range.
 
 Each jump segment shows fuel cost and whether it uses a neutron boost.`,
+      },
+    ],
+  },
+  {
+    category: 'Company & Income',
+    icon: '💼',
+    entries: [
+      {
+        title: 'Establishing a Company',
+        body: `Register a trade company for 1,000,000 CR from the Company screen (Commerce > Company). This unlocks passive income mechanics — a stepping stone toward affording a fleet carrier (5 billion CR).
+
+In Sandbox mode, company registration is free.
+
+The company tracks your reputation level, which grows as you collect income. Higher reputation levels (up to level 10 — Elite II) provide up to +50% income bonus.`,
+      },
+      {
+        title: 'Trade Contracts',
+        body: `Assign your spare ships (from your fleet, not your active ship) to autonomous trade contracts. Each assigned ship earns passive income based on its cargo capacity and jump range:
+
+• Income per hour = (cargo capacity × 50,000) + (jump range × 10,000)
+• Reputation multiplier applies on top (up to +50%)
+
+A Type-6 Transporter (50 cargo, 15 jump) earns ~2.65M CR/hr.
+An Anaconda (114 cargo, 18 jump) earns ~5.88M CR/hr.
+
+Income accumulates over time even while you're exploring, mining, or doing other activities. Collect periodically from the Company screen. You can recall a ship from a contract at any time — it returns to your fleet at your current location.
+
+Only ships in your owned fleet (not your active ship) can be assigned. Purchase additional ships at stations to build your contract fleet.`,
+      },
+      {
+        title: 'Carrier Buy/Sell Orders',
+        body: `Once you own a fleet carrier, you can set up to 5 buy or sell orders per carrier from the Company screen. Each active order generates 500,000 CR/hr in passive income.
+
+REQUIREMENTS:
+• The carrier's MARKET service must be enabled (toggle from the Carriers screen).
+• Orders generate income only while the market service is active.
+
+To set an order:
+1. Select your carrier (if you have multiple).
+2. Choose BUY or SELL.
+3. Select a commodity from the 230+ available.
+4. Confirm to add the order.
+
+Income accumulates over time — collect periodically from the Company screen. Each carrier tracks its own income independently.`,
+      },
+      {
+        title: 'Reputation System',
+        body: `Your company reputation grows as you collect contract income:
+
+• Every 100,000,000 CR collected raises your reputation by one level.
+• Reputation levels: Rookie → Novice → Competent → Skilled → Professional → Expert → Master → Veteran → Elite → Elite I → Elite II.
+• Each level provides +5% income bonus (max +50% at level 10).
+
+Reputation is permanent — it never decreases. Higher reputation means faster progress toward your goals.`,
       },
     ],
   },

@@ -827,7 +827,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
       const comm = COMMODITY_MAP[commodityId];
       if (!comm) return prev;
       const catKey = Object.entries(COMMODITY_CATEGORIES).find(([k, v]) => v === comm.category)?.[0];
-      const boost = ({ TECHNOLOGY: 5, INDUSTRIAL: 4, METALS: 3, MINERALS: 2, CHEMICALS: 3, RAW: 6 }[catKey] || 1) * Math.min(qty, 10);
+      const boost = ({ TECHNOLOGY: 5, INDUSTRIAL: 4, METALS: 3, MINERALS: 2, CHEMICALS: 3, RAW: 6, TEXTILES: 2, WEAPONS: 4, FOODS: 2, MEDICAL: 4, CONSUMER: 3, SALVAGE: 1, LEGAL_DRUGS: 3 }[catKey] || 1) * Math.min(qty, 10);
       const newInfra = Math.min(100, prev.shipyard.infrastructure + boost);
       const newLevel = Math.floor(newInfra / 20);
       const effectiveQty = Math.min(qty, 10);

@@ -361,7 +361,7 @@ function ShipyardTab({ shipyard, cargo, onDeliver, onSave, shipName, setShipName
               const comm = COMMODITY_MAP[item.commodity];
               if (!comm) return null;
               const catKey = Object.entries(COMMODITY_CATEGORIES).find(([k, v]) => v === comm.category)?.[0];
-              const boost = { TECHNOLOGY: 5, INDUSTRIAL: 4, METALS: 3, MINERALS: 2, CHEMICALS: 3, RAW: 6 }[catKey] || 1;
+              const boost = { TECHNOLOGY: 5, INDUSTRIAL: 4, METALS: 3, MINERALS: 2, CHEMICALS: 3, RAW: 6, TEXTILES: 2, WEAPONS: 4, FOODS: 2, MEDICAL: 4, CONSUMER: 3, SALVAGE: 1, LEGAL_DRUGS: 3 }[catKey] || 1;
               return (
                 <div key={item.commodity} className="flex items-center justify-between border border-orange-900 p-2 text-xs">
                   <div className="min-w-0 flex-1">
