@@ -5,6 +5,8 @@ import * as THREE from 'three';
 import { useGameState } from '@/lib/gameState';
 import { BODY_TYPES } from '@/lib/system';
 import { buildStationModel } from '@/lib/stationModelBuilder';
+import { buildShipModel } from '@/lib/shipModelBuilder';
+import { SHIP_MAP } from '@/lib/gameState';
 
 export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate }) {
   const mountRef = useRef(null);
@@ -18,11 +20,17 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
   const selectedMarkerRef = useRef(null);
   const stationMeshesRef = useRef([]);
   const focusBodyRef = useRef(null);
+  const shipMeshRef = useRef(null);
+  const shipPosRef = useRef({ x: 0, y: 0, z: 5 });
+  const travelRef = useRef(null);
+  const lastTimeRef = useRef(0);
 
   const { state, getSystemData, scanBody, dockAtStation, fssScanSystem, mapBody, landOnBody } = useGameState();
   const [selectedBody, setSelectedBody] = useState(null);
   const [hoveredBody, setHoveredBody] = useState(null);
   const [bodiesCollapsed, setBodiesCollapsed] = useState(state.settings?.miniScreen || false);
+  const [selectedStation, setSelectedStation] = useState(null);
+  const [travelInfo, setTravelInfo] = useState(null);
 
   const rotState = useRef({
     azimuth: Math.PI / 4,
@@ -68,7 +76,10 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
 
     const animate = () => {
       animationIdRef.current = requestAnimationFrame(animate);
-      const t = Date.now() * 0.00003;
+      const now = Date.now();
+      const dt = Math.min(0.1, (now - (lastTimeRef.current || now)) / 1000);
+      lastTimeRef.current = now;
+      const t = now * 0.00003;
 
       // Update body positions FIRST so camera focus tracks current positions (reduces jitter)
       for (const bm of bodyMeshesRef.current) {
@@ -108,8 +119,38 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
 
       // Pulse selected marker
       if (selectedMarkerRef.current) {
-        const pulse = 1 + Math.sin(Date.now() * 0.005) * 0.3;
+        const pulse = 1 + Math.sin(now * 0.005) * 0.3;
         selectedMarkerRef.current.scale.set(pulse, pulse, pulse);
+      }
+
+      // Ship travel animation
+      if (travelRef.current && shipMeshRef.current) {
+        const travel = travelRef.current;
+        const targetPos = new THREE.Vector3();
+        if (travel.targetType === 'station') {
+          travel.stationModel.getWorldPosition(targetPos);
+        } else if (travel.targetType === 'body') {
+          targetPos.copy(travel.bodyEntry.group.position);
+        }
+        const sp = shipPosRef.current;
+        const dx = targetPos.x - sp.x;
+        const dz = targetPos.z - sp.z;
+        const dist = Math.hypot(dx, dz);
+        if (dist < 0.8) {
+          const onComplete = travel.onComplete;
+          travelRef.current = null;
+          setTravelInfo(null);
+          if (onComplete) onComplete();
+        } else {
+          const moveX = (dx / dist) * travel.speed * dt;
+          const moveZ = (dz / dist) * travel.speed * dt;
+          sp.x += moveX;
+          sp.z += moveZ;
+          shipMeshRef.current.position.set(sp.x, 0, sp.z);
+          shipMeshRef.current.rotation.y = Math.atan2(dx, dz);
+          const progress = Math.min(0.99, 1 - dist / travel.initialDist);
+          setTravelInfo(prev => prev ? { ...prev, progress } : null);
+        }
       }
 
       renderer.render(scene, camera);
@@ -342,6 +383,33 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
       }
     }
 
+    // Build player ship model
+    if (shipMeshRef.current) {
+      scene.remove(shipMeshRef.current);
+      shipMeshRef.current.traverse(child => { if (child.geometry) child.geometry.dispose(); if (child.material) child.material.dispose(); });
+    }
+    const shipType = SHIP_MAP[state.ship.type];
+    const shipClass = shipType?.class || (state.ship.type === 'custom' ? 2 : 1);
+    const shipModel = buildShipModel(shipClass);
+    shipModel.scale.setScalar(0.6);
+    scene.add(shipModel);
+    shipMeshRef.current = shipModel;
+    // Initial position — at current station if docked, else near star
+    if (state.currentLocation === 'station' && state.currentStationId) {
+      const dockStation = systemData.stations.find(s => s.id === state.currentStationId);
+      if (dockStation) {
+        const parentEntry = bodyMeshesRef.current.find(bm => bm.body.id === dockStation.parentId);
+        if (parentEntry) {
+          shipPosRef.current = { x: parentEntry.group.position.x, y: 0, z: parentEntry.group.position.z };
+        }
+      }
+    } else {
+      shipPosRef.current = { x: 0, y: 0, z: 5 };
+    }
+    shipModel.position.set(shipPosRef.current.x, 0, shipPosRef.current.z);
+    travelRef.current = null;
+    setTravelInfo(null);
+
     // Auto-fit camera to system
     const maxOrbit = Math.max(...allBodies.map(b => b.orbitRadius || 0), 20);
     rotState.current.targetDistance = maxOrbit * 2.5;
@@ -480,14 +548,29 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
         .filter(bm => bm.mesh)
         .map(bm => bm.mesh);
 
-      const intersects = raycasterRef.current.intersectObjects(meshes, false);
-      if (intersects.length > 0) {
-        const idx = meshes.indexOf(intersects[0].object);
+      const stationModels = stationMeshesRef.current
+        .filter(sm => sm.model)
+        .map(sm => sm.model);
+
+      const bodyIntersects = raycasterRef.current.intersectObjects(meshes, false);
+      const stationIntersects = raycasterRef.current.intersectObjects(stationModels, true);
+
+      if (bodyIntersects.length > 0 && (stationIntersects.length === 0 || bodyIntersects[0].distance <= stationIntersects[0].distance)) {
+        const idx = meshes.indexOf(bodyIntersects[0].object);
         if (idx >= 0) {
           const bm = bodyMeshesRef.current.filter(bm => bm.mesh)[idx];
           if (bm) {
             handleSelectBody(bm.body);
           }
+        }
+      } else if (stationIntersects.length > 0) {
+        let hitStation = null;
+        for (const sm of stationMeshesRef.current) {
+          const hits = raycasterRef.current.intersectObject(sm.model, true);
+          if (hits.length > 0) { hitStation = sm.station; break; }
+        }
+        if (hitStation) {
+          handleSelectStation(hitStation);
         }
       }
     };
@@ -513,6 +596,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
 
   const handleSelectBody = useCallback((body) => {
     setSelectedBody(body);
+    setSelectedStation(null);
     const entry = bodyMeshesRef.current.find(bm => bm.body.id === body.id);
     focusBodyRef.current = entry || null;
     if (entry && entry.visualRadius) {
@@ -520,6 +604,60 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
     }
     if (onSelectBody) onSelectBody(body);
   }, [onSelectBody]);
+
+  const handleSelectStation = useCallback((station) => {
+    setSelectedStation(station);
+    setSelectedBody(null);
+    const parentEntry = bodyMeshesRef.current.find(bm => bm.body.id === station.parentId);
+    focusBodyRef.current = parentEntry || null;
+    if (parentEntry && parentEntry.visualRadius) {
+      rotState.current.targetDistance = Math.max(parentEntry.visualRadius * 5, 3);
+    }
+  }, []);
+
+  const getShipSpeed = () => {
+    const shipType = SHIP_MAP[state.ship.type];
+    const shipClass = shipType?.class || (state.ship.type === 'custom' ? 2 : 1);
+    return Math.max(4, 12 - shipClass * 2);
+  };
+
+  const handleTravelToStation = useCallback((station) => {
+    const sm = stationMeshesRef.current.find(s => s.station.id === station.id);
+    if (!sm) return;
+    const targetPos = new THREE.Vector3();
+    sm.model.getWorldPosition(targetPos);
+    const dist = Math.hypot(targetPos.x - shipPosRef.current.x, targetPos.z - shipPosRef.current.z);
+    if (dist < 0.8) {
+      dockAtStation(station.id);
+      return;
+    }
+    travelRef.current = {
+      targetType: 'station',
+      stationModel: sm.model,
+      station,
+      speed: getShipSpeed(),
+      initialDist: dist,
+      onComplete: () => dockAtStation(station.id),
+    };
+    setTravelInfo({ target: station.name, type: 'Docking', progress: 0 });
+    setSelectedStation(null);
+  }, [dockAtStation, state.ship.type]);
+
+  const handleTravelToBody = useCallback((body) => {
+    const entry = bodyMeshesRef.current.find(bm => bm.body.id === body.id);
+    if (!entry) return;
+    const dist = Math.hypot(entry.group.position.x - shipPosRef.current.x, entry.group.position.z - shipPosRef.current.z);
+    if (dist < 0.8) return;
+    travelRef.current = {
+      targetType: 'body',
+      bodyEntry: entry,
+      body,
+      speed: getShipSpeed(),
+      initialDist: dist,
+      onComplete: null,
+    };
+    setTravelInfo({ target: body.name || body.designation, type: 'In Transit', progress: 0 });
+  }, [state.ship.type]);
 
   const handleScan = useCallback(() => {
     if (!selectedBody) return;
@@ -547,12 +685,27 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
         </div>
       )}
 
+      {/* Travel progress */}
+      {travelInfo && (
+        <div className="absolute top-14 left-1/2 -translate-x-1/2 border border-cyan-700 bg-black/95 p-2 text-xs space-y-1 w-64 max-w-[80%] z-30">
+          <div className="flex items-center justify-between">
+            <span className="text-cyan-300 font-bold uppercase text-[10px]">{travelInfo.type}</span>
+            <span className="text-cyan-500 text-[10px]">{Math.round(travelInfo.progress * 100)}%</span>
+          </div>
+          <div className="text-cyan-600 text-[10px]">→ {travelInfo.target}</div>
+          <div className="w-full h-1.5 bg-black border border-cyan-900">
+            <div className="h-full bg-cyan-600 transition-all" style={{ width: `${travelInfo.progress * 100}%` }} />
+          </div>
+        </div>
+      )}
+
       {/* Reset view button */}
       {selectedBody && (
         <button
           onClick={() => {
             focusBodyRef.current = null;
             setSelectedBody(null);
+            setSelectedStation(null);
             const maxOrbit = Math.max(...systemData.bodies.map(b => b.orbitRadius || 0), 20);
             rotState.current.targetDistance = maxOrbit * 2.5;
             rotState.current.targetFocusX = 0;
@@ -613,8 +766,8 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
             {systemData.stations.filter(s => s.parentId === body.id).map(station => (
               <button
                 key={station.id}
-                onClick={() => handleSelectBody(body)}
-                className="w-full text-left pl-5 py-0.5 text-[10px] text-green-600 hover:text-green-400 flex items-center gap-1"
+                onClick={() => handleSelectStation(station)}
+                className={`w-full text-left pl-5 py-0.5 text-[10px] flex items-center gap-1 ${selectedStation?.id === station.id ? 'text-green-300' : 'text-green-600 hover:text-green-400'}`}
               >
                 <span className="text-green-800">◦</span>
                 <span className="truncate">{station.name}</span>
@@ -627,7 +780,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
       )}
 
       {/* Station docking panel — shown when in supercruise */}
-      {state.currentLocation !== 'station' && systemData.stations.length > 0 && !selectedBody && (
+      {state.currentLocation !== 'station' && systemData.stations.length > 0 && !selectedBody && !selectedStation && (
         <div className="absolute bottom-2 left-2 right-44 sm:right-56 border border-green-800 bg-black/95 p-3 text-xs space-y-2">
           <div className="text-green-500 font-bold uppercase text-[10px] border-b border-green-900 pb-1">
             Available Stations — Request Docking
@@ -646,14 +799,44 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
                   <div className="text-orange-700 text-[9px]">{station.parentName} · {station.economy.name}</div>
                 </div>
                 <button
-                  onClick={() => dockAtStation(station.id)}
-                  className="px-3 py-1 border border-green-600 text-green-400 hover:bg-green-950/30 text-[10px] font-bold"
+                  onClick={() => handleTravelToStation(station)}
+                  disabled={!!travelInfo}
+                  className="px-3 py-1 border border-green-600 text-green-400 hover:bg-green-950/30 text-[10px] font-bold disabled:opacity-50"
                 >
-                  DOCK
+                  {travelInfo ? '···' : 'DOCK'}
                 </button>
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Selected station info - bottom */}
+      {selectedStation && (
+        <div className="absolute bottom-2 left-2 right-44 sm:right-56 border border-green-700 bg-black/95 p-3 text-xs space-y-2">
+          <div className="flex items-center justify-between border-b border-green-900 pb-1">
+            <span className="text-green-300 font-bold">{selectedStation.name}</span>
+            <button onClick={() => setSelectedStation(null)} className="text-green-700 hover:text-green-400 text-[10px]">✕</button>
+          </div>
+          <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-orange-600">
+            <div>TYPE: <span className="text-orange-300 capitalize">{selectedStation.type}</span></div>
+            <div>ECONOMY: <span className="text-orange-300">{selectedStation.economy.name}</span></div>
+            <div>ORBIT: <span className="text-orange-300">{selectedStation.isOrbital ? 'Orbital' : 'Surface'}</span></div>
+            <div>STAR DIST: <span className="text-orange-300">{selectedStation.distanceFromStar?.toFixed(1)} AU</span></div>
+          </div>
+          <div className="flex flex-wrap gap-1">
+            {selectedStation.services.refuel && <span className="text-[9px] border border-orange-900 text-orange-500 px-1">REFUEL</span>}
+            {selectedStation.services.repair && <span className="text-[9px] border border-orange-900 text-orange-500 px-1">REPAIR</span>}
+            {selectedStation.services.market && <span className="text-[9px] border border-orange-900 text-orange-500 px-1">MARKET</span>}
+            {selectedStation.services.outfitting && <span className="text-[9px] border border-orange-900 text-orange-500 px-1">OUTFIT</span>}
+          </div>
+          <button
+            onClick={() => handleTravelToStation(selectedStation)}
+            disabled={!!travelInfo}
+            className="w-full py-1.5 border border-green-500 text-green-300 hover:bg-green-950/30 text-[10px] font-bold disabled:opacity-50"
+          >
+            {travelInfo ? `TRAVELING — ${Math.round(travelInfo.progress * 100)}%` : '⚡ TRAVEL & DOCK'}
+          </button>
         </div>
       )}
 
@@ -719,6 +902,15 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
               </button>
             )}
           </div>
+          {selectedBody.type !== BODY_TYPES.STAR && (
+            <button
+              onClick={() => handleTravelToBody(selectedBody)}
+              disabled={!!travelInfo}
+              className="w-full py-1.5 border border-cyan-500 text-cyan-300 hover:bg-cyan-950/30 text-[10px] font-bold disabled:opacity-50"
+            >
+              {travelInfo ? `TRAVELING — ${Math.round(travelInfo.progress * 100)}%` : '⚡ TRAVEL TO BODY'}
+            </button>
+          )}
           {selectedBody.landable && state.fssScannedSystems?.[state.currentSystem.seed] && (
             <div className="border-t border-orange-900 pt-1 space-y-1">
               {!state.mappedBodies?.[selectedBody.id] ? (
