@@ -40,6 +40,12 @@ import BlackMarketScreen from '@/components/game/BlackMarketScreen';
 import EngineeringScreen from '@/components/game/EngineeringScreen';
 import SRVRover from '@/components/game/SRVRover';
 import EncounterScreen from '@/components/game/EncounterScreen';
+import BountyBoard from '@/components/game/BountyBoard';
+import CrimeScreen from '@/components/game/CrimeScreen';
+import ConflictZoneScreen from '@/components/game/ConflictZoneScreen';
+import RESScreen from '@/components/game/RESScreen';
+import WingmateScreen from '@/components/game/WingmateScreen';
+import PassengerScreen from '@/components/game/PassengerScreen';
 
 function GameContent() {
   const { state } = useGameState();
@@ -123,6 +129,18 @@ function GameContent() {
         return <EngineeringScreen />;
       case 'srv':
         return <SRVRover onNavigate={handleNavigate} />;
+      case 'bountyboard':
+        return <BountyBoard />;
+      case 'crime':
+        return <CrimeScreen />;
+      case 'conflictzone':
+        return <ConflictZoneScreen />;
+      case 'res':
+        return <RESScreen />;
+      case 'wingmates':
+        return <WingmateScreen />;
+      case 'passengers':
+        return <PassengerScreen />;
       default:
         return <SystemOrrery />;
     }

@@ -9,7 +9,7 @@ import { Skull, ShoppingCart, AlertTriangle, TrendingUp, TrendingDown, Minus } f
 const CONTRABAND_IDS = COMMODITIES.filter(c => c.legality === 1).map(c => c.id);
 
 export default function BlackMarketScreen() {
-  const { state, getSystemData, addCredits, addCargo, removeCargo } = useGameState();
+  const { state, getSystemData, addCredits, addCargo, removeCargo, addCrime } = useGameState();
   const [tradeAmounts, setTradeAmounts] = useState({});
   const systemData = getSystemData();
   const station = systemData?.stations.find(s => s.id === state.currentStationId);
@@ -53,6 +53,7 @@ export default function BlackMarketScreen() {
     if (cargoUsed + qty > state.ship.cargoCapacity) return;
     addCredits(-(price * qty));
     addCargo(commodityId, qty);
+    addCrime('smuggling');
   };
 
   const handleSell = (commodityId, qty, price) => {
@@ -60,6 +61,7 @@ export default function BlackMarketScreen() {
     if (!item || item.qty < qty) return;
     addCredits(price * qty);
     removeCargo(commodityId, qty);
+    addCrime('smuggling');
   };
 
   return (
@@ -67,7 +69,7 @@ export default function BlackMarketScreen() {
       <div className="border border-red-800 p-4 flex items-center gap-2">
         <Skull className="w-5 h-5 text-red-500" />
         <h2 className="text-red-300 font-bold uppercase">Black Market — {station.name}</h2>
-        <span className="text-red-700 text-[10px] ml-auto">⚠ CARRYING CONTRABAND RISKS SCAN FINES</span>
+        <span className="text-red-700 text-[10px] ml-auto">⚠ TRADING HERE INCREASES NOTORIETY</span>
       </div>
 
       <div className="space-y-1">

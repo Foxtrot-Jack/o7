@@ -11,6 +11,7 @@ import { getCrewBonuses } from './crew';
 import { generateCommunityGoals } from './communityGoals';
 import { SYNTHESIS_MAP } from './synthesis';
 import { shouldTriggerEncounter, generateEncounter } from './encounters';
+import { CRIME_TYPES, getCleanRecordCost } from './crime';
 
 const STORAGE_KEY = 'starfarer_save_v1';
 const STORAGE_KEY_SANDBOX = 'starfarer_sandbox_v1';
@@ -168,6 +169,11 @@ function createInitialState() {
     fsdBoost: false,
     heatSinkCharges: 0,
     activeEncounter: null,
+    crime: { notoriety: 0, bounty: 0, crimes: [], lastCrime: 0 },
+    bountyMissions: [],
+    wingmates: [],
+    passengerMissions: [],
+    activeCombat: null,
     createdAt: Date.now(),
   };
 }
@@ -237,6 +243,11 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
           fsdBoost: parsed.fsdBoost || false,
           heatSinkCharges: parsed.heatSinkCharges || 0,
           activeEncounter: parsed.activeEncounter || null,
+          crime: parsed.crime || { notoriety: 0, bounty: 0, crimes: [], lastCrime: 0 },
+          bountyMissions: parsed.bountyMissions || [],
+          wingmates: parsed.wingmates || [],
+          passengerMissions: parsed.passengerMissions || [],
+          activeCombat: parsed.activeCombat || null,
           saveMode: saveSlot,
           lightYearsTraveled: parsed.lightYearsTraveled || 0,
           lifetimeEarnings: parsed.lifetimeEarnings || 0,
@@ -339,6 +350,9 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
           },
         } : {}),
         activeEncounter: shouldTriggerEncounter(system) ? generateEncounter(system) : null,
+        passengerMissions: (prev.passengerMissions || []).map(m =>
+          m.jumpsCompleted < m.jumpsRequired ? { ...m, jumpsCompleted: m.jumpsCompleted + 1 } : m
+        ),
       };
     });
   }, []);
@@ -1457,6 +1471,102 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     });
   }, []);
 
+  // ===== CRIME & PUNISHMENT =====
+  const addCrime = useCallback((typeId) => {
+    setState(prev => {
+      const crimeDef = CRIME_TYPES[typeId];
+      if (!crimeDef) return prev;
+      const crime = prev.crime || { notoriety: 0, bounty: 0, crimes: [], lastCrime: 0 };
+      return {
+        ...prev,
+        crime: {
+          notoriety: crime.notoriety + crimeDef.notoriety,
+          bounty: crime.bounty + crimeDef.baseBounty,
+          lastCrime: Date.now(),
+          crimes: [...(crime.crimes || []), { type: crimeDef.label, date: Date.now(), bounty: crimeDef.baseBounty }].slice(-20),
+        },
+      };
+    });
+  }, []);
+
+  const payOffBounty = useCallback(() => {
+    setState(prev => {
+      const crime = prev.crime || { notoriety: 0, bounty: 0 };
+      const cost = getCleanRecordCost(crime.bounty);
+      const isSb = prev.saveMode === 'sandbox';
+      if (!isSb && prev.credits < cost) return prev;
+      return {
+        ...prev,
+        credits: prev.credits - (isSb ? 0 : cost),
+        crime: { notoriety: 0, bounty: 0, crimes: [], lastCrime: 0 },
+      };
+    });
+  }, []);
+
+  // ===== BOUNTY HUNTING =====
+  const addBountyMission = useCallback((mission) => {
+    setState(prev => ({ ...prev, bountyMissions: [...(prev.bountyMissions || []), mission] }));
+  }, []);
+
+  const completeBountyMission = useCallback((missionId) => {
+    setState(prev => {
+      const mission = (prev.bountyMissions || []).find(m => m.id === missionId);
+      if (!mission) return prev;
+      return {
+        ...prev,
+        bountyMissions: prev.bountyMissions.filter(m => m.id !== missionId),
+        credits: prev.credits + mission.reward,
+        lifetimeEarnings: (prev.lifetimeEarnings || 0) + mission.reward,
+      };
+    });
+  }, []);
+
+  // ===== WINGMATES =====
+  const hireWingmate = useCallback((pilot) => {
+    setState(prev => {
+      const isSb = prev.saveMode === 'sandbox';
+      if (!isSb && prev.credits < pilot.hireCost) return prev;
+      if ((prev.wingmates || []).length >= 4) return prev;
+      return {
+        ...prev,
+        credits: prev.credits - (isSb ? 0 : pilot.hireCost),
+        wingmates: [...(prev.wingmates || []), { ...pilot, active: true, hiredAt: Date.now() }],
+      };
+    });
+  }, []);
+
+  const dismissWingmate = useCallback((pilotId) => {
+    setState(prev => ({ ...prev, wingmates: (prev.wingmates || []).filter(w => w.id !== pilotId) }));
+  }, []);
+
+  // ===== PASSENGER TRANSPORT =====
+  const addPassengerMission = useCallback((mission) => {
+    setState(prev => ({ ...prev, passengerMissions: [...(prev.passengerMissions || []), mission] }));
+  }, []);
+
+  const completePassengerMission = useCallback((missionId) => {
+    setState(prev => {
+      const mission = (prev.passengerMissions || []).find(m => m.id === missionId);
+      if (!mission) return prev;
+      return {
+        ...prev,
+        passengerMissions: prev.passengerMissions.filter(m => m.id !== missionId),
+        credits: prev.credits + mission.reward,
+        lifetimeEarnings: (prev.lifetimeEarnings || 0) + mission.reward,
+        rank: { ...prev.rank, trade: updateRank(prev.rank.trade, mission.reward) },
+      };
+    });
+  }, []);
+
+  // ===== COMBAT =====
+  const startCombat = useCallback((enemy, context, extraData = {}) => {
+    setState(prev => ({ ...prev, activeCombat: { enemy, context, ...extraData } }));
+  }, []);
+
+  const endCombat = useCallback(() => {
+    setState(prev => ({ ...prev, activeCombat: null }));
+  }, []);
+
   const value = {
     state,
     isSandbox,
@@ -1532,6 +1642,16 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     repairShip,
     resolveEncounterAction,
     applyEngineering,
+    addCrime,
+    payOffBounty,
+    addBountyMission,
+    completeBountyMission,
+    hireWingmate,
+    dismissWingmate,
+    addPassengerMission,
+    completePassengerMission,
+    startCombat,
+    endCombat,
   };
 
   return (
