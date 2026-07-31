@@ -29,6 +29,11 @@ export default function GalaxyMap({ onJumpToSystem }) {
   const [showFilterPanel, setShowFilterPanel] = useState(false);
   const [showBookmarks, setShowBookmarks] = useState(false);
   const [showTrail, setShowTrail] = useState(true);
+  const [starBrightness, setStarBrightness] = useState(100);
+  const [trailBrightness, setTrailBrightness] = useState(40);
+  const [overviewBrightness, setOverviewBrightness] = useState(80);
+  const brightnessRef = useRef({ star: 100, trail: 40, overview: 80 });
+  brightnessRef.current = { star: starBrightness, trail: trailBrightness, overview: overviewBrightness };
 
   // Rotation/zoom state
   const rotState = useRef({
@@ -193,7 +198,7 @@ export default function GalaxyMap({ onJumpToSystem }) {
       vertexColors: true,
       sizeAttenuation: false,
       transparent: true,
-      opacity: 0.9,
+      opacity: 0.9 * (brightnessRef.current.star / 100),
     });
 
     const points = new THREE.Points(geometry, material);
@@ -263,7 +268,7 @@ export default function GalaxyMap({ onJumpToSystem }) {
       });
       const trailGeom = new THREE.BufferGeometry();
       trailGeom.setAttribute('position', new THREE.BufferAttribute(trailPositions, 3));
-      const trailMat = new THREE.LineBasicMaterial({ color: 0x00aa44, transparent: true, opacity: 0.4 });
+      const trailMat = new THREE.LineBasicMaterial({ color: 0x00aa44, transparent: true, opacity: 0.4 * (brightnessRef.current.trail / 100) });
       const trail = new THREE.Line(trailGeom, trailMat);
       sceneRef.current.add(trail);
       trailRef.current = trail;
@@ -278,7 +283,7 @@ export default function GalaxyMap({ onJumpToSystem }) {
       ovPos[i*3] = p.x - center.x;
       ovPos[i*3+1] = p.y - center.y;
       ovPos[i*3+2] = p.z - center.z;
-      const b = Math.min(1, p.density / 3) * 0.5;
+      const b = Math.min(1, p.density / 2) * 0.9;
       ovCol[i*3] = b;
       ovCol[i*3+1] = b * 0.5;
       ovCol[i*3+2] = b * 0.1;
@@ -286,7 +291,7 @@ export default function GalaxyMap({ onJumpToSystem }) {
     const ovGeom = new THREE.BufferGeometry();
     ovGeom.setAttribute('position', new THREE.BufferAttribute(ovPos, 3));
     ovGeom.setAttribute('color', new THREE.BufferAttribute(ovCol, 3));
-    const ovMat = new THREE.PointsMaterial({ size: 1.5, vertexColors: true, sizeAttenuation: false, transparent: true, opacity: 0.5 });
+    const ovMat = new THREE.PointsMaterial({ size: 2, vertexColors: true, sizeAttenuation: false, transparent: true, opacity: 0.8 * (brightnessRef.current.overview / 100) });
     const ovCloud = new THREE.Points(ovGeom, ovMat);
     sceneRef.current.add(ovCloud);
     overviewRef.current = ovCloud;
@@ -294,6 +299,17 @@ export default function GalaxyMap({ onJumpToSystem }) {
     // Set initial zoom to show a good range
     rotState.current.targetDistance = 120;
   }, [stars, state.currentSystem, filters, state.discoveredSystems, state.ownedShips, state.colonies, showTrail, state.flightLog]);
+
+  // Apply brightness changes without regenerating geometry
+  useEffect(() => {
+    if (pointsRef.current) pointsRef.current.material.opacity = 0.9 * (starBrightness / 100);
+  }, [starBrightness]);
+  useEffect(() => {
+    if (trailRef.current) trailRef.current.material.opacity = 0.4 * (trailBrightness / 100);
+  }, [trailBrightness]);
+  useEffect(() => {
+    if (overviewRef.current) overviewRef.current.material.opacity = 0.8 * (overviewBrightness / 100);
+  }, [overviewBrightness]);
 
   // Mouse + touch interaction — rotate, pinch, two-finger pan, tap to select
   useEffect(() => {
@@ -562,6 +578,7 @@ export default function GalaxyMap({ onJumpToSystem }) {
       {/* Zoom controls */}
       <div className="absolute top-16 left-2 flex gap-1 z-20">
         <button onClick={() => { rotState.current.targetDistance = 30000; }} className="px-2 py-0.5 border border-orange-700 bg-black/80 text-orange-500 hover:bg-orange-950/30 text-[10px]">GALAXY VIEW</button>
+        <button onClick={() => { rotState.current.targetPanX = 0; rotState.current.targetPanZ = 0; rotState.current.targetDistance = 120; }} className="px-2 py-0.5 border border-orange-700 bg-black/80 text-orange-500 hover:bg-orange-950/30 text-[10px]">⊕ CENTER</button>
         <button onClick={() => { rotState.current.targetDistance = 120; }} className="px-2 py-0.5 border border-orange-700 bg-black/80 text-orange-500 hover:bg-orange-950/30 text-[10px]">LOCAL VIEW</button>
       </div>
 
@@ -642,6 +659,20 @@ export default function GalaxyMap({ onJumpToSystem }) {
             <button onClick={() => setFilters({...filters, showColonies: !filters.showColonies})} className={`flex-1 py-0.5 border ${filters.showColonies ? 'border-purple-600 text-purple-400' : 'border-orange-900 text-orange-800'}`}>★ COLONIES</button>
             </div>
             <button onClick={() => setShowTrail(!showTrail)} className={`w-full py-0.5 border mt-1 ${showTrail ? 'border-green-600 text-green-400' : 'border-orange-900 text-orange-800'}`}>~ FLIGHT TRAIL ({state.flightLog?.length || 0})</button>
+            <div className="border-t border-orange-900 pt-1.5 space-y-1.5">
+              <div>
+                <div className="flex justify-between text-orange-700 text-[9px]"><span>STAR BRIGHTNESS</span><span>{starBrightness}%</span></div>
+                <input type="range" min="10" max="200" value={starBrightness} onChange={e => setStarBrightness(parseInt(e.target.value))} className="w-full" />
+              </div>
+              <div>
+                <div className="flex justify-between text-orange-700 text-[9px]"><span>TRAIL BRIGHTNESS</span><span>{trailBrightness}%</span></div>
+                <input type="range" min="0" max="200" value={trailBrightness} onChange={e => setTrailBrightness(parseInt(e.target.value))} className="w-full" />
+              </div>
+              <div>
+                <div className="flex justify-between text-orange-700 text-[9px]"><span>GALAXY OVERLAY</span><span>{overviewBrightness}%</span></div>
+                <input type="range" min="0" max="200" value={overviewBrightness} onChange={e => setOverviewBrightness(parseInt(e.target.value))} className="w-full" />
+              </div>
+            </div>
         </div>
       )}
 

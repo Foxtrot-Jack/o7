@@ -132,6 +132,7 @@ function createInitialState() {
       scanlines: true,
       textBrightness: 100,
       miniScreen: false,
+      colorTheme: 'elite',
     },
     createdAt: Date.now(),
   };

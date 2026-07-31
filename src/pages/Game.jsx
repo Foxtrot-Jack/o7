@@ -80,7 +80,7 @@ function GameContent() {
 
   return (
     <div className={`w-full h-screen bg-black flex flex-col overflow-hidden ${state.settings?.miniScreen ? 'mini-screen' : ''}`}>
-      <CRTFrame enabled={state.settings.crtEffect} brightness={state.settings.textBrightness || 100}>
+      <CRTFrame enabled={state.settings.crtEffect} brightness={state.settings.textBrightness || 100} theme={state.settings.colorTheme || 'elite'}>
         <div className="flex flex-col h-full">
           <StatusHeader />
           <NavBar

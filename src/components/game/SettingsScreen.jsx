@@ -1,7 +1,8 @@
 // Display Settings — brightness, mini-screen, CRT, reset
 import React from 'react';
 import { useGameState } from '@/lib/gameState';
-import { Settings, Sun, Monitor, Tv, RotateCcw, ArrowLeftRight } from 'lucide-react';
+import { Settings, Sun, Monitor, Tv, RotateCcw, ArrowLeftRight, Palette } from 'lucide-react';
+import { THEME_LIST } from '@/lib/themes';
 
 export default function SettingsScreen() {
   const { state, update, resetGame, switchSave } = useGameState();
@@ -48,6 +49,26 @@ export default function SettingsScreen() {
           <span className="text-orange-600 text-xs">Scanlines, glow, and CRT flicker</span>
           <button onClick={() => set('crtEffect', !s.crtEffect)} className={`px-3 py-1 border text-xs ${s.crtEffect ? 'border-orange-500 bg-orange-950/40 text-orange-300' : 'border-orange-900 text-orange-700'}`}>{s.crtEffect ? 'ON' : 'OFF'}</button>
         </div>
+      </div>
+
+      <div className="border border-orange-900 p-4 space-y-2">
+        <div className="flex items-center gap-2">
+          <Palette className="w-4 h-4 text-orange-500" />
+          <h3 className="text-orange-400 text-sm font-bold uppercase">Color Theme</h3>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          {THEME_LIST.map(t => (
+            <button
+              key={t.id}
+              onClick={() => set('colorTheme', t.id)}
+              className={`border p-2 text-xs flex items-center gap-2 ${s.colorTheme === t.id ? 'border-orange-500 bg-orange-950/30' : 'border-orange-900 hover:border-orange-700'}`}
+            >
+              <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: t.color, boxShadow: `0 0 4px ${t.color}` }} />
+              <span className="text-orange-400 truncate">{t.name}</span>
+            </button>
+          ))}
+        </div>
+        <div className="text-orange-700 text-[10px]">Changes the accent color of the entire interface, including 3D views.</div>
       </div>
 
       <div className="border border-cyan-900 p-4 space-y-2">
