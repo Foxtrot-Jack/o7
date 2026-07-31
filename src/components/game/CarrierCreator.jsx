@@ -15,6 +15,18 @@ export default function CarrierCreator() {
 
   const level = isSandbox ? 5 : (state.shipyard ? Math.min(5, Math.floor(state.shipyard.infrastructure / 20)) : 0);
 
+  if ((state.fleetCarriers || []).length === 0) {
+    return (
+      <div className="w-full h-full flex items-center justify-center p-4">
+        <div className="text-center space-y-2">
+          <Anchor className="w-10 h-10 mx-auto text-orange-700 opacity-50" />
+          <p className="text-orange-500 text-sm font-bold uppercase">Carrier Yard Locked</p>
+          <p className="text-orange-700 text-xs max-w-xs">You must own a Fleet Carrier before you can design custom carrier configurations.</p>
+        </div>
+      </div>
+    );
+  }
+
   const handlePartSelect = useCallback((slotId, partId) => {
     setDesign(prev => ({ ...prev, parts: { ...prev.parts, [slotId]: { ...prev.parts[slotId], partId } } }));
   }, []);

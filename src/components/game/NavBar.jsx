@@ -95,6 +95,7 @@ const NAV_GROUPS = [
 ];
 
 const STATION_ONLY_SCREENS = ['station', 'market', 'outfitting', 'materialtrader', 'synthesis', 'crew', 'blackmarket', 'engineering', 'bountyboard', 'passengers', 'multicrew', 'cartography'];
+const CARRIER_REQUIRED_SCREENS = ['carriercreator'];
 
 export default function NavBar({ currentScreen, onNavigate, location }) {
   const [openGroup, setOpenGroup] = useState(null);
@@ -119,6 +120,8 @@ export default function NavBar({ currentScreen, onNavigate, location }) {
   const handleItemClick = (item) => {
     const isStationOnly = STATION_ONLY_SCREENS.includes(item.id);
     if (isStationOnly && location !== 'station') return;
+    const isCarrierRequired = CARRIER_REQUIRED_SCREENS.includes(item.id);
+    if (isCarrierRequired && (state.fleetCarriers || []).length === 0) return;
     onNavigate(item.id);
     setOpenGroup(null);
   };
@@ -157,7 +160,7 @@ export default function NavBar({ currentScreen, onNavigate, location }) {
                 {group.items.map((item) => {
                   if (item.id === 'cheats' && !state.cheats?.unlocked) return null;
                   const ItemIcon = item.icon;
-                  const itemDisabled = STATION_ONLY_SCREENS.includes(item.id) && location !== 'station';
+                  const itemDisabled = (STATION_ONLY_SCREENS.includes(item.id) && location !== 'station') || (CARRIER_REQUIRED_SCREENS.includes(item.id) && (state.fleetCarriers || []).length === 0);
                   const itemActive = currentScreen === item.id;
                   return (
                     <button
