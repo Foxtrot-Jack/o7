@@ -1,18 +1,10 @@
-// Achievements & Exploration Progress
+// Achievements & Exploration Progress — 130+ goals
 import React from 'react';
 import { useGameState } from '@/lib/gameState';
-import { Trophy, Star, Globe, Map, Telescope, Award, Rocket, Ship } from 'lucide-react';
+import { ACHIEVEMENT_DEFS } from '@/lib/achievementDefs';
+import { Trophy, Star, Globe, Map, Telescope, Award, Rocket, Ship, Coins, Fuel, Anchor, Bookmark, Zap, Mountain, Beaker, Boxes, Hammer, Route, TrendingUp, Pickaxe, Layers, Compass } from 'lucide-react';
 
-const DEFS = [
-  { id: 'neutron_star', name: 'Neutron Star Pioneer', desc: 'First discovery of a neutron star', section: 'firstDiscoveries', icon: Star },
-  { id: 'black_hole', name: 'Black Hole Voyager', desc: 'First discovery of a black hole', section: 'firstDiscoveries', icon: Star },
-  { id: 'ammonia_world', name: 'Ammonia World Discoverer', desc: 'First discovery of an ammonia world', section: 'firstDiscoveries', icon: Globe },
-  { id: 'earth_like', name: 'Earth-Like Finder', desc: 'First discovery of an Earth-like world', section: 'firstDiscoveries', icon: Globe },
-  { id: 'water_world', name: 'Water World Surveyor', desc: 'First discovery of a water world', section: 'firstDiscoveries', icon: Globe },
-  { id: 'habitable_world', name: 'Habitable World Trailblazer', desc: 'First discovery of a habitable world', section: 'firstDiscoveries', icon: Globe },
-  { id: 'first_carrier', name: 'Fleet Commander', desc: 'Purchased your first fleet carrier', section: 'milestones', icon: Ship },
-  { id: 'first_colony', name: 'Colonial Pioneer', desc: 'Established your first colony', section: 'milestones', icon: Rocket },
-];
+const ICON_MAP = { Star, Globe, Map, Telescope, Award, Rocket, Ship, Coins, Fuel, Anchor, Bookmark, Zap, Mountain, Beaker, Boxes, Hammer, Route, TrendingUp, Pickaxe, Trophy, Layers, Compass };
 
 const GALAXY_SIZE = 4000000000;
 
@@ -24,11 +16,46 @@ export default function AchievementsScreen() {
   const systemsScanned = ach.systemsScanned || 0;
   const galaxyPct = (systemsVisited / GALAXY_SIZE) * 100;
 
+  const isEarned = (def) => {
+    if (def.check) return def.check(state);
+    if (def.section === 'firstDiscoveries') return !!ach.firstDiscoveries?.[def.id];
+    if (def.section === 'milestones') return !!ach.milestones?.[def.id];
+    return false;
+  };
+
+  const getData = (def) => {
+    if (def.section === 'firstDiscoveries') return ach.firstDiscoveries?.[def.id];
+    if (def.section === 'milestones') return ach.milestones?.[def.id];
+    return null;
+  };
+
+  const earnedCount = ACHIEVEMENT_DEFS.filter(isEarned).length;
+  const firstDiscoveries = ACHIEVEMENT_DEFS.filter(d => d.section === 'firstDiscoveries');
+  const milestones = ACHIEVEMENT_DEFS.filter(d => d.section === 'milestones');
+
+  const renderAchievement = (def) => {
+    const earned = isEarned(def);
+    const data = getData(def);
+    const Icon = ICON_MAP[def.icon] || Award;
+    return (
+      <div key={def.id} className={`border p-1.5 flex items-center gap-2 ${earned ? 'border-orange-600' : 'border-orange-950 opacity-50'}`}>
+        <Icon className={`w-4 h-4 flex-shrink-0 ${earned ? 'text-orange-400' : 'text-orange-800'}`} />
+        <div className="flex-1 min-w-0">
+          <div className={`text-[11px] font-bold ${earned ? 'text-orange-300' : 'text-orange-700'}`}>{def.name}</div>
+          <div className="text-[9px] text-orange-700 truncate">{def.desc}</div>
+          {earned && data?.system && <div className="text-[9px] text-green-600">✓ {data.system}</div>}
+        </div>
+        {earned && <span className="text-green-500 text-sm flex-shrink-0">✓</span>}
+      </div>
+    );
+  };
+
   return (
     <div className="w-full h-full overflow-y-auto p-4 space-y-4">
       <div className="border border-orange-700 p-4 flex items-center gap-2">
         <Trophy className="w-5 h-5 text-orange-500" />
         <h2 className="text-orange-300 font-bold uppercase">Commander Achievements</h2>
+        <span className="ml-auto text-orange-500 text-xs">{earnedCount} / {ACHIEVEMENT_DEFS.length}</span>
       </div>
 
       <div className="border border-orange-900 p-4 space-y-3">
@@ -47,24 +74,17 @@ export default function AchievementsScreen() {
       </div>
 
       <div className="border border-orange-900 p-4 space-y-2">
-        <h3 className="text-orange-500 text-sm font-bold uppercase flex items-center gap-2"><Award className="w-4 h-4" /> First Discoveries & Milestones</h3>
-        {DEFS.map(d => {
-          const data = ach[d.section]?.[d.id];
-          const earned = !!data;
-          const Icon = d.icon;
-          return (
-            <div key={d.id} className={`border p-2 flex items-center gap-3 ${earned ? 'border-orange-600' : 'border-orange-950 opacity-50'}`}>
-              <Icon className={`w-5 h-5 ${earned ? 'text-orange-400' : 'text-orange-800'}`} />
-              <div className="flex-1">
-                <div className={`text-xs font-bold ${earned ? 'text-orange-300' : 'text-orange-700'}`}>{d.name}</div>
-                <div className="text-[10px] text-orange-700">{d.desc}</div>
-                {earned && data.system && <div className="text-[10px] text-green-600">✓ Found in {data.system}</div>}
-                {earned && !data.system && <div className="text-[10px] text-green-600">✓ Achieved</div>}
-              </div>
-              {earned && <span className="text-green-500 text-lg">✓</span>}
-            </div>
-          );
-        })}
+        <h3 className="text-orange-500 text-sm font-bold uppercase flex items-center gap-2"><Award className="w-4 h-4" /> First Discoveries ({firstDiscoveries.filter(isEarned).length}/{firstDiscoveries.length})</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+          {firstDiscoveries.map(renderAchievement)}
+        </div>
+      </div>
+
+      <div className="border border-orange-900 p-4 space-y-2">
+        <h3 className="text-orange-500 text-sm font-bold uppercase flex items-center gap-2"><Trophy className="w-4 h-4" /> Milestones ({milestones.filter(isEarned).length}/{milestones.length})</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+          {milestones.map(renderAchievement)}
+        </div>
       </div>
     </div>
   );

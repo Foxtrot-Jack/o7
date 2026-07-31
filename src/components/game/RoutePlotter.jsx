@@ -6,10 +6,10 @@ import { generateStarsInRange, distance3D } from '@/lib/galaxy';
 import { computeShipStats, getDefaultModules } from '@/lib/shipOutfitting';
 import { Route, Search, Zap, Navigation, AlertTriangle } from 'lucide-react';
 
-const CORRIDOR_WIDTH = 20;
+const CORRIDOR_WIDTH = 25;
 const SEGMENT_SIZE = 25;
-const MAX_SEGMENTS = 200;
-const MAX_JUMPS = 500;
+const MAX_SEGMENTS = 1000;
+const MAX_JUMPS = 2000;
 
 export default function RoutePlotter() {
   const { state } = useGameState();
@@ -50,10 +50,10 @@ export default function RoutePlotter() {
             setProgress(100);
             setSearching(false);
           }, 50);
-        } else if (radius < 500) {
-          searchRing(radius < 200 ? 200 : radius < 300 ? 300 : 500);
+        } else if (radius < 2000) {
+          searchRing(radius < 200 ? 200 : radius < 400 ? 400 : radius < 800 ? 800 : radius < 1200 ? 1200 : 2000);
         } else {
-          setError(`System "${searchName}" not found within 500 LY. Jump closer to your destination.`);
+          setError(`System "${searchName}" not found within 2000 LY. Jump closer to your destination.`);
           setSearching(false);
           setProgress(0);
         }
@@ -160,7 +160,7 @@ export default function RoutePlotter() {
         <div className="text-center text-orange-700 py-8 text-xs">
           <Route className="w-6 h-6 mx-auto mb-2 opacity-40" />
           Enter a destination system name above to plot an optimized route.
-          <div className="text-[10px] mt-1 text-orange-800">Search radius 500 LY · No route distance limit · Neutron star routing supported</div>
+          <div className="text-[10px] mt-1 text-orange-800">Search radius 2000 LY · No route distance limit · Neutron star routing supported</div>
         </div>
       )}
     </div>

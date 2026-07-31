@@ -22,6 +22,7 @@ import OutfittingScreen from '@/components/game/OutfittingScreen';
 import SurfaceSurvey from '@/components/game/SurfaceSurvey';
 import TradeTools from '@/components/game/TradeTools';
 import CommanderProfile from '@/components/game/CommanderProfile';
+import ShipCreator from '@/components/game/ShipCreator';
 
 function GameContent() {
   const { state } = useGameState();
@@ -71,6 +72,8 @@ function GameContent() {
         return <TradeTools />;
       case 'profile':
         return <CommanderProfile />;
+      case 'shipcreator':
+        return <ShipCreator />;
       default:
         return <SystemOrrery />;
     }

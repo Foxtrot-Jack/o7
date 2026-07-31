@@ -2,12 +2,12 @@
 // Finds best buy/sell opportunities between current system and all reachable systems
 import React, { useState, useEffect, useCallback } from 'react';
 import { useGameState } from '@/lib/gameState';
-import { COMMODITIES, COMMODITY_CATEGORIES } from '@/lib/commodities';
+import { COMMODITIES, COMMODITY_CATEGORIES, COMMODITY_MAP } from '@/lib/commodities';
 import { generateStarsInRange, distance3D } from '@/lib/galaxy';
 import { generateSystem } from '@/lib/system';
 import { TrendingUp, Loader, RefreshCw, ArrowRight } from 'lucide-react';
 
-const SEARCH_RADIUS = 250;
+const SEARCH_RADIUS = 1000;
 
 export default function TradeRoutes() {
   const { state, getSystemData } = useGameState();
@@ -15,6 +15,7 @@ export default function TradeRoutes() {
   const [progress, setProgress] = useState(0);
   const [progressLabel, setProgressLabel] = useState('');
   const [opportunities, setOpportunities] = useState([]);
+  const [commodityFilter, setCommodityFilter] = useState('all');
 
   const currentSystemData = getSystemData();
   const currentEconomy = currentSystemData?.economy;
@@ -51,30 +52,30 @@ export default function TradeRoutes() {
           const sysData = generateSystem(star.seed, star.starClass);
           const targetEconomy = sysData.economy;
 
-          const fwdCategories = (currentEconomy?.produces || []).filter(c => (targetEconomy?.consumes || []).includes(c));
-          const fwdBest = findBestCommodity(fwdCategories);
-          if (fwdBest) {
-            opps.push({
-              system: star.name, seed: star.seed, distance: star.dist,
-              economy: targetEconomy.name, commodity: fwdBest.name,
-              buyPrice: Math.round(fwdBest.basePrice * 0.6),
-              sellPrice: Math.round(fwdBest.basePrice * 1.4),
-              profit: Math.round(fwdBest.basePrice * 0.8),
-              direction: 'forward',
-            });
-          }
-
-          const retCategories = (targetEconomy?.produces || []).filter(c => (currentEconomy?.consumes || []).includes(c));
-          const retBest = findBestCommodity(retCategories);
-          if (retBest) {
-            opps.push({
-              system: star.name, seed: star.seed, distance: star.dist,
-              economy: targetEconomy.name, commodity: retBest.name + ' (return)',
-              buyPrice: Math.round(retBest.basePrice * 0.6),
-              sellPrice: Math.round(retBest.basePrice * 1.4),
-              profit: Math.round(retBest.basePrice * 0.8),
-              direction: 'return',
-            });
+          if (commodityFilter !== 'all') {
+            const comm = COMMODITY_MAP[commodityFilter];
+            if (comm) {
+              const catKey = Object.entries(COMMODITY_CATEGORIES).find(([k, v]) => v === comm.category)?.[0];
+              if (catKey) {
+                if ((currentEconomy?.produces || []).includes(catKey) && (targetEconomy?.consumes || []).includes(catKey)) {
+                  opps.push({ system: star.name, seed: star.seed, distance: star.dist, economy: targetEconomy.name, commodity: comm.name, buyPrice: Math.round(comm.basePrice * 0.6), sellPrice: Math.round(comm.basePrice * 1.4), profit: Math.round(comm.basePrice * 0.8), direction: 'forward' });
+                }
+                if ((targetEconomy?.produces || []).includes(catKey) && (currentEconomy?.consumes || []).includes(catKey)) {
+                  opps.push({ system: star.name, seed: star.seed, distance: star.dist, economy: targetEconomy.name, commodity: comm.name + ' (return)', buyPrice: Math.round(comm.basePrice * 0.6), sellPrice: Math.round(comm.basePrice * 1.4), profit: Math.round(comm.basePrice * 0.8), direction: 'return' });
+                }
+              }
+            }
+          } else {
+            const fwdCategories = (currentEconomy?.produces || []).filter(c => (targetEconomy?.consumes || []).includes(c));
+            const fwdBest = findBestCommodity(fwdCategories);
+            if (fwdBest) {
+              opps.push({ system: star.name, seed: star.seed, distance: star.dist, economy: targetEconomy.name, commodity: fwdBest.name, buyPrice: Math.round(fwdBest.basePrice * 0.6), sellPrice: Math.round(fwdBest.basePrice * 1.4), profit: Math.round(fwdBest.basePrice * 0.8), direction: 'forward' });
+            }
+            const retCategories = (targetEconomy?.produces || []).filter(c => (currentEconomy?.consumes || []).includes(c));
+            const retBest = findBestCommodity(retCategories);
+            if (retBest) {
+              opps.push({ system: star.name, seed: star.seed, distance: star.dist, economy: targetEconomy.name, commodity: retBest.name + ' (return)', buyPrice: Math.round(retBest.basePrice * 0.6), sellPrice: Math.round(retBest.basePrice * 1.4), profit: Math.round(retBest.basePrice * 0.8), direction: 'return' });
+            }
           }
         }
         idx = end;
@@ -90,7 +91,7 @@ export default function TradeRoutes() {
       };
       processChunk();
     }, 50);
-  }, [state.currentSystem, currentEconomy]);
+  }, [state.currentSystem, currentEconomy, commodityFilter]);
 
   useEffect(() => { computeRoutes(); }, [computeRoutes]);
 
@@ -110,6 +111,16 @@ export default function TradeRoutes() {
         <button onClick={computeRoutes} disabled={loading} className="mt-2 px-3 py-1 border border-orange-700 text-orange-400 hover:bg-orange-950/30 text-[10px] flex items-center gap-1 disabled:opacity-50">
           <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} /> REFRESH SCAN
         </button>
+      </div>
+
+      <div className="border border-orange-900 p-2 flex items-center gap-2">
+        <span className="text-orange-700 text-[10px] uppercase whitespace-nowrap">Filter:</span>
+        <select value={commodityFilter} onChange={e => setCommodityFilter(e.target.value)} className="flex-1 bg-black border border-orange-900 text-orange-300 px-2 py-1 text-xs outline-none focus:border-orange-500">
+          <option value="all">All Commodities</option>
+          {COMMODITIES.filter(c => c.legality === 0).map(c => (
+            <option key={c.id} value={c.id}>{c.name}</option>
+          ))}
+        </select>
       </div>
 
       {loading ? (

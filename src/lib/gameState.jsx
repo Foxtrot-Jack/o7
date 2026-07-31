@@ -3,7 +3,8 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { STARTING_SYSTEM, distance3D } from './galaxy';
 import { generateSystem } from './system';
-import { COMMODITIES } from './commodities';
+import { COMMODITIES, COMMODITY_MAP, COMMODITY_CATEGORIES } from './commodities';
+import { computeCustomShipStats } from './shipParts';
 import { getDefaultModules, computeShipStats } from './shipOutfitting';
 
 const STORAGE_KEY = 'starfarer_save_v1';
@@ -118,6 +119,9 @@ function createInitialState() {
     // Fleet
     ownedShips: [],
     fleetCarriers: [],
+    // Custom ships
+    customShips: [],
+    shipyard: null,
     // Achievements
     achievements: {
       firstDiscoveries: {},
@@ -181,6 +185,8 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
           },
           ownedShips: parsed.ownedShips || [],
           fleetCarriers: parsed.fleetCarriers || [],
+          customShips: parsed.customShips || [],
+          shipyard: parsed.shipyard || null,
           bookmarkedSystems: parsed.bookmarkedSystems || [],
           fssScannedSystems: parsed.fssScannedSystems || {},
           mappedBodies: parsed.mappedBodies || {},
@@ -374,6 +380,13 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
           modules: newMods,
         },
         ownedShips: [...prev.ownedShips, oldShip],
+        achievements: {
+          ...prev.achievements,
+          milestones: {
+            ...prev.achievements?.milestones,
+            ...(prev.achievements?.milestones?.first_ship_purchase ? {} : { first_ship_purchase: { date: Date.now() } }),
+          },
+        },
       };
     });
   }, []);
@@ -518,14 +531,19 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
       const sysName = prev.currentSystem.name;
       if (body.type === 'star' && body.starClass) {
         const cls = body.starClass.class;
+        const starAchId = `star_${cls}`;
+        if (!ach.firstDiscoveries[starAchId]) ach.firstDiscoveries[starAchId] = { system: sysName, date: Date.now() };
         if (cls === 'NS' && !ach.firstDiscoveries.neutron_star) ach.firstDiscoveries.neutron_star = { system: sysName, date: Date.now() };
         if (cls === 'BH' && !ach.firstDiscoveries.black_hole) ach.firstDiscoveries.black_hole = { system: sysName, date: Date.now() };
       }
       if (body.type === 'planet') {
+        const planetAchId = `planet_${body.planetType}`;
+        if (!ach.firstDiscoveries[planetAchId]) ach.firstDiscoveries[planetAchId] = { system: sysName, date: Date.now() };
         if (body.planetType === 'ammonia' && !ach.firstDiscoveries.ammonia_world) ach.firstDiscoveries.ammonia_world = { system: sysName, date: Date.now() };
         if (body.planetType === 'earthlike' && !ach.firstDiscoveries.earth_like) ach.firstDiscoveries.earth_like = { system: sysName, date: Date.now() };
         if (body.planetType === 'water_world' && !ach.firstDiscoveries.water_world) ach.firstDiscoveries.water_world = { system: sysName, date: Date.now() };
         if (body.habitable && !ach.firstDiscoveries.habitable_world) ach.firstDiscoveries.habitable_world = { system: sysName, date: Date.now() };
+        if (body.planetType === 'terracformed' && !ach.firstDiscoveries.terraformed_world) ach.firstDiscoveries.terraformed_world = { system: sysName, date: Date.now() };
       }
       return {
         ...prev,
@@ -669,7 +687,9 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
   const addBookmark = useCallback((system) => {
     setState(prev => {
       if (prev.bookmarkedSystems.find(s => s.seed === system.seed)) return prev;
-      return { ...prev, bookmarkedSystems: [...prev.bookmarkedSystems, {
+      const milestones = { ...prev.achievements?.milestones };
+      if (!milestones.first_bookmark) milestones.first_bookmark = { date: Date.now() };
+      return { ...prev, achievements: { ...prev.achievements, milestones }, bookmarkedSystems: [...prev.bookmarkedSystems, {
         seed: system.seed, name: system.name, x: system.x, y: system.y, z: system.z,
         starClass: system.starClass, security: system.security, population: system.population,
       }] };
@@ -685,6 +705,13 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     setState(prev => ({
       ...prev,
       fssScannedSystems: { ...prev.fssScannedSystems, [prev.currentSystem.seed]: true },
+      achievements: {
+        ...prev.achievements,
+        milestones: {
+          ...prev.achievements?.milestones,
+          ...(prev.achievements?.milestones?.first_fss_scan ? {} : { first_fss_scan: { date: Date.now() } }),
+        },
+      },
     }));
   }, []);
 
@@ -693,6 +720,13 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     setState(prev => ({
       ...prev,
       mappedBodies: { ...prev.mappedBodies, [bodyId]: { mapped: true, date: Date.now() } },
+      achievements: {
+        ...prev.achievements,
+        milestones: {
+          ...prev.achievements?.milestones,
+          ...(prev.achievements?.milestones?.first_mapping ? {} : { first_mapping: { date: Date.now() } }),
+        },
+      },
     }));
   }, []);
 
@@ -701,16 +735,34 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     setState(prev => {
       const key = `${bodyId}:${signal.id}`;
       if (prev.surfaceDiscoveries[key]) return prev;
+      const signalAchId = `signal_${signal.id}`;
+      const newAch = { ...prev.achievements };
+      newAch.firstDiscoveries = { ...newAch.firstDiscoveries };
+      if (!newAch.firstDiscoveries[signalAchId]) {
+        newAch.firstDiscoveries[signalAchId] = { system: prev.currentSystem.name, date: Date.now() };
+      }
       return {
         ...prev,
         surfaceDiscoveries: { ...prev.surfaceDiscoveries, [key]: { ...signal, bodyId, date: Date.now() } },
+        achievements: newAch,
       };
     });
   }, []);
 
   // Land on a body
   const landOnBody = useCallback((bodyId) => {
-    setState(prev => ({ ...prev, currentLocation: 'surface', currentSurfaceBody: bodyId }));
+    setState(prev => ({
+      ...prev,
+      currentLocation: 'surface',
+      currentSurfaceBody: bodyId,
+      achievements: {
+        ...prev.achievements,
+        milestones: {
+          ...prev.achievements?.milestones,
+          ...(prev.achievements?.milestones?.first_surface_landing ? {} : { first_surface_landing: { date: Date.now() } }),
+        },
+      },
+    }));
   }, []);
 
   // Depart from surface
@@ -733,6 +785,117 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     }
     if (onSwitchSave) onSwitchSave();
   }, [onSwitchSave, storageKey]);
+
+  // Build a space shipyard (requires 3 colonies + 100M credits in normal mode)
+  const buildShipyard = useCallback(() => {
+    setState(prev => {
+      if (prev.shipyard) return prev;
+      const isSb = prev.saveMode === 'sandbox';
+      if (!isSb) {
+        if (prev.credits < 100000000) return prev;
+        if (prev.colonies.length < 3) return prev;
+      }
+      const yard = {
+        id: `shipyard_${Date.now()}`,
+        systemName: prev.currentSystem.name,
+        systemSeed: prev.currentSystem.seed,
+        infrastructure: isSb ? 100 : 0,
+        level: isSb ? 5 : 0,
+        materialsDelivered: {},
+        builtAt: Date.now(),
+      };
+      const milestones = { ...prev.achievements?.milestones };
+      if (!milestones.first_shipyard_built) milestones.first_shipyard_built = { system: prev.currentSystem.name, date: Date.now() };
+      return {
+        ...prev,
+        credits: prev.credits - (isSb ? 0 : 100000000),
+        shipyard: yard,
+        achievements: { ...prev.achievements, milestones },
+      };
+    });
+  }, []);
+
+  // Deliver cargo to shipyard to increase infrastructure
+  const deliverToShipyard = useCallback((commodityId, qty) => {
+    setState(prev => {
+      if (!prev.shipyard) return prev;
+      const comm = COMMODITY_MAP[commodityId];
+      if (!comm) return prev;
+      const catKey = Object.entries(COMMODITY_CATEGORIES).find(([k, v]) => v === comm.category)?.[0];
+      const boost = ({ TECHNOLOGY: 5, INDUSTRIAL: 4, METALS: 3, MINERALS: 2, CHEMICALS: 3, RAW: 6 }[catKey] || 1) * Math.min(qty, 10);
+      const newInfra = Math.min(100, prev.shipyard.infrastructure + boost);
+      const newLevel = Math.floor(newInfra / 20);
+      const effectiveQty = Math.min(qty, 10);
+      const cargo = [...prev.ship.cargo];
+      const existing = cargo.find(c => c.commodity === commodityId);
+      if (existing) {
+        existing.qty -= effectiveQty;
+        if (existing.qty <= 0) { const idx = cargo.indexOf(existing); cargo.splice(idx, 1); }
+      }
+      return {
+        ...prev,
+        ship: { ...prev.ship, cargo },
+        shipyard: {
+          ...prev.shipyard,
+          infrastructure: newInfra,
+          level: newLevel,
+          materialsDelivered: { ...prev.shipyard.materialsDelivered, [commodityId]: (prev.shipyard.materialsDelivered[commodityId] || 0) + effectiveQty },
+        },
+      };
+    });
+  }, []);
+
+  // Save a custom ship design
+  const saveCustomShip = useCallback((design) => {
+    setState(prev => {
+      const ship = { ...design, id: `custom_${Date.now()}`, createdAt: Date.now() };
+      const milestones = { ...prev.achievements?.milestones };
+      if (!milestones.first_custom_ship) milestones.first_custom_ship = { date: Date.now() };
+      return {
+        ...prev,
+        customShips: [...prev.customShips, ship],
+        achievements: { ...prev.achievements, milestones },
+      };
+    });
+  }, []);
+
+  // Delete a custom ship design
+  const deleteCustomShip = useCallback((shipId) => {
+    setState(prev => ({ ...prev, customShips: prev.customShips.filter(s => s.id !== shipId) }));
+  }, []);
+
+  // Activate a custom ship as the player's current ship
+  const activateCustomShip = useCallback((shipId) => {
+    setState(prev => {
+      if (prev.currentLocation !== 'station') return prev;
+      const custom = prev.customShips.find(s => s.id === shipId);
+      if (!custom) return prev;
+      const oldShip = {
+        id: `ship_${Date.now()}`,
+        typeId: prev.ship.type,
+        customName: prev.ship.name,
+        storedAt: { systemSeed: prev.currentSystem.seed, stationId: prev.currentStationId },
+        cargo: prev.ship.cargo,
+        fuel: prev.ship.fuel,
+        modules: prev.ship.modules || getDefaultModules(prev.ship.type),
+      };
+      const stats = computeCustomShipStats(custom);
+      return {
+        ...prev,
+        ship: {
+          type: 'custom',
+          customShipId: shipId,
+          name: custom.name,
+          cargo: [],
+          fuel: stats.fuelCapacity,
+          fuelCapacity: stats.fuelCapacity,
+          cargoCapacity: stats.cargoCapacity,
+          modules: getDefaultModules('sidewinder'),
+        },
+        ownedShips: [...prev.ownedShips, oldShip],
+      };
+    });
+  }, []);
 
   const isSandbox = state.saveMode === 'sandbox';
 
@@ -775,6 +938,11 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     landOnBody,
     departSurface,
     switchSave,
+    buildShipyard,
+    deliverToShipyard,
+    saveCustomShip,
+    deleteCustomShip,
+    activateCustomShip,
   };
 
   return (
