@@ -41,7 +41,7 @@ export default function OutfittingScreen() {
   const equipModule = (slotKey, moduleId) => {
     const mod = MODULES[moduleId];
     if (!mod) return;
-    const isSb = state.saveMode === 'sandbox';
+    const isSb = state.saveMode === 'sandbox' || (state.cheats?.unlocked && state.cheats?.active?.free_outfitting);
     const price = isSb ? 0 : getModulePrice(moduleId);
     const currentModId = modules[slotKey];
     const refund = (!isSb && currentModId) ? Math.floor(getModulePrice(currentModId) * 0.9) : 0;
@@ -63,7 +63,7 @@ export default function OutfittingScreen() {
   const unequipModule = (slotKey) => {
     const currentModId = modules[slotKey];
     if (!currentModId) return;
-    const isSb = state.saveMode === 'sandbox';
+    const isSb = state.saveMode === 'sandbox' || (state.cheats?.unlocked && state.cheats?.active?.free_outfitting);
     const refund = isSb ? 0 : Math.floor(getModulePrice(currentModId) * 0.9);
     if (!isSb && refund > 0) addCredits(refund);
     const newModules = { ...modules };
@@ -120,7 +120,7 @@ export default function OutfittingScreen() {
           onUnequip={() => unequipModule(selectedSlot.key)}
           onClose={() => setSelectedSlot(null)}
           credits={state.credits}
-          isSandbox={state.saveMode === 'sandbox'}
+          isSandbox={state.saveMode === 'sandbox' || (state.cheats?.unlocked && state.cheats?.active?.free_outfitting)}
         />
       )}
 
@@ -131,7 +131,7 @@ export default function OutfittingScreen() {
           currentEng={(modules.__engineering || {})[engineeringSlot]}
           onApply={applyEngineering}
           onClose={() => setEngineeringSlot(null)}
-          outfittingLevel={state.saveMode === 'sandbox' ? 5 : Math.min(5, Math.max(1, Math.ceil(Math.log10((state.currentSystem.population || 1) + 1))))}
+          outfittingLevel={(state.saveMode === 'sandbox' || (state.cheats?.unlocked && state.cheats?.active?.free_outfitting)) ? 5 : Math.min(5, Math.max(1, Math.ceil(Math.log10((state.currentSystem.population || 1) + 1))))}
         />
       )}
     </div>

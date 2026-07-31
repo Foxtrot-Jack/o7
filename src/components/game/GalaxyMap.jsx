@@ -550,21 +550,24 @@ export default function GalaxyMap({ onJumpToSystem }) {
       { x: selectedStar.x, y: selectedStar.y, z: selectedStar.z }
     );
 
-    // Check fuel — each LY costs 0.5 fuel
-    const fuelCost = Math.ceil(dist * 0.5);
-    if (fuelCost > state.ship.fuel) {
-      alert('INSUFFICIENT FUEL FOR JUMP');
-      return;
+    const cheatActive = (id) => state.cheats?.unlocked && state.cheats?.active?.[id];
+
+    // Check fuel — each LY costs 0.5 fuel (skip if cheats active)
+    if (!cheatActive('instant_jumps') && !cheatActive('infinite_fuel')) {
+      const fuelCost = Math.ceil(dist * 0.5);
+      if (fuelCost > state.ship.fuel) {
+        alert('INSUFFICIENT FUEL FOR JUMP');
+        return;
+      }
     }
 
-    // Deduct fuel and jump
     setCurrentSystem({
       ...selectedStar,
       visited: true,
     });
     setSelectedStar(null);
     if (onJumpToSystem) onJumpToSystem();
-  }, [selectedStar, state.currentSystem, state.ship.fuel, setCurrentSystem, onJumpToSystem]);
+  }, [selectedStar, state.currentSystem, state.ship.fuel, setCurrentSystem, onJumpToSystem, state.cheats]);
 
   const jumpDistance = selectedStar
     ? distance3D(
@@ -574,10 +577,12 @@ export default function GalaxyMap({ onJumpToSystem }) {
     : null;
 
   const fuelCost = selectedStar ? Math.ceil(parseFloat(jumpDistance) * 0.5) : null;
+  const fuelCheat = state.cheats?.unlocked && (state.cheats?.active?.instant_jumps || state.cheats?.active?.infinite_fuel);
+  const galaxyFlip = state.cheats?.unlocked && state.cheats?.active?.galaxy_flip;
 
   return (
     <div className="relative w-full h-full bg-black">
-      <div ref={mountRef} className="w-full h-full" style={{ touchAction: 'none' }} />
+      <div ref={mountRef} className="w-full h-full" style={{ touchAction: 'none', transform: galaxyFlip ? 'scaleY(-1)' : 'none' }} />
 
       {/* Loading indicator */}
       {loading && (
@@ -736,7 +741,7 @@ export default function GalaxyMap({ onJumpToSystem }) {
           <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-orange-600">
             <div>DISTANCE: <span className="text-orange-300">{jumpDistance} LY</span></div>
             <div>SECURITY: <span className="text-orange-300 capitalize">{selectedStar.security}</span></div>
-            <div>FUEL COST: <span className="text-orange-300">{fuelCost} T</span></div>
+            <div>FUEL COST: <span className="text-orange-300">{fuelCheat ? 'FREE' : `${fuelCost} T`}</span></div>
             <div>POPULATION: <span className="text-orange-300">{selectedStar.population > 0 ? selectedStar.population.toLocaleString() : 'Uninhabited'}</span></div>
           </div>
           <button
@@ -751,14 +756,14 @@ export default function GalaxyMap({ onJumpToSystem }) {
           </button>
           <button
             onClick={handleJump}
-            disabled={fuelCost > state.ship.fuel}
+            disabled={!fuelCheat && fuelCost > state.ship.fuel}
             className={`w-full py-2 border text-xs font-bold transition-all ${
-              fuelCost > state.ship.fuel
+              !fuelCheat && fuelCost > state.ship.fuel
                 ? 'border-red-900 text-red-800 cursor-not-allowed'
                 : 'border-orange-500 text-orange-300 hover:bg-orange-950/50'
             }`}
           >
-            {fuelCost > state.ship.fuel ? 'INSUFFICIENT FUEL' : `ENGAGE FSD — JUMP TO ${selectedStar.name.toUpperCase()}`}
+            {fuelCheat ? `⚡ JUMP TO ${selectedStar.name.toUpperCase()}` : fuelCost > state.ship.fuel ? 'INSUFFICIENT FUEL' : `ENGAGE FSD — JUMP TO ${selectedStar.name.toUpperCase()}`}
           </button>
         </div>
       )}

@@ -1,7 +1,8 @@
 // Game state management with localStorage persistence
 // Uses React context for app-wide access
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import { STARTING_SYSTEM, distance3D } from './galaxy';
+import { STARTING_SYSTEM, distance3D, generateStarsInRange, SOL_SYSTEM } from './galaxy';
+import { SOL_CHEATS } from './solSystem';
 import { generateSystem } from './system';
 import { COMMODITIES, COMMODITY_MAP, COMMODITY_CATEGORIES } from './commodities';
 import { computeCustomShipStats } from './shipParts';
@@ -124,6 +125,11 @@ function createInitialState() {
     shipyard: null,
     // Company (passive income)
     company: null,
+    // Cheats (unlocked by finding Sol)
+    cheats: {
+      unlocked: false,
+      active: {},
+    },
     // Achievements
     achievements: {
       firstDiscoveries: {},
@@ -190,6 +196,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
           customShips: parsed.customShips || [],
           shipyard: parsed.shipyard || null,
           company: parsed.company || null,
+          cheats: { unlocked: false, active: {}, ...(parsed.cheats || {}) },
           bookmarkedSystems: parsed.bookmarkedSystems || [],
           fssScannedSystems: parsed.fssScannedSystems || {},
           mappedBodies: parsed.mappedBodies || {},
@@ -273,6 +280,16 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
           scanValue: 0,
         },
       },
+      ...(system.seed === SOL_SYSTEM.seed && !prev.cheats?.unlocked ? {
+        cheats: { ...prev.cheats, unlocked: true },
+        achievements: {
+          ...prev.achievements,
+          milestones: {
+            ...prev.achievements?.milestones,
+            found_sol: prev.achievements?.milestones?.found_sol || { date: Date.now() },
+          },
+        },
+      } : {}),
     }));
   }, []);
 
@@ -1038,6 +1055,57 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     });
   }, []);
 
+  // ===== SOL CHEATS =====
+  const isCheatActive = useCallback((cheatId) => {
+    return state.cheats?.unlocked && state.cheats?.active?.[cheatId];
+  }, [state.cheats]);
+
+  const toggleCheat = useCallback((cheatId) => {
+    setState(prev => {
+      if (!prev.cheats?.unlocked) return prev;
+      return {
+        ...prev,
+        cheats: {
+          ...prev.cheats,
+          active: { ...prev.cheats.active, [cheatId]: !prev.cheats.active[cheatId] },
+        },
+      };
+    });
+  }, []);
+
+  const applyMaxCredits = useCallback(() => {
+    setState(prev => ({ ...prev, credits: 1000000000, lifetimeEarnings: Math.max(prev.lifetimeEarnings || 0, 1000000000) }));
+  }, []);
+
+  const applyMaxColonies = useCallback(() => {
+    setState(prev => ({
+      ...prev,
+      colonies: prev.colonies.map(c => ({ ...c, infrastructure: 100, population: 1000000, happiness: 100, stage: 4, growthRate: 1 })),
+    }));
+  }, []);
+
+  const applyRevealSystems = useCallback(() => {
+    const center = stateRef.current.currentSystem;
+    if (!center) return;
+    const stars = generateStarsInRange(center.x, center.y, center.z, 500);
+    setState(prev => {
+      const newDiscovered = { ...prev.discoveredSystems };
+      for (const star of stars) {
+        if (!newDiscovered[star.seed]) {
+          newDiscovered[star.seed] = { name: star.name, firstDiscovered: false, bodyCount: 0, scanValue: 0 };
+        }
+      }
+      return { ...prev, discoveredSystems: newDiscovered };
+    });
+  }, []);
+
+  const applyMaxMaterials = useCallback(() => {
+    const ALL_MATS = ['iron','silicon','carbon','water','nickel','phosphorus','sulphur','chromium','manganese','zinc','germanium','tin','tungsten','mercury','platinum','palladium','iridium','painite','pristine_diamond','low_temp_diamond','tritium','bromellite','void_opals','alexandrite','core_minerals'];
+    const maxMats = {};
+    for (const m of ALL_MATS) maxMats[m] = 999;
+    setState(prev => ({ ...prev, materials: { ...prev.materials, ...maxMats } }));
+  }, []);
+
   const isSandbox = state.saveMode === 'sandbox';
 
   const value = {
@@ -1091,6 +1159,12 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     setCarrierOrder,
     removeCarrierOrder,
     collectCarrierIncome,
+    isCheatActive,
+    toggleCheat,
+    applyMaxCredits,
+    applyMaxColonies,
+    applyRevealSystems,
+    applyMaxMaterials,
   };
 
   return (

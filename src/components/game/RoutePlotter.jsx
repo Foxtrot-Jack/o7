@@ -2,7 +2,7 @@
 // Plots multi-jump routes with neutron star highway support
 import React, { useState, useMemo } from 'react';
 import { useGameState, SHIP_MAP } from '@/lib/gameState';
-import { generateStarsInRange, distance3D } from '@/lib/galaxy';
+import { generateStarsInRange, distance3D, SOL_SYSTEM } from '@/lib/galaxy';
 import { computeShipStats, getDefaultModules } from '@/lib/shipOutfitting';
 import { Route, Search, Zap, Navigation, AlertTriangle } from 'lucide-react';
 
@@ -33,6 +33,19 @@ export default function RoutePlotter() {
     setRoute(null);
     setProgress(5);
     setProgressLabel('Initializing search...');
+
+    // Sandbox: direct search for Sol
+    if (state.saveMode === 'sandbox' && searchName.trim().toLowerCase() === 'sol') {
+      setDestination(SOL_SYSTEM);
+      setProgressLabel('Plotting optimized route to Sol...');
+      setProgress(60);
+      setTimeout(() => {
+        plotRoute(state.currentSystem, SOL_SYSTEM, jumpRange, useNeutron);
+        setProgress(100);
+        setSearching(false);
+      }, 50);
+      return;
+    }
 
     const searchRing = (radius) => {
       const center = state.currentSystem;

@@ -91,6 +91,7 @@ export const ACHIEVEMENT_DEFS = [
   { id: 'first_engineering', name: 'Engineer', desc: 'Applied an engineering modification', section: 'milestones', icon: 'hammer' },
   { id: 'first_ship_transfer', name: 'Logistics Officer', desc: 'Transferred a stored ship', section: 'milestones', icon: 'ship' },
   { id: 'first_route_plotted', name: 'Navigator Elite', desc: 'Plotted your first multi-jump route', section: 'milestones', icon: 'route' },
+  { id: 'found_sol', name: 'Homecoming', desc: 'Discovered Sol — humanity\'s lost cradle', section: 'milestones', icon: 'globe' },
 
   // ===== JUMP MILESTONES (8) =====
   milestone('jumps_1', 'First Jump', 'Complete your first hyperspace jump', 'zap', s => num(s.totalJumps), 1),

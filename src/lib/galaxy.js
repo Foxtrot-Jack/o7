@@ -151,6 +151,15 @@ export function generateStarsInRange(centerX, centerY, centerZ, radius) {
     }
   }
 
+  // Inject Sol system if within range
+  const solDist = distance3D(
+    { x: SOL_SYSTEM.x, y: SOL_SYSTEM.y, z: SOL_SYSTEM.z },
+    { x: centerX, y: centerY, z: centerZ }
+  );
+  if (solDist <= radius) {
+    allStars.push({ ...SOL_SYSTEM });
+  }
+
   return allStars;
 }
 
@@ -166,6 +175,22 @@ export const STARTING_SYSTEM = {
   security: 'medium',
   population: 4500000000,
   visited: true,
+};
+
+// Sol — humanity's lost cradle, hidden far from the starting system
+export const SOL_SEED = hashSeed('sol_system_hidden');
+export const SOL_SYSTEM = {
+  id: 'sol',
+  seed: SOL_SEED,
+  x: -5500,
+  y: -4200,
+  z: 320,
+  name: 'Sol',
+  starClass: STAR_CLASSES[4], // G class — yellow star
+  security: 'high',
+  population: 20000000000,
+  visited: false,
+  isSol: true,
 };
 
 // Get the color for a star class

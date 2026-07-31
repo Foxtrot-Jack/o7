@@ -7,6 +7,7 @@ export const THEMES = {
   crimson: { name: 'Crimson',       color: '#ff3232', hueRotate: -25, glow: 'rgba(255,50,50,0.03)',  flicker: 'rgba(255,50,50,0.02)',  shadow: 'rgba(255,50,50,0.5)',  shadowDim: 'rgba(255,50,50,0.2)',  gradient: 'rgba(255,50,50,0.02)' },
   violet:  { name: 'Violet',        color: '#b464ff', hueRotate: 235, glow: 'rgba(180,100,255,0.03)',flicker: 'rgba(180,100,255,0.02)',shadow: 'rgba(180,100,255,0.5)',shadowDim: 'rgba(180,100,255,0.2)',gradient: 'rgba(180,100,255,0.02)' },
   mono:    { name: 'Monochrome',    color: '#cccccc', hueRotate: 0,   grayscale: true, glow: 'rgba(200,200,200,0.03)', flicker: 'rgba(200,200,200,0.02)', shadow: 'rgba(200,200,200,0.5)', shadowDim: 'rgba(200,200,200,0.2)', gradient: 'rgba(200,200,200,0.02)' },
+  sol_gold: { name: 'Sol Gold',     color: '#ffd700', hueRotate: 20,  glow: 'rgba(255,215,0,0.04)',  flicker: 'rgba(255,215,0,0.02)',  shadow: 'rgba(255,215,0,0.6)',  shadowDim: 'rgba(255,215,0,0.25)',  gradient: 'rgba(255,215,0,0.03)' },
 };
 
 export const THEME_LIST = Object.entries(THEMES).map(([id, t]) => ({ id, ...t }));

@@ -3,7 +3,8 @@
 import { makeRng, randInt, randFloat, pick, pickWeighted, shuffle } from './prng';
 import { generateBodyName, generateStationName, generateFactionName } from './names';
 import { ECONOMY_TYPES } from './commodities';
-import { STAR_CLASSES, SPECIAL_STARS } from './galaxy';
+import { STAR_CLASSES, SPECIAL_STARS, SOL_SEED } from './galaxy';
+import { generateSolSystem } from './solSystem';
 
 const ALL_STAR_CLASSES_LOCAL = [...STAR_CLASSES, ...SPECIAL_STARS];
 
@@ -66,7 +67,7 @@ export const SURFACE_SIGNALS = {
 };
 
 // Generate surface signals for a body — uses separate RNG to not affect system gen
-function generateSurfaceSignals(bodyId, planetType) {
+export function generateSurfaceSignals(bodyId, planetType) {
   const rng = makeRng(bodyId + ':signals');
   const signals = [];
   const habitable = ['earthlike', 'water_world', 'terracformed'].includes(planetType);
@@ -99,6 +100,9 @@ function generateSurfaceSignals(bodyId, planetType) {
 
 // Generate a complete system from a seed
 export function generateSystem(starSeed, parentStarClass) {
+  if (starSeed === SOL_SEED) {
+    return generateSolSystem();
+  }
   const rng = makeRng(starSeed + ':system');
 
   // Number of stars in the system (1-3)
@@ -388,7 +392,7 @@ function generateRing(rng, parentId) {
   };
 }
 
-function generatePlanetMaterials(rng, planetType) {
+export function generatePlanetMaterials(rng, planetType) {
   // Materials available for mining from this body
   const allMaterials = [
     { id: 'iron', chance: 0.8 },

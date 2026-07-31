@@ -25,6 +25,7 @@ import CommanderProfile from '@/components/game/CommanderProfile';
 import ShipCreator from '@/components/game/ShipCreator';
 import Codex from '@/components/game/Codex';
 import CompanyScreen from '@/components/game/CompanyScreen';
+import CheatsScreen from '@/components/game/CheatsScreen';
 
 function GameContent() {
   const { state } = useGameState();
@@ -80,6 +81,8 @@ function GameContent() {
         return <Codex />;
       case 'company':
         return <CompanyScreen />;
+      case 'cheats':
+        return <CheatsScreen />;
       default:
         return <SystemOrrery />;
     }
@@ -89,7 +92,7 @@ function GameContent() {
 
   return (
     <div className={`w-full h-screen bg-black flex flex-col overflow-hidden ${state.settings?.miniScreen ? 'mini-screen' : ''}`}>
-      <CRTFrame enabled={state.settings.crtEffect} brightness={state.settings.textBrightness || 100} theme={state.settings.colorTheme || 'elite'}>
+      <CRTFrame enabled={state.settings.crtEffect} brightness={state.settings.textBrightness || 100} theme={state.cheats?.unlocked && state.cheats?.active?.golden_theme ? 'sol_gold' : (state.settings.colorTheme || 'elite')}>
         <div className="flex flex-col h-full">
           <StatusHeader />
           <NavBar

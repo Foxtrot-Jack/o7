@@ -46,6 +46,18 @@ export default function MarketScreen() {
       // Stock available
       const stock = isProduced ? randInt(rng, 50, 5000) : randInt(rng, 0, 500);
 
+      // Venus cheat — Morning Star: perfect prices
+      if (state.cheats?.unlocked && state.cheats?.active?.best_prices) {
+        return {
+          ...commodity,
+          buyPrice: 0,
+          sellPrice: Math.round(commodity.basePrice * 3),
+          supply: 100,
+          demand: 100,
+          stock: 99999,
+        };
+      }
+
       return {
         ...commodity,
         buyPrice,

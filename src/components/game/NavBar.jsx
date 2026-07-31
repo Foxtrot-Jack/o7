@@ -1,6 +1,7 @@
 // Navigation bar — dropdown-grouped access to all screens
 import React, { useState, useRef, useEffect } from 'react';
-import { Compass, Store, Package, ClipboardList, Pickaxe, Telescope, Home, Map, Rocket, Layers, Anchor, Trophy, Settings, Wrench, MapPin, TrendingUp, User, Hammer, BookOpen, Briefcase, ChevronDown, Lock } from 'lucide-react';
+import { Compass, Store, Package, ClipboardList, Pickaxe, Telescope, Home, Map, Rocket, Layers, Anchor, Trophy, Settings, Wrench, MapPin, TrendingUp, User, Hammer, BookOpen, Briefcase, ChevronDown, Lock, Sparkles } from 'lucide-react';
+import { useGameState } from '@/lib/gameState';
 
 const NAV_GROUPS = [
   {
@@ -50,6 +51,7 @@ const NAV_GROUPS = [
       { id: 'achievements', label: 'Awards', icon: Trophy },
       { id: 'profile', label: 'Profile', icon: User },
       { id: 'codex', label: 'Codex', icon: BookOpen },
+      { id: 'cheats', label: 'Cheats', icon: Sparkles },
       { id: 'settings', label: 'Settings', icon: Settings },
     ],
   },
@@ -60,6 +62,7 @@ const STATION_ONLY_SCREENS = ['station', 'market', 'outfitting'];
 export default function NavBar({ currentScreen, onNavigate, location }) {
   const [openGroup, setOpenGroup] = useState(null);
   const navRef = useRef(null);
+  const { state } = useGameState();
 
   useEffect(() => {
     if (!openGroup) return;
@@ -115,6 +118,7 @@ export default function NavBar({ currentScreen, onNavigate, location }) {
             {isOpen && !groupDisabled && (
               <div className={`absolute top-full ${group.align === 'right' ? 'right-0' : 'left-0'} mt-0.5 min-w-[150px] border border-orange-800 bg-black z-50 shadow-lg shadow-black`}>
                 {group.items.map((item) => {
+                  if (item.id === 'cheats' && !state.cheats?.unlocked) return null;
                   const ItemIcon = item.icon;
                   const itemDisabled = STATION_ONLY_SCREENS.includes(item.id) && location !== 'station';
                   const itemActive = currentScreen === item.id;
