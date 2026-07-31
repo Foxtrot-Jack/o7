@@ -86,11 +86,11 @@ export function getPartsForSlot(slotId, shipyardLevel) {
 export function createEmptyDesign() {
   const parts = {};
   for (const slot of SHIP_SLOTS) {
-    if (slot.category === 'hull') parts[slot.id] = { partId: 'hull_arrow', scale: [1, 1, 1], position: [0, 0, 0] };
-    else if (slot.category === 'cockpit') parts[slot.id] = { partId: 'cockpit_bubble', scale: [1, 1, 1], position: [0, 0, 0] };
-    else if (slot.category === 'wing') parts[slot.id] = { partId: 'wing_straight', scale: [1, 1, 1], position: [0, 0, 0] };
-    else if (slot.category === 'engine') parts[slot.id] = { partId: 'engine_basic', scale: [1, 1, 1], position: [0, 0, 0] };
-    else parts[slot.id] = { partId: null, scale: [1, 1, 1], position: [0, 0, 0] };
+    if (slot.category === 'hull') parts[slot.id] = { partId: 'hull_arrow', scale: [1, 1, 1], position: [0, 0, 0], rotation: [0, 0, 0] };
+    else if (slot.category === 'cockpit') parts[slot.id] = { partId: 'cockpit_bubble', scale: [1, 1, 1], position: [0, 0, 0], rotation: [0, 0, 0] };
+    else if (slot.category === 'wing') parts[slot.id] = { partId: 'wing_straight', scale: [1, 1, 1], position: [0, 0, 0], rotation: [0, 0, 0] };
+    else if (slot.category === 'engine') parts[slot.id] = { partId: 'engine_basic', scale: [1, 1, 1], position: [0, 0, 0], rotation: [0, 0, 0] };
+    else parts[slot.id] = { partId: null, scale: [1, 1, 1], position: [0, 0, 0], rotation: [0, 0, 0] };
   }
   return { name: 'Untitled Vessel', parts };
 }

@@ -178,6 +178,10 @@ export default function ShipBuilder3D({ design, selectedSlot, onSelectSlot }) {
       }
       if (slot.id === 'wing_left') mesh.rotation.z = Math.PI / 12;
       if (slot.id === 'wing_right') mesh.rotation.z = -Math.PI / 12;
+      const rot = partRef.rotation || [0, 0, 0];
+      mesh.rotation.x += rot[0] * Math.PI / 180;
+      mesh.rotation.y += rot[1] * Math.PI / 180;
+      mesh.rotation.z += rot[2] * Math.PI / 180;
 
       mesh.userData.slot = slot.id;
       group.add(mesh);

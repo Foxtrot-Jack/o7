@@ -45,6 +45,15 @@ export default function ShipCreator() {
     });
   }, []);
 
+  const handleRotationChange = useCallback((slotId, axis, value) => {
+    setDesign(prev => {
+      const part = prev.parts[slotId];
+      const rotation = [...(part.rotation || [0, 0, 0])];
+      rotation[axis] = value;
+      return { ...prev, parts: { ...prev.parts, [slotId]: { ...part, rotation } } };
+    });
+  }, []);
+
   const handleClearSlot = useCallback((slotId) => {
     setDesign(prev => ({
       ...prev,
@@ -111,6 +120,7 @@ export default function ShipCreator() {
           onPartSelect={handlePartSelect}
           onScaleChange={handleScaleChange}
           onPositionChange={handlePositionChange}
+          onRotationChange={handleRotationChange}
           onClearSlot={handleClearSlot}
           shipName={shipName}
           setShipName={setShipName}
@@ -143,12 +153,13 @@ export default function ShipCreator() {
   );
 }
 
-function BuilderTab({ design, selectedSlot, onSelectSlot, onPartSelect, onScaleChange, onPositionChange, onClearSlot, shipName, setShipName, stats, onSave, shipyardLevel, isSandbox }) {
+function BuilderTab({ design, selectedSlot, onSelectSlot, onPartSelect, onScaleChange, onPositionChange, onRotationChange, onClearSlot, shipName, setShipName, stats, onSave, shipyardLevel, isSandbox }) {
   const slot = SHIP_SLOTS.find(s => s.id === selectedSlot);
   const availableParts = getPartsForSlot(selectedSlot, shipyardLevel);
   const currentPart = design.parts[selectedSlot]?.partId ? SHIP_PART_MAP[design.parts[selectedSlot].partId] : null;
   const currentScale = design.parts[selectedSlot]?.scale || [1, 1, 1];
   const currentPosition = design.parts[selectedSlot]?.position || [0, 0, 0];
+  const currentRotation = design.parts[selectedSlot]?.rotation || [0, 0, 0];
 
   return (
     <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
@@ -203,7 +214,7 @@ function BuilderTab({ design, selectedSlot, onSelectSlot, onPartSelect, onScaleC
         {/* Scale + Position sliders side by side */}
         {currentPart && (
           <div className="border border-orange-900 p-2">
-            <div className="grid grid-cols-2 gap-x-2 gap-y-2">
+            <div className="grid grid-cols-3 gap-x-2 gap-y-2">
               <div>
                 <div className="text-orange-700 text-[9px] uppercase mb-1">Resize</div>
                 {['X', 'Y', 'Z'].map((axis, i) => (
@@ -219,6 +230,15 @@ function BuilderTab({ design, selectedSlot, onSelectSlot, onPartSelect, onScaleC
                   <div key={axis}>
                     <div className="flex justify-between text-[9px] text-orange-700"><span>POS {axis}</span><span>{currentPosition[i].toFixed(1)}</span></div>
                     <input type="range" min="-3" max="3" step="0.1" value={currentPosition[i]} onChange={e => onPositionChange(selectedSlot, i, parseFloat(e.target.value))} className="w-full" />
+                  </div>
+                ))}
+              </div>
+              <div>
+                <div className="text-orange-700 text-[9px] uppercase mb-1">Rotate</div>
+                {['X', 'Y', 'Z'].map((axis, i) => (
+                  <div key={axis}>
+                    <div className="flex justify-between text-[9px] text-orange-700"><span>ROT {axis}</span><span>{currentRotation[i].toFixed(0)}°</span></div>
+                    <input type="range" min="-180" max="180" step="5" value={currentRotation[i]} onChange={e => onRotationChange(selectedSlot, i, parseFloat(e.target.value))} className="w-full" />
                   </div>
                 ))}
               </div>
