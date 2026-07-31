@@ -24,6 +24,7 @@ import TradeTools from '@/components/game/TradeTools';
 import CommanderProfile from '@/components/game/CommanderProfile';
 import ShipCreator from '@/components/game/ShipCreator';
 import Codex from '@/components/game/Codex';
+import CompanyScreen from '@/components/game/CompanyScreen';
 
 function GameContent() {
   const { state } = useGameState();
@@ -77,6 +78,8 @@ function GameContent() {
         return <ShipCreator />;
       case 'codex':
         return <Codex />;
+      case 'company':
+        return <CompanyScreen />;
       default:
         return <SystemOrrery />;
     }

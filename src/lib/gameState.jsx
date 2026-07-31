@@ -122,6 +122,8 @@ function createInitialState() {
     // Custom ships
     customShips: [],
     shipyard: null,
+    // Company (passive income)
+    company: null,
     // Achievements
     achievements: {
       firstDiscoveries: {},
@@ -187,6 +189,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
           fleetCarriers: parsed.fleetCarriers || [],
           customShips: parsed.customShips || [],
           shipyard: parsed.shipyard || null,
+          company: parsed.company || null,
           bookmarkedSystems: parsed.bookmarkedSystems || [],
           fssScannedSystems: parsed.fssScannedSystems || {},
           mappedBodies: parsed.mappedBodies || {},
@@ -479,6 +482,8 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
         tritiumCapacity: 1000,
         bankBalance: 0,
         services: { market: false, shipyard: false, outfitting: false, refuel: true, repair: true },
+        orders: [],
+        lastIncomeCollection: Date.now(),
       };
       return {
         ...prev,
@@ -897,6 +902,142 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     });
   }, []);
 
+  // Create a trade company (1M CR registration, mid-game passive income)
+  const createCompany = useCallback((companyName) => {
+    setState(prev => {
+      if (prev.company) return prev;
+      const isSb = prev.saveMode === 'sandbox';
+      if (!isSb && prev.credits < 1000000) return prev;
+      return {
+        ...prev,
+        credits: prev.credits - (isSb ? 0 : 1000000),
+        company: {
+          name: companyName || 'Independent Corp',
+          totalCollected: 0,
+          contracts: [],
+          lastCollection: Date.now(),
+          createdAt: Date.now(),
+        },
+      };
+    });
+  }, []);
+
+  // Assign a stored ship to an autonomous trade contract
+  const assignShipToContract = useCallback((shipId) => {
+    setState(prev => {
+      if (!prev.company) return prev;
+      const stored = prev.ownedShips.find(s => s.id === shipId);
+      if (!stored) return prev;
+      const shipType = SHIP_MAP[stored.typeId];
+      if (!shipType) return prev;
+      const mods = stored.modules || getDefaultModules(stored.typeId);
+      const stats = computeShipStats(stored.typeId, mods);
+      const rate = Math.round(stats.cargoCapacity * 50000 + stats.jumpRange * 10000);
+      const contract = {
+        id: `contract_${Date.now()}`,
+        shipId,
+        shipTypeId: stored.typeId,
+        shipName: stored.customName || shipType.name,
+        incomePerHour: rate,
+        assignedAt: Date.now(),
+      };
+      return {
+        ...prev,
+        ownedShips: prev.ownedShips.filter(s => s.id !== shipId),
+        company: { ...prev.company, contracts: [...prev.company.contracts, contract] },
+      };
+    });
+  }, []);
+
+  // Recall a ship from a contract back to owned fleet
+  const recallShipFromContract = useCallback((contractId) => {
+    setState(prev => {
+      if (!prev.company) return prev;
+      const contract = prev.company.contracts.find(c => c.id === contractId);
+      if (!contract) return prev;
+      const shipType = SHIP_MAP[contract.shipTypeId];
+      const ship = {
+        id: contract.shipId,
+        typeId: contract.shipTypeId,
+        customName: contract.shipName,
+        storedAt: { systemSeed: prev.currentSystem.seed, stationId: prev.currentStationId },
+        cargo: [],
+        fuel: shipType?.fuelCapacity || 8,
+        modules: getDefaultModules(contract.shipTypeId),
+      };
+      return {
+        ...prev,
+        ownedShips: [...prev.ownedShips, ship],
+        company: { ...prev.company, contracts: prev.company.contracts.filter(c => c.id !== contractId) },
+      };
+    });
+  }, []);
+
+  // Collect accumulated company contract income
+  const collectCompanyIncome = useCallback(() => {
+    setState(prev => {
+      if (!prev.company) return prev;
+      const now = Date.now();
+      const elapsedHours = (now - prev.company.lastCollection) / 3600000;
+      const repLevel = Math.min(10, Math.floor((prev.company.totalCollected || 0) / 100000000));
+      const multiplier = 1 + repLevel * 0.05;
+      const income = Math.floor(prev.company.contracts.reduce((sum, c) => sum + c.incomePerHour * elapsedHours * multiplier, 0));
+      if (income <= 0) return prev;
+      return {
+        ...prev,
+        credits: prev.credits + income,
+        lifetimeEarnings: (prev.lifetimeEarnings || 0) + income,
+        company: {
+          ...prev.company,
+          totalCollected: (prev.company.totalCollected || 0) + income,
+          lastCollection: now,
+        },
+      };
+    });
+  }, []);
+
+  // Set a buy/sell order on a fleet carrier
+  const setCarrierOrder = useCallback((carrierId, order) => {
+    setState(prev => ({
+      ...prev,
+      fleetCarriers: prev.fleetCarriers.map(c => {
+        if (c.id !== carrierId) return c;
+        const orders = c.orders || [];
+        if (orders.length >= 5) return c;
+        return { ...c, orders: [...orders, { ...order, id: `order_${Date.now()}`, createdAt: Date.now() }] };
+      }),
+    }));
+  }, []);
+
+  // Remove a carrier order
+  const removeCarrierOrder = useCallback((carrierId, orderId) => {
+    setState(prev => ({
+      ...prev,
+      fleetCarriers: prev.fleetCarriers.map(c => c.id !== carrierId ? c : { ...c, orders: (c.orders || []).filter(o => o.id !== orderId) }),
+    }));
+  }, []);
+
+  // Collect carrier order income (requires market service enabled)
+  const collectCarrierIncome = useCallback((carrierId) => {
+    setState(prev => {
+      const carrier = prev.fleetCarriers.find(c => c.id === carrierId);
+      if (!carrier) return prev;
+      const now = Date.now();
+      const lastCol = carrier.lastIncomeCollection || carrier.createdAt || now;
+      const elapsedHours = Math.max(0, (now - lastCol) / 3600000);
+      const orders = carrier.orders || [];
+      const activeOrders = carrier.services?.market ? orders.length : 0;
+      const income = Math.floor(activeOrders * 500000 * elapsedHours);
+      if (income <= 0) return prev;
+      return {
+        ...prev,
+        credits: prev.credits + income,
+        lifetimeEarnings: (prev.lifetimeEarnings || 0) + income,
+        fleetCarriers: prev.fleetCarriers.map(c => c.id === carrierId ? { ...c, lastIncomeCollection: now } : c),
+      };
+    });
+  }, []);
+
   const isSandbox = state.saveMode === 'sandbox';
 
   const value = {
@@ -943,6 +1084,13 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     saveCustomShip,
     deleteCustomShip,
     activateCustomShip,
+    createCompany,
+    assignShipToContract,
+    recallShipFromContract,
+    collectCompanyIncome,
+    setCarrierOrder,
+    removeCarrierOrder,
+    collectCarrierIncome,
   };
 
   return (
