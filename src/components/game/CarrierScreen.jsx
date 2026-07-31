@@ -7,7 +7,7 @@ import { Rocket, Fuel, Banknote, Plus, Edit2, Check, Anchor, Trash2 } from 'luci
 const CARRIER_COST = 5000000000;
 const MAX_CARRIERS = 5;
 
-export default function CarrierScreen() {
+export default function CarrierScreen({ onNavigate }) {
   const { state, buyFleetCarrier, jumpCarrier, renameCarrier, decommissionCarrier } = useGameState();
   const [showBuy, setShowBuy] = useState(false);
   const [carrierName, setCarrierName] = useState('');
@@ -114,7 +114,8 @@ export default function CarrierScreen() {
                 </div>
 
                 {isHere && (
-                  <div className="border-t border-orange-900 pt-2">
+                  <div className="border-t border-orange-900 pt-2 space-y-2">
+                    <button onClick={() => onNavigate('carrierinterior')} className="w-full py-1.5 border border-green-500 text-green-300 hover:bg-green-950/30 text-xs font-bold">ENTER INTERIOR</button>
                     {jumpState && jumpState.carrierId === c.id ? (
                       <div className="space-y-2">
                         <div className="text-orange-400 text-xs font-bold">Select Jump Destination (500 LY max)</div>

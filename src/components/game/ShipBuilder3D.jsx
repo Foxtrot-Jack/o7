@@ -3,7 +3,7 @@ import React, { useRef, useEffect } from 'react';
 import * as THREE from 'three';
 import { SHIP_SLOTS, SHIP_PART_MAP } from '@/lib/shipParts';
 
-export default function ShipBuilder3D({ design, selectedSlot, onSelectSlot }) {
+export default function ShipBuilder3D({ design, selectedSlot, onSelectSlot, slots = SHIP_SLOTS, partMap = SHIP_PART_MAP, initialDistance = 6 }) {
   const mountRef = useRef(null);
   const sceneRef = useRef(null);
   const rendererRef = useRef(null);
@@ -12,7 +12,7 @@ export default function ShipBuilder3D({ design, selectedSlot, onSelectSlot }) {
   const meshesRef = useRef([]);
   const raycasterRef = useRef(new THREE.Raycaster());
   const animationIdRef = useRef(null);
-  const rotRef = useRef({ azimuth: Math.PI / 4, polar: Math.PI / 3, distance: 6, targetDistance: 6 });
+  const rotRef = useRef({ azimuth: Math.PI / 4, polar: Math.PI / 3, distance: initialDistance, targetDistance: initialDistance });
 
   // Init Three.js scene
   useEffect(() => {
@@ -158,10 +158,10 @@ export default function ShipBuilder3D({ design, selectedSlot, onSelectSlot }) {
     const baseMat = new THREE.MeshBasicMaterial({ color: 0xff8800, wireframe: true });
     const selMat = new THREE.MeshBasicMaterial({ color: 0x00ff88, wireframe: true });
 
-    for (const slot of SHIP_SLOTS) {
+    for (const slot of slots) {
       const partRef = design.parts?.[slot.id];
       if (!partRef?.partId) continue;
-      const part = SHIP_PART_MAP[partRef.partId];
+      const part = partMap[partRef.partId];
       if (!part) continue;
 
       const geom = createGeometry(part.shape, slot.category);

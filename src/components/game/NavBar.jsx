@@ -1,6 +1,6 @@
 // Navigation bar — dropdown-grouped access to all screens
 import React, { useState, useRef, useEffect } from 'react';
-import { Compass, Store, Package, ClipboardList, Pickaxe, Telescope, Home, Map, Rocket, Layers, Anchor, Trophy, Settings, Wrench, MapPin, TrendingUp, User, Hammer, BookOpen, Briefcase, ChevronDown, Lock, Sparkles, Medal, Palette } from 'lucide-react';
+import { Compass, Store, Package, ClipboardList, Pickaxe, Telescope, Home, Map, Rocket, Layers, Anchor, Trophy, Settings, Wrench, MapPin, TrendingUp, User, Hammer, BookOpen, Briefcase, ChevronDown, Lock, Sparkles, Medal, Palette, DoorOpen } from 'lucide-react';
 import { useGameState } from '@/lib/gameState';
 
 const NAV_GROUPS = [
@@ -36,6 +36,8 @@ const NAV_GROUPS = [
       { id: 'fleet', label: 'Fleet Manager', icon: Layers },
       { id: 'carriers', label: 'Fleet Carriers', icon: Anchor },
       { id: 'shipcreator', label: 'Ship Yard', icon: Hammer },
+      { id: 'carriercreator', label: 'Carrier Yard', icon: Hammer },
+      { id: 'carrierinterior', label: 'Carrier Interior', icon: DoorOpen },
     ],
   },
   {

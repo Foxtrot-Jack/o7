@@ -28,6 +28,8 @@ import CompanyScreen from '@/components/game/CompanyScreen';
 import CheatsScreen from '@/components/game/CheatsScreen';
 import LeaderboardScreen from '@/components/game/LeaderboardScreen';
 import BadgeMaker from '@/components/game/BadgeMaker';
+import CarrierCreator from '@/components/game/CarrierCreator';
+import CarrierInterior from '@/components/game/CarrierInterior';
 
 function GameContent() {
   const { state } = useGameState();
@@ -64,13 +66,17 @@ function GameContent() {
       case 'fleet':
         return <FleetScreen />;
       case 'carriers':
-        return <CarrierScreen />;
+        return <CarrierScreen onNavigate={handleNavigate} />;
       case 'achievements':
         return <AchievementsScreen />;
       case 'leaderboard':
         return <LeaderboardScreen />;
       case 'badgemaker':
         return <BadgeMaker />;
+      case 'carriercreator':
+        return <CarrierCreator />;
+      case 'carrierinterior':
+        return <CarrierInterior onNavigate={handleNavigate} />;
       case 'settings':
         return <SettingsScreen />;
       case 'outfitting':

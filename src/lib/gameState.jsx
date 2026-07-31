@@ -144,6 +144,8 @@ function createInitialState() {
     playerBadge: null,
     // Saved badge designs gallery
     savedBadges: [],
+    // Custom carrier designs
+    customCarrierDesigns: [],
     // Last body orbited (for returning from surface to correct orbit)
     lastOrbitBodyId: null,
     // Settings
@@ -213,6 +215,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
           flightLog: parsed.flightLog || [],
           playerBadge: parsed.playerBadge || null,
           savedBadges: parsed.savedBadges || [],
+          customCarrierDesigns: parsed.customCarrierDesigns || [],
           lastOrbitBodyId: parsed.lastOrbitBodyId || null,
           saveMode: saveSlot,
           lightYearsTraveled: parsed.lightYearsTraveled || 0,
@@ -513,6 +516,8 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
         services: { market: false, shipyard: false, outfitting: false, refuel: true, repair: true },
         orders: [],
         lastIncomeCollection: Date.now(),
+        interior: { roomItems: [], savedPlants: [], barTab: 0 },
+        design: null,
       };
       return {
         ...prev,
@@ -1152,6 +1157,67 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     setState(prev => ({ ...prev, materials: { ...prev.materials, ...maxMats } }));
   }, []);
 
+  // ===== CARRIER INTERIOR & MANAGEMENT =====
+  const updateCarrierInterior = useCallback((carrierId, updater) => {
+    setState(prev => ({
+      ...prev,
+      fleetCarriers: prev.fleetCarriers.map(c => {
+        if (c.id !== carrierId) return c;
+        const interior = c.interior || { roomItems: [], savedPlants: [], barTab: 0 };
+        const newInterior = typeof updater === 'function' ? updater(interior) : { ...interior, ...updater };
+        return { ...c, interior: newInterior };
+      }),
+    }));
+  }, []);
+
+  const buyAle = useCallback((carrierId, cost) => {
+    setState(prev => {
+      const isSb = prev.saveMode === 'sandbox';
+      if (!isSb && prev.credits < cost) return prev;
+      return {
+        ...prev,
+        credits: prev.credits - (isSb ? 0 : cost),
+        fleetCarriers: prev.fleetCarriers.map(c => c.id === carrierId ? {
+          ...c,
+          interior: { ...(c.interior || { roomItems: [], savedPlants: [], barTab: 0 }), barTab: (c.interior?.barTab || 0) + cost },
+        } : c),
+      };
+    });
+  }, []);
+
+  const requestShipTransit = useCallback((carrierId, shipId) => {
+    setState(prev => {
+      const carrier = prev.fleetCarriers.find(c => c.id === carrierId);
+      if (!carrier || carrier.systemSeed !== prev.currentSystem.seed) return prev;
+      const ship = prev.ownedShips.find(s => s.id === shipId);
+      if (!ship) return prev;
+      const shipType = SHIP_MAP[ship.typeId];
+      const isSb = prev.saveMode === 'sandbox';
+      const cost = isSb ? 0 : (shipType?.class || 1) * 500000;
+      if (!isSb && prev.credits < cost) return prev;
+      return {
+        ...prev,
+        credits: prev.credits - cost,
+        ownedShips: prev.ownedShips.map(s => s.id === shipId ? { ...s, storedAt: { carrierId } } : s),
+      };
+    });
+  }, []);
+
+  const saveCustomCarrierDesign = useCallback((design) => {
+    setState(prev => ({ ...prev, customCarrierDesigns: [...(prev.customCarrierDesigns || []), { ...design, id: `carrier_design_${Date.now()}`, createdAt: Date.now() }] }));
+  }, []);
+
+  const deleteCustomCarrierDesign = useCallback((designId) => {
+    setState(prev => ({ ...prev, customCarrierDesigns: (prev.customCarrierDesigns || []).filter(d => d.id !== designId) }));
+  }, []);
+
+  const applyCarrierDesign = useCallback((carrierId, design) => {
+    setState(prev => ({
+      ...prev,
+      fleetCarriers: prev.fleetCarriers.map(c => c.id === carrierId ? { ...c, design } : c),
+    }));
+  }, []);
+
   // ===== BADGE & SHARING SYSTEM =====
   const savePlayerBadge = useCallback((badge) => {
     setState(prev => ({ ...prev, playerBadge: badge }));
@@ -1246,6 +1312,12 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     deleteBadge,
     setCompanyLogo,
     importShipBlueprint,
+    updateCarrierInterior,
+    buyAle,
+    requestShipTransit,
+    saveCustomCarrierDesign,
+    deleteCustomCarrierDesign,
+    applyCarrierDesign,
   };
 
   return (
