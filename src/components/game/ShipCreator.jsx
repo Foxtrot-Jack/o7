@@ -147,6 +147,9 @@ export default function ShipCreator() {
           shipyard={state.shipyard}
           cargo={state.ship.cargo}
           onDeliver={deliverToShipyard}
+          onSave={handleSave}
+          shipName={shipName}
+          setShipName={setShipName}
         />
       )}
     </div>
@@ -313,7 +316,7 @@ function SavedShipsTab({ ships, onLoad, onDelete, onActivate, isDocked, activeSh
   );
 }
 
-function ShipyardTab({ shipyard, cargo, onDeliver }) {
+function ShipyardTab({ shipyard, cargo, onDeliver, onSave, shipName, setShipName }) {
   if (!shipyard) return null;
   const levelInfo = getShipyardLevel(shipyard.infrastructure);
   const nextLevel = SHIPYARD_LEVELS.find(l => l.level === levelInfo.level + 1);
@@ -371,6 +374,14 @@ function ShipyardTab({ shipyard, cargo, onDeliver }) {
             })}
           </div>
         )}
+      </div>
+      {/* Save blueprint */}
+      <div className="border border-green-900 p-3 space-y-2">
+        <h3 className="text-green-400 text-sm font-bold uppercase flex items-center gap-1"><Save className="w-3.5 h-3.5" /> Save Blueprint</h3>
+        <input type="text" value={shipName} onChange={e => setShipName(e.target.value)} placeholder="Blueprint name..." className="w-full bg-black border border-orange-900 text-orange-300 px-2 py-1.5 text-xs outline-none focus:border-orange-500" />
+        <button onClick={onSave} disabled={!shipName.trim()} className="w-full py-2 border border-green-500 text-green-300 hover:bg-green-950/50 text-xs font-bold flex items-center justify-center gap-1.5 disabled:opacity-30">
+          <Save className="w-3.5 h-3.5" /> SAVE BLUEPRINT
+        </button>
       </div>
     </div>
   );
