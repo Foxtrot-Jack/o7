@@ -21,6 +21,7 @@ import SettingsScreen from '@/components/game/SettingsScreen';
 import OutfittingScreen from '@/components/game/OutfittingScreen';
 import SurfaceSurvey from '@/components/game/SurfaceSurvey';
 import TradeTools from '@/components/game/TradeTools';
+import CommanderProfile from '@/components/game/CommanderProfile';
 
 function GameContent() {
   const { state } = useGameState();
@@ -68,6 +69,8 @@ function GameContent() {
         return <SurfaceSurvey />;
       case 'trade':
         return <TradeTools />;
+      case 'profile':
+        return <CommanderProfile />;
       default:
         return <SystemOrrery />;
     }

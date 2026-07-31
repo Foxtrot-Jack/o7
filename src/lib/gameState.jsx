@@ -96,6 +96,9 @@ function createInitialState() {
     },
     totalJumps: 0,
     totalProfit: 0,
+    lightYearsTraveled: 0,
+    lifetimeEarnings: 0,
+    shipsPurchased: 0,
     // Refinery (mining yields)
     refinery: [], // [{materialId, qty}]
     refineryCapacity: 4,
@@ -183,6 +186,9 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
           surfaceDiscoveries: parsed.surfaceDiscoveries || {},
           flightLog: parsed.flightLog || [],
           saveMode: saveSlot,
+          lightYearsTraveled: parsed.lightYearsTraveled || 0,
+          lifetimeEarnings: parsed.lifetimeEarnings || 0,
+          shipsPurchased: parsed.shipsPurchased || 0,
         };
           // Regenerate system data for the current system (not persisted since it's large)
           if (merged.currentSystem) {
@@ -246,6 +252,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
       currentLocation: 'system',
       currentStationId: null,
       totalJumps: prev.totalJumps + 1,
+      lightYearsTraveled: (prev.lightYearsTraveled || 0) + distance3D(prev.currentSystem, system),
       flightLog: [...(prev.flightLog || []), { seed: system.seed, name: system.name, x: system.x, y: system.y, z: system.z }].slice(-50),
       discoveredSystems: {
         ...prev.discoveredSystems,
@@ -283,6 +290,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
       ...prev,
       credits: prev.credits + amount,
       totalProfit: prev.totalProfit + (amount > 0 ? amount : 0),
+      lifetimeEarnings: (prev.lifetimeEarnings || 0) + (amount > 0 ? amount : 0),
     }));
   }, []);
 
@@ -354,6 +362,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
       return {
         ...prev,
         credits: prev.credits - (isSb ? 0 : shipType.cost),
+        shipsPurchased: (prev.shipsPurchased || 0) + 1,
         ship: {
           type: shipType.id,
           name: customName || shipType.name,
@@ -554,6 +563,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
       return {
         ...prev,
         credits: prev.credits + totalPayout,
+        lifetimeEarnings: (prev.lifetimeEarnings || 0) + totalPayout,
         soldExplorationData: [...prev.soldExplorationData, { value: totalPayout, date: Date.now(), bodies: soldBodies.length }],
         scannedBodies: {},
         discoveredSystems: updatedDiscovered,
@@ -583,6 +593,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
         ...prev,
         activeMissions: prev.activeMissions.filter(m => m.id !== missionId),
         credits: prev.credits + (mission.reward || 0),
+        lifetimeEarnings: (prev.lifetimeEarnings || 0) + (mission.reward || 0),
         rank: {
           ...prev.rank,
           trade: updateRank(prev.rank.trade, mission.reward || 0),

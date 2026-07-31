@@ -572,6 +572,11 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
             <div className="text-orange-600">FACTION: {systemData.faction}</div>
             <div className="text-orange-600">ECONOMY: {systemData.economy.name}</div>
             <div className="text-orange-600">BODIES: {systemData.bodyCount}</div>
+            {state.fssScannedSystems?.[state.currentSystem.seed] && (() => {
+              const scannable = systemData.bodies.filter(b => b.type !== BODY_TYPES.RING);
+              const scanned = scannable.filter(b => state.scannedBodies[b.id]).length;
+              return <div className="text-cyan-600">SCANNED: {scanned}/{scannable.length}</div>;
+            })()}
             <div className="text-orange-600">STARS: {systemData.stars.length}</div>
             <div className="text-orange-800 text-[10px] mt-1">DRAG TO ROTATE · 2-FINGER PAN/PINCH · SCROLL TO ZOOM · TAP BODY</div>
           </>
