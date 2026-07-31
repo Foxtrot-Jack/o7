@@ -1,6 +1,6 @@
 // Navigation bar — dropdown-grouped access to all screens
 import React, { useState, useRef, useEffect } from 'react';
-import { Compass, Store, Package, ClipboardList, Pickaxe, Telescope, Home, Map, Rocket, Layers, Anchor, Trophy, Settings, Wrench, MapPin, TrendingUp, User, Hammer, BookOpen, Briefcase, ChevronDown, Lock, Sparkles, Medal, Palette, DoorOpen, ArrowLeftRight, FlaskConical, Users, Crown, Target } from 'lucide-react';
+import { Compass, Store, Package, ClipboardList, Pickaxe, Telescope, Home, Map, Rocket, Layers, Anchor, Trophy, Settings, Wrench, MapPin, TrendingUp, User, Hammer, BookOpen, Briefcase, ChevronDown, Lock, Sparkles, Medal, Palette, DoorOpen, ArrowLeftRight, FlaskConical, Users, Crown, Target, Skull, Newspaper, Crosshair } from 'lucide-react';
 import { useGameState } from '@/lib/gameState';
 
 const NAV_GROUPS = [
@@ -11,6 +11,7 @@ const NAV_GROUPS = [
       { id: 'system', label: 'System', icon: Compass },
       { id: 'exploration', label: 'Exploration', icon: Telescope },
       { id: 'survey', label: 'Surface Survey', icon: MapPin },
+      { id: 'srv', label: 'SRV Rover', icon: Crosshair },
     ],
   },
   {
@@ -19,6 +20,8 @@ const NAV_GROUPS = [
       { id: 'station', label: 'Station Services', icon: Home },
       { id: 'market', label: 'Market', icon: Store },
       { id: 'outfitting', label: 'Outfitting', icon: Wrench },
+      { id: 'engineering', label: 'Engineering', icon: FlaskConical },
+      { id: 'blackmarket', label: 'Black Market', icon: Skull },
       { id: 'materialtrader', label: 'Material Trader', icon: ArrowLeftRight },
       { id: 'synthesis', label: 'Synthesis', icon: FlaskConical },
       { id: 'crew', label: 'Crew Quarters', icon: Users },
@@ -55,6 +58,7 @@ const NAV_GROUPS = [
     items: [
       { id: 'achievements', label: 'Awards', icon: Trophy },
       { id: 'leaderboard', label: 'Leaderboard', icon: Medal },
+      { id: 'galnet', label: 'GalNet News', icon: Newspaper },
       { id: 'powerplay', label: 'Power Play', icon: Crown },
       { id: 'goals', label: 'Community Goals', icon: Target },
       { id: 'badgemaker', label: 'Badge Maker', icon: Palette },
@@ -66,7 +70,7 @@ const NAV_GROUPS = [
   },
 ];
 
-const STATION_ONLY_SCREENS = ['station', 'market', 'outfitting', 'materialtrader', 'synthesis', 'crew'];
+const STATION_ONLY_SCREENS = ['station', 'market', 'outfitting', 'materialtrader', 'synthesis', 'crew', 'blackmarket', 'engineering'];
 
 export default function NavBar({ currentScreen, onNavigate, location }) {
   const [openGroup, setOpenGroup] = useState(null);

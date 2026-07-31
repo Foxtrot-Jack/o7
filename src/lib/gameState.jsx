@@ -10,6 +10,7 @@ import { getDefaultModules, computeShipStats } from './shipOutfitting';
 import { getCrewBonuses } from './crew';
 import { generateCommunityGoals } from './communityGoals';
 import { SYNTHESIS_MAP } from './synthesis';
+import { shouldTriggerEncounter, generateEncounter } from './encounters';
 
 const STORAGE_KEY = 'starfarer_save_v1';
 const STORAGE_KEY_SANDBOX = 'starfarer_sandbox_v1';
@@ -166,6 +167,7 @@ function createInitialState() {
     lastGoalRefresh: Date.now(),
     fsdBoost: false,
     heatSinkCharges: 0,
+    activeEncounter: null,
     createdAt: Date.now(),
   };
 }
@@ -234,6 +236,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
           lastGoalRefresh: parsed.lastGoalRefresh || Date.now(),
           fsdBoost: parsed.fsdBoost || false,
           heatSinkCharges: parsed.heatSinkCharges || 0,
+          activeEncounter: parsed.activeEncounter || null,
           saveMode: saveSlot,
           lightYearsTraveled: parsed.lightYearsTraveled || 0,
           lifetimeEarnings: parsed.lifetimeEarnings || 0,
@@ -335,6 +338,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
             },
           },
         } : {}),
+        activeEncounter: shouldTriggerEncounter(system) ? generateEncounter(system) : null,
       };
     });
   }, []);
@@ -1403,6 +1407,56 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     });
   }, []);
 
+  // ===== ENCOUNTERS =====
+  const resolveEncounterAction = useCallback((outcome) => {
+    if (outcome === null) {
+      setState(prev => ({ ...prev, activeEncounter: null }));
+      return;
+    }
+    setState(prev => {
+      let newShip = { ...prev.ship };
+      if (outcome.damage > 0) {
+        newShip.integrity = Math.max(0, (newShip.integrity ?? 100) - outcome.damage);
+      }
+      if (outcome.cargoGained?.length > 0) {
+        const cargo = [...newShip.cargo];
+        for (const gain of outcome.cargoGained) {
+          const existing = cargo.find(c => c.commodity === gain.commodity);
+          if (existing) existing.qty += gain.qty;
+          else cargo.push({ commodity: gain.commodity, qty: gain.qty });
+        }
+        newShip.cargo = cargo;
+      }
+      if (outcome.cargoLost?.length > 0) {
+        newShip.cargo = newShip.cargo.filter(c => !outcome.cargoLost.includes(c.commodity));
+      }
+      let newMaterials = { ...prev.materials };
+      if (outcome.materialsGained?.length > 0) {
+        for (const mat of outcome.materialsGained) {
+          newMaterials[mat.materialId] = (newMaterials[mat.materialId] || 0) + mat.qty;
+        }
+      }
+      return {
+        ...prev,
+        ship: newShip,
+        credits: prev.credits + (outcome.creditsChange || 0),
+        lifetimeEarnings: (prev.lifetimeEarnings || 0) + (outcome.creditsChange > 0 ? outcome.creditsChange : 0),
+        materials: newMaterials,
+      };
+    });
+  }, []);
+
+  // ===== ENGINEERING =====
+  const applyEngineering = useCallback((slotKey, blueprintId, level) => {
+    setState(prev => {
+      const modules = { ...prev.ship.modules };
+      const eng = { ...(modules.__engineering || {}) };
+      eng[slotKey] = { blueprint: blueprintId, level };
+      modules.__engineering = eng;
+      return { ...prev, ship: { ...prev.ship, modules } };
+    });
+  }, []);
+
   const value = {
     state,
     isSandbox,
@@ -1476,6 +1530,8 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     claimGoalReward,
     synthesize,
     repairShip,
+    resolveEncounterAction,
+    applyEngineering,
   };
 
   return (

@@ -115,6 +115,14 @@ export default function SurfaceSurvey({ onNavigate }) {
         </div>
       )}
 
+      {/* Deploy SRV */}
+      <button
+        onClick={() => { if (onNavigate) onNavigate('srv'); }}
+        className="w-full py-2.5 border border-cyan-500 text-cyan-300 hover:bg-cyan-950/30 text-xs font-bold"
+      >
+        🚗 DEPLOY SRV ROVER
+      </button>
+
       {/* Depart button */}
       <button
         onClick={() => { departSurface(); if (onNavigate) onNavigate('system'); }}

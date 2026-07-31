@@ -4,6 +4,7 @@ import { useGameState } from '@/lib/gameState';
 import { COMMODITIES, COMMODITY_CATEGORIES, COMMODITY_MAP, ECONOMY_TYPES } from '@/lib/commodities';
 import { makeRng, randInt, randFloat } from '@/lib/prng';
 import { ShoppingCart, ArrowUp, ArrowDown, Package } from 'lucide-react';
+import { getMarketCycle, getPriceModifier, getPriceTrend, getTrendDisplay } from '@/lib/dynamicEconomy';
 
 export default function MarketScreen() {
   const { state, getSystemData, addCredits, addCargo, removeCargo } = useGameState();
@@ -34,7 +35,12 @@ export default function MarketScreen() {
       // Restricted items cost more
       if (commodity.legality === 1) priceMod *= 1.5;
 
-      const buyPrice = Math.round(commodity.basePrice * priceMod);
+      const baseBuyPrice = Math.round(commodity.basePrice * priceMod);
+      // Dynamic economy — prices shift each jump cycle
+      const cycle = getMarketCycle(state.totalJumps);
+      const dynMod = getPriceModifier(commodity.basePrice, systemData.seed, station.id, cycle);
+      const buyPrice = Math.round(baseBuyPrice * dynMod);
+      const trend = getPriceTrend(buyPrice, baseBuyPrice);
       const sellPrice = Math.round(buyPrice * 0.82); // sell back at 82% of buy
 
       // Supply and demand levels
@@ -52,6 +58,7 @@ export default function MarketScreen() {
           ...commodity,
           buyPrice: 0,
           sellPrice: Math.round(commodity.basePrice * 3),
+          trend: 'stable',
           supply: 100,
           demand: 100,
           stock: 99999,
@@ -62,12 +69,13 @@ export default function MarketScreen() {
         ...commodity,
         buyPrice,
         sellPrice,
+        trend,
         supply,
         demand,
         stock,
       };
     });
-  }, [station, systemData]);
+  }, [station, systemData, state.totalJumps]);
 
   const cargoUsed = state.ship.cargo.reduce((sum, c) => sum + c.qty, 0);
   const cargoFree = state.ship.cargoCapacity - cargoUsed;
@@ -132,6 +140,7 @@ export default function MarketScreen() {
           <span className="text-orange-600">CREDITS: <span className="text-orange-300">{state.credits.toLocaleString()} CR</span></span>
           <span className="text-orange-600">CARGO: <span className="text-orange-300">{cargoUsed}/{state.ship.cargoCapacity} T</span></span>
           <span className="text-orange-600">ECONOMY: <span className="text-orange-300">{station.economy.name}</span></span>
+          <span className="text-orange-600">CYCLE: <span className="text-orange-300">{state.totalJumps}</span></span>
         </div>
       </div>
 
@@ -160,6 +169,7 @@ export default function MarketScreen() {
               <th className="text-left p-2">Commodity</th>
               <th className="text-right p-2">Buy</th>
               <th className="text-right p-2">Sell</th>
+              <th className="text-center p-2 hidden md:table-cell">Trend</th>
               <th className="text-center p-2 hidden sm:table-cell">Supply</th>
               <th className="text-center p-2 hidden sm:table-cell">Demand</th>
               <th className="text-right p-2 hidden sm:table-cell">Stock</th>
@@ -185,6 +195,9 @@ export default function MarketScreen() {
                   </td>
                   <td className="text-right p-2 text-orange-300">{item.buyPrice.toLocaleString()}</td>
                   <td className="text-right p-2 text-orange-500">{item.sellPrice.toLocaleString()}</td>
+                  <td className="text-center p-2 hidden md:table-cell">
+                    <span className={getTrendDisplay(item.trend).color + ' text-[9px]'}>{getTrendDisplay(item.trend).label}</span>
+                  </td>
                   <td className="text-center p-2 hidden sm:table-cell">
                     <span className={supplyInfo.color}>{supplyInfo.label}</span>
                   </td>

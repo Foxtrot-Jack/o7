@@ -35,6 +35,11 @@ import PowerPlayScreen from '@/components/game/PowerPlayScreen';
 import MaterialTraderScreen from '@/components/game/MaterialTraderScreen';
 import CommunityGoalsScreen from '@/components/game/CommunityGoalsScreen';
 import SynthesisScreen from '@/components/game/SynthesisScreen';
+import GalnetScreen from '@/components/game/GalnetScreen';
+import BlackMarketScreen from '@/components/game/BlackMarketScreen';
+import EngineeringScreen from '@/components/game/EngineeringScreen';
+import SRVRover from '@/components/game/SRVRover';
+import EncounterScreen from '@/components/game/EncounterScreen';
 
 function GameContent() {
   const { state } = useGameState();
@@ -110,6 +115,14 @@ function GameContent() {
         return <CommunityGoalsScreen />;
       case 'synthesis':
         return <SynthesisScreen />;
+      case 'galnet':
+        return <GalnetScreen />;
+      case 'blackmarket':
+        return <BlackMarketScreen />;
+      case 'engineering':
+        return <EngineeringScreen />;
+      case 'srv':
+        return <SRVRover onNavigate={handleNavigate} />;
       default:
         return <SystemOrrery />;
     }
@@ -130,6 +143,7 @@ function GameContent() {
           <div className={`flex-1 ${isFullScreen ? 'overflow-hidden' : 'overflow-auto'}`}>
             {renderScreen()}
           </div>
+          {state.activeEncounter && <EncounterScreen />}
           {/* Footer status bar */}
           <div className="border-t border-orange-900/50 px-3 py-1 flex items-center justify-between text-[10px] text-orange-800 bg-black">
             <span>DOGSTAR INTERSTELLAR v1.0 · {state.ship.name}</span>
