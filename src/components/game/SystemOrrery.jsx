@@ -34,6 +34,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
   const [bodiesCollapsed, setBodiesCollapsed] = useState(state.settings?.miniScreen || false);
   const [selectedStation, setSelectedStation] = useState(null);
   const [travelInfo, setTravelInfo] = useState(null);
+  const [orbitingBodyId, setOrbitingBodyId] = useState(null);
 
   const rotState = useRef({
     azimuth: Math.PI / 4,
@@ -143,8 +144,10 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
           const onComplete = travel.onComplete;
           if (travel.targetType === 'body') {
             orbitAnchorRef.current = travel.bodyEntry;
+            setOrbitingBodyId(travel.bodyEntry.body.id);
           } else if (travel.targetType === 'station') {
             orbitAnchorRef.current = bodyMeshesRef.current.find(bm => bm.body.id === travel.station.parentId) || null;
+            setOrbitingBodyId(travel.station.parentId);
           }
           travelRef.current = null;
           setTravelInfo(null);
@@ -459,6 +462,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
     }
     if (!anchorBody) anchorBody = bodyMeshesRef.current[0] || null;
     orbitAnchorRef.current = anchorBody;
+    setOrbitingBodyId(anchorBody?.body?.id || null);
     // Initial position — at the anchored body
     if (anchorBody) {
       shipPosRef.current = { x: anchorBody.group.position.x, y: 0, z: anchorBody.group.position.z };
@@ -713,6 +717,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
       dockAtStation(station.id);
       return;
     }
+    setOrbitingBodyId(null);
     travelRef.current = {
       targetType: 'station',
       stationModel: sm.model,
@@ -730,6 +735,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
     if (!entry) return;
     const dist = Math.hypot(entry.group.position.x - shipPosRef.current.x, entry.group.position.z - shipPosRef.current.z);
     if (dist < 0.8) return;
+    setOrbitingBodyId(null);
     travelRef.current = {
       targetType: 'body',
       bodyEntry: entry,
@@ -989,30 +995,40 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
           <div className="flex items-center gap-2 pt-1">
             {isScanned ? (
               <span className="text-green-500 text-[10px]">✓ SCANNED — VALUE: {selectedBody.scanValue?.toLocaleString()} CR</span>
-            ) : (
+            ) : orbitingBodyId === selectedBody.id ? (
               <button
                 onClick={handleScan}
                 className="px-3 py-1 border border-orange-500 text-orange-300 hover:bg-orange-950/50 text-[10px]"
               >
                 SCAN BODY (+{selectedBody.scanValue?.toLocaleString()} CR)
               </button>
+            ) : (
+              <span className="text-orange-700 text-[10px]">⚠ MUST BE IN ORBIT TO SCAN — TRAVEL TO THIS BODY FIRST</span>
             )}
           </div>
           {selectedBody.type !== BODY_TYPES.STAR && (
-            <button
-              onClick={() => handleTravelToBody(selectedBody)}
-              disabled={!!travelInfo}
-              className="w-full py-1.5 border border-cyan-500 text-cyan-300 hover:bg-cyan-950/30 text-[10px] font-bold disabled:opacity-50"
-            >
-              {travelInfo ? `TRAVELING — ${Math.round(travelInfo.progress * 100)}%` : '⚡ TRAVEL TO BODY'}
-            </button>
+            orbitingBodyId === selectedBody.id ? (
+              <div className="w-full py-1.5 border border-cyan-800 text-cyan-500 text-[10px] text-center">✓ IN ORBIT</div>
+            ) : (
+              <button
+                onClick={() => handleTravelToBody(selectedBody)}
+                disabled={!!travelInfo}
+                className="w-full py-1.5 border border-cyan-500 text-cyan-300 hover:bg-cyan-950/30 text-[10px] font-bold disabled:opacity-50"
+              >
+                {travelInfo ? `TRAVELING — ${Math.round(travelInfo.progress * 100)}%` : '⚡ TRAVEL TO BODY'}
+              </button>
+            )
           )}
           {selectedBody.landable && state.fssScannedSystems?.[state.currentSystem.seed] && (
             <div className="border-t border-orange-900 pt-1 space-y-1">
               {!state.mappedBodies?.[selectedBody.id] ? (
-                <button onClick={() => mapBody(selectedBody.id)} className="w-full py-1.5 border border-cyan-500 text-cyan-300 hover:bg-cyan-950/30 text-[10px] font-bold">
-                  LAUNCH SURFACE PROBES
-                </button>
+                orbitingBodyId === selectedBody.id ? (
+                  <button onClick={() => mapBody(selectedBody.id)} className="w-full py-1.5 border border-cyan-500 text-cyan-300 hover:bg-cyan-950/30 text-[10px] font-bold">
+                    LAUNCH SURFACE PROBES
+                  </button>
+                ) : (
+                  <div className="text-orange-700 text-[10px] text-center py-1.5">⚠ MUST BE IN ORBIT TO LAUNCH PROBES</div>
+                )
               ) : (
                 <>
                   <div className="text-cyan-500 text-[10px]">✓ MAPPED — {selectedBody.surfaceSignals?.length || 0} SURFACE SIGNALS DETECTED</div>
@@ -1025,12 +1041,16 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
                       ))}
                     </div>
                   )}
-                  <button
-                    onClick={() => { landOnBody(selectedBody.id); if (onNavigate) onNavigate('survey'); }}
-                    className="w-full py-1.5 border border-green-500 text-green-300 hover:bg-green-950/30 text-[10px] font-bold"
-                  >
-                    LAND ON SURFACE
-                  </button>
+                  {orbitingBodyId === selectedBody.id ? (
+                    <button
+                      onClick={() => { landOnBody(selectedBody.id); if (onNavigate) onNavigate('survey'); }}
+                      className="w-full py-1.5 border border-green-500 text-green-300 hover:bg-green-950/30 text-[10px] font-bold"
+                    >
+                      LAND ON SURFACE
+                    </button>
+                  ) : (
+                    <div className="text-orange-700 text-[10px] text-center py-1.5">⚠ MUST BE IN ORBIT TO LAND</div>
+                  )}
                 </>
               )}
             </div>
