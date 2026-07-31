@@ -1,7 +1,8 @@
 // Main Game Page — orchestrates all screens with persistent navigation
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { GameStateProvider, useGameState } from '@/lib/gameState';
 import CRTFrame from '@/components/game/CRTFrame';
+import SaveSelect from '@/components/game/SaveSelect';
 import NavBar from '@/components/game/NavBar';
 import StatusHeader from '@/components/game/StatusHeader';
 import GalaxyMap from '@/components/game/GalaxyMap';
@@ -100,8 +101,25 @@ function GameContent() {
 }
 
 export default function Game() {
+  const [saveSlot, setSaveSlot] = useState(null);
+
+  useEffect(() => {
+    const active = localStorage.getItem('starfarer_active_save');
+    if (active === 'normal' || active === 'sandbox') setSaveSlot(active);
+  }, []);
+
+  if (!saveSlot) {
+    return <SaveSelect onSelect={(slot) => {
+      localStorage.setItem('starfarer_active_save', slot);
+      setSaveSlot(slot);
+    }} />;
+  }
+
   return (
-    <GameStateProvider>
+    <GameStateProvider key={saveSlot} saveSlot={saveSlot} onSwitchSave={() => {
+      localStorage.removeItem('starfarer_active_save');
+      setSaveSlot(null);
+    }}>
       <GameContent />
     </GameStateProvider>
   );

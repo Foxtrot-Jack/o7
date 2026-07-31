@@ -15,7 +15,8 @@ export default function CarrierScreen() {
   const [nameInput, setNameInput] = useState('');
   const [jumpState, setJumpState] = useState(null);
 
-  const hasVendor = (state.currentSystem?.population || 0) > 1000000000;
+  const isSandbox = state.saveMode === 'sandbox';
+  const hasVendor = isSandbox || (state.currentSystem?.population || 0) > 1000000000;
 
   const handleBuy = () => {
     buyFleetCarrier(carrierName || 'Unnamed Carrier');
@@ -55,9 +56,9 @@ export default function CarrierScreen() {
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-orange-400 text-sm font-bold">Purchase Fleet Carrier</div>
-                <div className="text-orange-700 text-[10px]">{hasVendor ? 'Fleet carrier vendor detected in this system.' : 'No vendor here. Visit a high-population system (1B+).'}</div>
+                <div className="text-orange-700 text-[10px]">{isSandbox ? 'All services available (sandbox mode).' : hasVendor ? 'Fleet carrier vendor detected in this system.' : 'No vendor here. Visit a high-population system (1B+).'}</div>
               </div>
-              <button onClick={() => setShowBuy(true)} disabled={!hasVendor || state.credits < CARRIER_COST} className="flex items-center gap-1 px-3 py-1.5 border border-orange-500 text-orange-300 hover:bg-orange-950/50 text-xs disabled:opacity-30">
+              <button onClick={() => setShowBuy(true)} disabled={!hasVendor || (!isSandbox && state.credits < CARRIER_COST)} className="flex items-center gap-1 px-3 py-1.5 border border-orange-500 text-orange-300 hover:bg-orange-950/50 text-xs disabled:opacity-30">
                 <Plus className="w-3.5 h-3.5" /> BUY
               </button>
             </div>
@@ -67,7 +68,7 @@ export default function CarrierScreen() {
               <input value={carrierName} onChange={e => setCarrierName(e.target.value)} placeholder="e.g., The Stellar Vanguard" className="w-full bg-black border border-orange-700 text-orange-300 px-2 py-1.5 text-xs" maxLength={30} />
               <div className="flex gap-2">
                 <button onClick={() => setShowBuy(false)} className="flex-1 py-1.5 border border-orange-900 text-orange-700 text-xs">CANCEL</button>
-                <button onClick={handleBuy} disabled={state.credits < CARRIER_COST} className="flex-1 py-1.5 border border-orange-500 text-orange-300 hover:bg-orange-950/50 text-xs font-bold disabled:opacity-30">CONFIRM — {CARRIER_COST.toLocaleString()} CR</button>
+                <button onClick={handleBuy} disabled={!isSandbox && state.credits < CARRIER_COST} className="flex-1 py-1.5 border border-orange-500 text-orange-300 hover:bg-orange-950/50 text-xs font-bold disabled:opacity-30">{isSandbox ? 'CONFIRM — FREE' : `CONFIRM — ${CARRIER_COST.toLocaleString()} CR`}</button>
               </div>
             </div>
           )}
@@ -121,7 +122,7 @@ export default function CarrierScreen() {
                           {jumpState.targets.map(sys => {
                             const tc = Math.ceil(sys.distance / 10);
                             return (
-                              <button key={sys.seed} onClick={() => { jumpCarrier(c.id, sys); setJumpState(null); }} disabled={c.tritium < tc} className="w-full flex justify-between border border-orange-900 p-1.5 text-xs hover:border-orange-700 disabled:opacity-30">
+                              <button key={sys.seed} onClick={() => { jumpCarrier(c.id, sys); setJumpState(null); }} disabled={!isSandbox && c.tritium < tc} className="w-full flex justify-between border border-orange-900 p-1.5 text-xs hover:border-orange-700 disabled:opacity-30">
                                 <span className="text-orange-400">{sys.name}</span><span className="text-orange-600">{sys.distance.toFixed(0)} LY · {tc}T</span>
                               </button>
                             );
@@ -130,7 +131,7 @@ export default function CarrierScreen() {
                         <button onClick={() => setJumpState(null)} className="w-full py-1 border border-orange-900 text-orange-700 text-xs">CANCEL</button>
                       </div>
                     ) : (
-                      <button onClick={() => startJump(c)} disabled={c.tritium < 50} className="w-full py-1.5 border border-orange-500 text-orange-300 hover:bg-orange-950/50 text-xs font-bold disabled:opacity-30">{c.tritium < 50 ? 'INSUFFICIENT TRITIUM' : 'JUMP CARRIER'}</button>
+                      <button onClick={() => startJump(c)} disabled={!isSandbox && c.tritium < 50} className="w-full py-1.5 border border-orange-500 text-orange-300 hover:bg-orange-950/50 text-xs font-bold disabled:opacity-30">{!isSandbox && c.tritium < 50 ? 'INSUFFICIENT TRITIUM' : 'JUMP CARRIER'}</button>
                     )}
                   </div>
                 )}

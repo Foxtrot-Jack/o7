@@ -30,6 +30,7 @@ export default function StatusHeader() {
         <div className="flex flex-col">
           <span className="text-orange-700 text-[10px] uppercase">Credits</span>
           <span className="text-orange-300 font-bold">{formatCredits(state.credits)} CR</span>
+          {state.saveMode === 'sandbox' && <span className="text-cyan-400 text-[9px] border border-cyan-700 px-1 ml-1">SANDBOX</span>}
         </div>
         <div className="flex flex-col">
           <span className="text-orange-700 text-[10px] uppercase">System</span>

@@ -41,15 +41,16 @@ export default function OutfittingScreen() {
   const equipModule = (slotKey, moduleId) => {
     const mod = MODULES[moduleId];
     if (!mod) return;
-    const price = getModulePrice(moduleId);
+    const isSb = state.saveMode === 'sandbox';
+    const price = isSb ? 0 : getModulePrice(moduleId);
     const currentModId = modules[slotKey];
-    const refund = currentModId ? Math.floor(getModulePrice(currentModId) * 0.9) : 0;
+    const refund = (!isSb && currentModId) ? Math.floor(getModulePrice(currentModId) * 0.9) : 0;
     const netCost = price - refund;
-    if (netCost > state.credits) {
+    if (!isSb && netCost > state.credits) {
       alert('INSUFFICIENT CREDITS');
       return;
     }
-    if (netCost !== 0) addCredits(-netCost);
+    if (!isSb && netCost !== 0) addCredits(-netCost);
     const newModules = { ...(state.ship.modules || modules), [slotKey]: moduleId };
     const newStats = computeShipStats(state.ship.type, newModules);
     update(prev => ({
@@ -62,8 +63,9 @@ export default function OutfittingScreen() {
   const unequipModule = (slotKey) => {
     const currentModId = modules[slotKey];
     if (!currentModId) return;
-    const refund = Math.floor(getModulePrice(currentModId) * 0.9);
-    if (refund > 0) addCredits(refund);
+    const isSb = state.saveMode === 'sandbox';
+    const refund = isSb ? 0 : Math.floor(getModulePrice(currentModId) * 0.9);
+    if (!isSb && refund > 0) addCredits(refund);
     const newModules = { ...modules };
     delete newModules[slotKey];
     const newStats = computeShipStats(state.ship.type, newModules);
@@ -118,6 +120,7 @@ export default function OutfittingScreen() {
           onUnequip={() => unequipModule(selectedSlot.key)}
           onClose={() => setSelectedSlot(null)}
           credits={state.credits}
+          isSandbox={state.saveMode === 'sandbox'}
         />
       )}
 
@@ -128,7 +131,7 @@ export default function OutfittingScreen() {
           currentEng={(modules.__engineering || {})[engineeringSlot]}
           onApply={applyEngineering}
           onClose={() => setEngineeringSlot(null)}
-          outfittingLevel={Math.min(5, Math.max(1, Math.ceil(Math.log10((state.currentSystem.population || 1) + 1))))}
+          outfittingLevel={state.saveMode === 'sandbox' ? 5 : Math.min(5, Math.max(1, Math.ceil(Math.log10((state.currentSystem.population || 1) + 1))))}
         />
       )}
     </div>
@@ -180,7 +183,7 @@ function SlotSection({ title, slots, modules, onSelect, onEngineering, disabled 
   );
 }
 
-function ModulePicker({ slot, currentModuleId, onEquip, onUnequip, onClose, credits }) {
+function ModulePicker({ slot, currentModuleId, onEquip, onUnequip, onClose, credits, isSandbox = false }) {
   const [filter, setFilter] = useState('all');
   const available = useMemo(() => {
     const mods = getModulesForSlot(slot.type, slot.size, null);
@@ -210,9 +213,9 @@ function ModulePicker({ slot, currentModuleId, onEquip, onUnequip, onClose, cred
         <div className="flex-1 overflow-y-auto p-2 space-y-1">
           {filtered.length === 0 && <div className="text-orange-700 text-xs text-center py-4">No modules available.</div>}
           {filtered.map(mod => {
-            const price = getModulePrice(mod.id);
-            const netCost = price - refund;
-            const canAfford = netCost <= credits;
+            const price = isSandbox ? 0 : getModulePrice(mod.id);
+            const netCost = isSandbox ? 0 : price - refund;
+            const canAfford = isSandbox || netCost <= credits;
             const isEquipped = currentModuleId === mod.id;
             const stat = getModStat(mod);
             return (
@@ -222,7 +225,7 @@ function ModulePicker({ slot, currentModuleId, onEquip, onUnequip, onClose, cred
                     <span className={`font-bold ${mod.premium ? 'text-yellow-400' : 'text-orange-300'}`}>{mod.name}</span>
                     {mod.premium && <span className="text-yellow-500 text-[9px] ml-1">EXPANDED</span>}
                   </div>
-                  <span className="text-orange-400">{isEquipped ? '✓ EQUIPPED' : netCost >= 0 ? `${netCost.toLocaleString()} CR` : `+${Math.abs(netCost).toLocaleString()} CR`}</span>
+                  <span className="text-orange-400">{isEquipped ? '✓ EQUIPPED' : isSandbox ? 'FREE' : netCost >= 0 ? `${netCost.toLocaleString()} CR` : `+${Math.abs(netCost).toLocaleString()} CR`}</span>
                 </div>
                 <div className="text-orange-600 text-[9px]">{mod.statLabel}: {stat.value}{stat.unit} · Mass: {mod.mass}T</div>
               </button>

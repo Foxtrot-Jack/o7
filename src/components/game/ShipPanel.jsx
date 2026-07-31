@@ -59,6 +59,7 @@ export default function ShipPanel({ onNavigate }) {
             isDocked={state.currentLocation === 'station'}
             onBuy={(id) => buyShip(id)}
             system={state.currentSystem}
+            isSandbox={state.saveMode === 'sandbox'}
           />
         )}
         {tab === 'navigation' && (
@@ -165,7 +166,7 @@ function CargoHold({ cargo, onJettison }) {
   );
 }
 
-function Shipyard({ currentShip, credits, isDocked, onBuy, system }) {
+function Shipyard({ currentShip, credits, isDocked, onBuy, system, isSandbox }) {
   if (!isDocked) {
     return (
       <div className="text-center text-orange-700 py-8">
@@ -175,7 +176,7 @@ function Shipyard({ currentShip, credits, isDocked, onBuy, system }) {
       </div>
     );
   }
-  const availableShips = getAvailableShipsAtStation(system);
+  const availableShips = getAvailableShipsAtStation(system, isSandbox);
   const stockLabel = system?.population > 1000000000 ? 'FULL CATALOGUE' : system?.population > 1000000 ? 'STANDARD RANGE' : system?.population > 0 ? 'LIMITED SELECTION' : 'BASIC VESSELS ONLY';
   return (
     <div className="space-y-2">
@@ -183,7 +184,7 @@ function Shipyard({ currentShip, credits, isDocked, onBuy, system }) {
       <div className="text-orange-700 text-[10px] mb-2">STOCK LEVEL: <span className="text-orange-400">{stockLabel}</span></div>
       {[...SHIP_TYPES].filter(s => availableShips.has(s.id)).sort((a, b) => a.cost - b.cost).map(ship => {
         const isCurrent = ship.id === currentShip;
-        const canAfford = credits >= ship.cost;
+        const canAfford = isSandbox || credits >= ship.cost;
         return (
           <div key={ship.id} className={`border p-3 text-xs ${isCurrent ? 'border-green-700' : 'border-orange-900'}`}>
             <div className="flex items-start justify-between">
@@ -192,7 +193,7 @@ function Shipyard({ currentShip, credits, isDocked, onBuy, system }) {
                 <div className="text-orange-700 text-[10px]">{ship.manufacturer} · Class {ship.class} · {ship.multirole ? 'Multirole' : 'Specialist'}</div>
               </div>
               <div className="text-right">
-                <div className="text-orange-400">{ship.cost === 0 ? 'STARTER' : `${ship.cost.toLocaleString()} CR`}</div>
+                <div className="text-orange-400">{isSandbox ? 'FREE' : ship.cost === 0 ? 'STARTER' : `${ship.cost.toLocaleString()} CR`}</div>
               </div>
             </div>
             <div className="grid grid-cols-3 gap-2 mt-2 text-[10px] text-orange-600">
@@ -209,10 +210,10 @@ function Shipyard({ currentShip, credits, isDocked, onBuy, system }) {
                     alert('INSUFFICIENT CREDITS');
                   }
                 }}
-                disabled={!canAfford}
+                disabled={!isSandbox && !canAfford}
                 className="mt-2 w-full py-1.5 border border-orange-500 text-orange-300 hover:bg-orange-950/50 disabled:opacity-30 text-[10px]"
               >
-                {canAfford ? 'PURCHASE' : 'INSUFFICIENT CREDITS'}
+                {isSandbox ? 'PURCHASE (FREE)' : canAfford ? 'PURCHASE' : 'INSUFFICIENT CREDITS'}
               </button>
             )}
             {isCurrent && <div className="mt-2 text-center text-green-600 text-[10px]">✓ CURRENTLY PILOTED</div>}

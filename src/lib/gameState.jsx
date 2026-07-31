@@ -7,6 +7,7 @@ import { COMMODITIES } from './commodities';
 import { getDefaultModules, computeShipStats } from './shipOutfitting';
 
 const STORAGE_KEY = 'starfarer_save_v1';
+const STORAGE_KEY_SANDBOX = 'starfarer_sandbox_v1';
 
 // Ship definitions
 export const SHIP_TYPES = [
@@ -63,6 +64,7 @@ export const MISSION_TYPES = {
 function createInitialState() {
   return {
     version: 1,
+    saveMode: 'normal',
     credits: 100000,
     ship: {
       type: 'sidewinder',
@@ -132,17 +134,37 @@ function createInitialState() {
   };
 }
 
+function createSandboxState() {
+  const base = createInitialState();
+  return {
+    ...base,
+    saveMode: 'sandbox',
+    credits: 1000000000,
+    ship: {
+      type: 'anaconda',
+      name: 'Anaconda',
+      cargo: [],
+      fuel: 64,
+      fuelCapacity: 64,
+      cargoCapacity: 114,
+      modules: getDefaultModules('anaconda'),
+    },
+  };
+}
+
 const GameStateContext = createContext(null);
 
-export function GameStateProvider({ children }) {
-  const [state, setState] = useState(createInitialState);
+export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave }) {
+  const [state, setState] = useState(() => saveSlot === 'sandbox' ? createSandboxState() : createInitialState());
   const stateRef = useRef(state);
   stateRef.current = state;
+
+  const storageKey = saveSlot === 'sandbox' ? STORAGE_KEY_SANDBOX : STORAGE_KEY;
 
   // Load from localStorage on mount
   useEffect(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
+      const saved = localStorage.getItem(storageKey);
       if (saved) {
         const parsed = JSON.parse(saved);
         // Merge with defaults to handle new fields
@@ -160,6 +182,7 @@ export function GameStateProvider({ children }) {
           mappedBodies: parsed.mappedBodies || {},
           surfaceDiscoveries: parsed.surfaceDiscoveries || {},
           flightLog: parsed.flightLog || [],
+          saveMode: saveSlot,
         };
           // Regenerate system data for the current system (not persisted since it's large)
           if (merged.currentSystem) {
@@ -183,13 +206,13 @@ export function GameStateProvider({ children }) {
   useEffect(() => {
     const timer = setTimeout(() => {
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        localStorage.setItem(storageKey, JSON.stringify(state));
       } catch (e) {
         console.error('Failed to save:', e);
       }
     }, 500);
     return () => clearTimeout(timer);
-  }, [state]);
+  }, [state, storageKey]);
 
   // Update function
   const update = useCallback((updater) => {
@@ -314,7 +337,9 @@ export function GameStateProvider({ children }) {
     setState(prev => {
       if (prev.currentLocation !== 'station') return prev;
       const shipType = SHIP_MAP[shipTypeId];
-      if (!shipType || prev.credits < shipType.cost) return prev;
+      if (!shipType) return prev;
+      const isSb = prev.saveMode === 'sandbox';
+      if (!isSb && prev.credits < shipType.cost) return prev;
       const oldShip = {
         id: `ship_${Date.now()}`,
         typeId: prev.ship.type,
@@ -328,7 +353,7 @@ export function GameStateProvider({ children }) {
       const newStats = computeShipStats(shipType.id, newMods);
       return {
         ...prev,
-        credits: prev.credits - shipType.cost,
+        credits: prev.credits - (isSb ? 0 : shipType.cost),
         ship: {
           type: shipType.id,
           name: customName || shipType.name,
@@ -392,8 +417,9 @@ export function GameStateProvider({ children }) {
       if (!stored) return prev;
       const shipType = SHIP_MAP[stored.typeId];
       if (!shipType) return prev;
-      const cost = Math.ceil(shipType.cost * 0.01) + 10000;
-      if (prev.credits < cost) return prev;
+      const isSb = prev.saveMode === 'sandbox';
+      const cost = isSb ? 0 : (Math.ceil(shipType.cost * 0.01) + 10000);
+      if (!isSb && prev.credits < cost) return prev;
       return {
         ...prev,
         credits: prev.credits - cost,
@@ -415,8 +441,11 @@ export function GameStateProvider({ children }) {
     const CARRIER_COST = 5000000000;
     setState(prev => {
       if (prev.fleetCarriers.length >= 5) return prev;
-      if (prev.credits < CARRIER_COST) return prev;
-      if ((prev.currentSystem?.population || 0) <= 1000000000) return prev;
+      const isSb = prev.saveMode === 'sandbox';
+      if (!isSb) {
+        if (prev.credits < CARRIER_COST) return prev;
+        if ((prev.currentSystem?.population || 0) <= 1000000000) return prev;
+      }
       const carrier = {
         id: `carrier_${Date.now()}`,
         name: name || 'Unnamed Carrier',
@@ -430,7 +459,7 @@ export function GameStateProvider({ children }) {
       };
       return {
         ...prev,
-        credits: prev.credits - CARRIER_COST,
+        credits: prev.credits - (isSb ? 0 : CARRIER_COST),
         fleetCarriers: [...prev.fleetCarriers, carrier],
         achievements: {
           ...prev.achievements,
@@ -446,8 +475,9 @@ export function GameStateProvider({ children }) {
       const c = prev.fleetCarriers.find(c => c.id === carrierId);
       if (!c || !c.system) return prev;
       const dist = distance3D({ x: c.system.x, y: c.system.y, z: c.system.z }, { x: targetSystem.x, y: targetSystem.y, z: targetSystem.z });
-      const tritiumCost = Math.ceil(dist / 10);
-      if (c.tritium < tritiumCost) return prev;
+      const isSb = prev.saveMode === 'sandbox';
+      const tritiumCost = isSb ? 0 : Math.ceil(dist / 10);
+      if (!isSb && c.tritium < tritiumCost) return prev;
       return {
         ...prev,
         fleetCarriers: prev.fleetCarriers.map(fc => fc.id === carrierId
@@ -607,7 +637,8 @@ export function GameStateProvider({ children }) {
     setState(prev => {
       const carrier = prev.fleetCarriers.find(c => c.id === carrierId);
       if (!carrier) return prev;
-      const refund = Math.floor(5000000000 * 0.75);
+      const isSb = prev.saveMode === 'sandbox';
+      const refund = isSb ? 0 : Math.floor(5000000000 * 0.75);
       const updatedShips = prev.ownedShips.map(s =>
         s.storedAt?.carrierId === carrierId
           ? { ...s, storedAt: { systemSeed: carrier.systemSeed, stationId: null } }
@@ -677,12 +708,25 @@ export function GameStateProvider({ children }) {
 
   // Reset game
   const resetGame = useCallback(() => {
-    localStorage.removeItem(STORAGE_KEY);
-    setState(createInitialState());
-  }, []);
+    localStorage.removeItem(storageKey);
+    setState(saveSlot === 'sandbox' ? createSandboxState() : createInitialState());
+  }, [storageKey, saveSlot]);
+
+  // Switch to a different save slot
+  const switchSave = useCallback(() => {
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(stateRef.current));
+    } catch (e) {
+      console.error('Failed to save before switch:', e);
+    }
+    if (onSwitchSave) onSwitchSave();
+  }, [onSwitchSave, storageKey]);
+
+  const isSandbox = state.saveMode === 'sandbox';
 
   const value = {
     state,
+    isSandbox,
     update,
     getSystemData,
     setCurrentSystem,
@@ -718,6 +762,7 @@ export function GameStateProvider({ children }) {
     collectSurfaceDiscovery,
     landOnBody,
     departSurface,
+    switchSave,
   };
 
   return (
@@ -764,7 +809,8 @@ export function hasCarrierVendor(system) {
 }
 
 // Determine which ships are in stock at a station based on system population
-export function getAvailableShipsAtStation(system) {
+export function getAvailableShipsAtStation(system, isSandbox = false) {
+  if (isSandbox) return new Set(SHIP_TYPES.map(s => s.id));
   const pop = system?.population || 0;
   const available = ['sidewinder', 'eagle', 'hauler', 'adder'];
   if (pop > 100000) available.push('viper', 'cobra', 'dolphin');
@@ -777,7 +823,8 @@ export function getAvailableShipsAtStation(system) {
 }
 
 // Determine outfitting/engineering level based on system stats
-export function getOutfittingLevel(system, systemData) {
+export function getOutfittingLevel(system, systemData, isSandbox = false) {
+  if (isSandbox) return 5;
   const pop = system?.population || 0;
   const economy = (systemData?.economy?.name || '').toLowerCase();
   let level = 1;

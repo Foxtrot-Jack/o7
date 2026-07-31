@@ -1,10 +1,10 @@
 // Display Settings — brightness, mini-screen, CRT, reset
 import React from 'react';
 import { useGameState } from '@/lib/gameState';
-import { Settings, Sun, Monitor, Tv, RotateCcw } from 'lucide-react';
+import { Settings, Sun, Monitor, Tv, RotateCcw, ArrowLeftRight } from 'lucide-react';
 
 export default function SettingsScreen() {
-  const { state, update, resetGame } = useGameState();
+  const { state, update, resetGame, switchSave } = useGameState();
   const s = state.settings || {};
 
   const set = (key, val) => update({ settings: { ...s, [key]: val } });
@@ -50,12 +50,21 @@ export default function SettingsScreen() {
         </div>
       </div>
 
+      <div className="border border-cyan-900 p-4 space-y-2">
+        <div className="flex items-center gap-2">
+          <ArrowLeftRight className="w-4 h-4 text-cyan-500" />
+          <h3 className="text-cyan-400 text-sm font-bold uppercase">Switch Save</h3>
+        </div>
+        <div className="text-orange-700 text-[10px]">Return to save selection to switch between Commander and Sandbox profiles.</div>
+        <button onClick={() => switchSave()} className="w-full py-2 border border-cyan-700 text-cyan-400 hover:bg-cyan-950/30 text-xs font-bold">SWITCH SAVE SLOT</button>
+      </div>
+
       <div className="border border-red-900 p-4 space-y-2">
         <div className="flex items-center gap-2">
           <RotateCcw className="w-4 h-4 text-red-500" />
           <h3 className="text-red-400 text-sm font-bold uppercase">Reset Game</h3>
         </div>
-        <div className="text-orange-700 text-[10px]">Erases all progress, ships, carriers, and achievements. Cannot be undone.</div>
+        <div className="text-orange-700 text-[10px]">{state.saveMode === 'sandbox' ? 'Resets sandbox to initial state. Cannot be undone.' : 'Erases all progress, ships, carriers, and achievements. Cannot be undone.'}</div>
         <button onClick={() => { if (confirm('Erase ALL progress? This cannot be undone.')) resetGame(); }} className="w-full py-2 border border-red-700 text-red-400 hover:bg-red-950/30 text-xs font-bold">RESET ALL PROGRESS</button>
       </div>
     </div>

@@ -20,23 +20,26 @@ export default function StationScreen({ onNavigate }) {
     );
   }
 
+  const isSandbox = state.saveMode === 'sandbox';
   const fuelNeeded = state.ship.fuelCapacity - state.ship.fuel;
-  const refuelCost = Math.ceil(refuelAmount * 50);
-  const fullRefuelCost = Math.ceil(fuelNeeded * 50);
-  const outfittingLevelIndex = Math.max(0, Math.min(4, getOutfittingLevel(state.currentSystem, systemData) - 1));
+  const refuelCost = isSandbox ? 0 : Math.ceil(refuelAmount * 50);
+  const fullRefuelCost = isSandbox ? 0 : Math.ceil(fuelNeeded * 50);
+  const outfittingLevelIndex = Math.max(0, Math.min(4, getOutfittingLevel(state.currentSystem, systemData, isSandbox) - 1));
   const outfittingLevel = OUTFITTING_LEVELS[outfittingLevelIndex];
 
   const handleRefuel = () => {
-    if (refuelCost > state.credits || refuelAmount <= 0) return;
+    if (refuelAmount <= 0) return;
+    if (!isSandbox && refuelCost > state.credits) return;
     refuel(refuelAmount);
-    addCredits(-refuelCost);
+    if (!isSandbox) addCredits(-refuelCost);
     setRefuelAmount(0);
   };
 
   const handleFullRefuel = () => {
-    if (fullRefuelCost > state.credits || fuelNeeded <= 0) return;
+    if (fuelNeeded <= 0) return;
+    if (!isSandbox && fullRefuelCost > state.credits) return;
     refuel(fuelNeeded);
-    addCredits(-fullRefuelCost);
+    if (!isSandbox) addCredits(-fullRefuelCost);
   };
 
   const stationTypeNames = {
@@ -125,17 +128,17 @@ export default function StationScreen({ onNavigate }) {
             >MAX</button>
             <button
               onClick={handleRefuel}
-              disabled={refuelCost > state.credits || refuelAmount <= 0}
+              disabled={refuelAmount <= 0 || (!isSandbox && refuelCost > state.credits)}
               className="text-xs px-3 py-1 border border-orange-500 text-orange-300 hover:bg-orange-950/50 disabled:opacity-30"
-            >REFUEL ({refuelCost} CR)</button>
+            >{isSandbox ? 'REFUEL (FREE)' : `REFUEL (${refuelCost} CR)`}</button>
           </div>
           {fuelNeeded > 0 && (
             <button
               onClick={handleFullRefuel}
-              disabled={fullRefuelCost > state.credits}
+              disabled={!isSandbox && fullRefuelCost > state.credits}
               className="mt-2 w-full text-xs py-1.5 border border-orange-700 text-orange-400 hover:bg-orange-950/30 disabled:opacity-30"
             >
-              FULL REFUEL — {fullRefuelCost} CR
+              {isSandbox ? 'FULL REFUEL — FREE' : `FULL REFUEL — ${fullRefuelCost} CR`}
             </button>
           )}
         </div>
