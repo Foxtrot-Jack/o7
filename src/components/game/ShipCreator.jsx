@@ -200,29 +200,29 @@ function BuilderTab({ design, selectedSlot, onSelectSlot, onPartSelect, onScaleC
           )}
         </div>
 
-        {/* Scale sliders */}
+        {/* Scale + Position sliders side by side */}
         {currentPart && (
-          <div className="border border-orange-900 p-2 space-y-2">
-            <div className="text-orange-700 text-[10px] uppercase">Resize Part</div>
-            {['X', 'Y', 'Z'].map((axis, i) => (
-              <div key={axis}>
-                <div className="flex justify-between text-[9px] text-orange-700"><span>SCALE {axis}</span><span>{currentScale[i].toFixed(1)}x</span></div>
-                <input type="range" min="0.3" max="3" step="0.1" value={currentScale[i]} onChange={e => onScaleChange(selectedSlot, i, parseFloat(e.target.value))} className="w-full" />
+          <div className="border border-orange-900 p-2">
+            <div className="grid grid-cols-2 gap-x-2 gap-y-2">
+              <div>
+                <div className="text-orange-700 text-[9px] uppercase mb-1">Resize</div>
+                {['X', 'Y', 'Z'].map((axis, i) => (
+                  <div key={axis}>
+                    <div className="flex justify-between text-[9px] text-orange-700"><span>SCL {axis}</span><span>{currentScale[i].toFixed(1)}x</span></div>
+                    <input type="range" min="0.3" max="3" step="0.1" value={currentScale[i]} onChange={e => onScaleChange(selectedSlot, i, parseFloat(e.target.value))} className="w-full" />
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        )}
-
-        {/* Position sliders */}
-        {currentPart && (
-          <div className="border border-orange-900 p-2 space-y-2">
-            <div className="text-orange-700 text-[10px] uppercase">Move Part</div>
-            {['X', 'Y', 'Z'].map((axis, i) => (
-              <div key={axis}>
-                <div className="flex justify-between text-[9px] text-orange-700"><span>POS {axis}</span><span>{currentPosition[i].toFixed(1)}</span></div>
-                <input type="range" min="-3" max="3" step="0.1" value={currentPosition[i]} onChange={e => onPositionChange(selectedSlot, i, parseFloat(e.target.value))} className="w-full" />
+              <div>
+                <div className="text-orange-700 text-[9px] uppercase mb-1">Move</div>
+                {['X', 'Y', 'Z'].map((axis, i) => (
+                  <div key={axis}>
+                    <div className="flex justify-between text-[9px] text-orange-700"><span>POS {axis}</span><span>{currentPosition[i].toFixed(1)}</span></div>
+                    <input type="range" min="-3" max="3" step="0.1" value={currentPosition[i]} onChange={e => onPositionChange(selectedSlot, i, parseFloat(e.target.value))} className="w-full" />
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
           </div>
         )}
 
