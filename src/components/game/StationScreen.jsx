@@ -1,7 +1,7 @@
 // Station Screen — docking services overview
 import React, { useState } from 'react';
 import { useGameState, getOutfittingLevel, OUTFITTING_LEVELS } from '@/lib/gameState';
-import { Home, Fuel, Wrench, ShoppingCart, Ship as ShipIcon, Telescope, Map, Pickaxe, Rocket, LogOut, ClipboardList } from 'lucide-react';
+import { Home, Fuel, Wrench, ShoppingCart, Ship as ShipIcon, Telescope, Map, Pickaxe, Rocket, LogOut, ClipboardList, Settings as SettingsIcon } from 'lucide-react';
 
 export default function StationScreen({ onNavigate }) {
   const { state, getSystemData, leaveStation, refuel, addCredits } = useGameState();
@@ -74,7 +74,8 @@ export default function StationScreen({ onNavigate }) {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
           <ServiceButton icon={ShoppingCart} label="Commodity Market" available={station.services.market} onClick={() => onNavigate('market')} />
           <ServiceButton icon={ClipboardList} label="Mission Board" available={station.services.missions} onClick={() => onNavigate('missions')} />
-          <ServiceButton icon={ShipIcon} label="Shipyard & Outfitting" available={true} onClick={() => onNavigate('ship')} />
+          <ServiceButton icon={ShipIcon} label="Shipyard" available={true} onClick={() => onNavigate('ship')} />
+          <ServiceButton icon={Wrench} label="Outfitting" available={true} onClick={() => onNavigate('outfitting')} />
           <ServiceButton icon={Telescope} label="Cartographics" available={station.services.cartographics} onClick={() => onNavigate('exploration')} />
           <ServiceButton icon={Map} label="Galaxy Map" available={true} onClick={() => onNavigate('galaxy')} />
           <ServiceButton icon={Pickaxe} label="Refinery & Mining" available={true} onClick={() => onNavigate('mining')} />

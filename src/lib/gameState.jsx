@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { STARTING_SYSTEM, distance3D } from './galaxy';
 import { generateSystem } from './system';
 import { COMMODITIES } from './commodities';
+import { getDefaultModules, computeShipStats } from './shipOutfitting';
 
 const STORAGE_KEY = 'starfarer_save_v1';
 
@@ -70,6 +71,7 @@ function createInitialState() {
       fuel: 8,
       fuelCapacity: 8,
       cargoCapacity: 4,
+      modules: getDefaultModules('sidewinder'),
     },
     currentSystem: STARTING_SYSTEM,
     currentLocation: 'station', // 'system' | 'station'
@@ -305,7 +307,10 @@ export function GameStateProvider({ children }) {
         storedAt: { systemSeed: prev.currentSystem.seed, stationId: prev.currentStationId },
         cargo: prev.ship.cargo,
         fuel: prev.ship.fuel,
+        modules: prev.ship.modules || getDefaultModules(prev.ship.type),
       };
+      const newMods = getDefaultModules(shipType.id);
+      const newStats = computeShipStats(shipType.id, newMods);
       return {
         ...prev,
         credits: prev.credits - shipType.cost,
@@ -313,9 +318,10 @@ export function GameStateProvider({ children }) {
           type: shipType.id,
           name: customName || shipType.name,
           cargo: [],
-          fuel: shipType.fuelCapacity,
-          fuelCapacity: shipType.fuelCapacity,
-          cargoCapacity: shipType.cargoCapacity,
+          fuel: newStats.fuelCapacity,
+          fuelCapacity: newStats.fuelCapacity,
+          cargoCapacity: newStats.cargoCapacity,
+          modules: newMods,
         },
         ownedShips: [...prev.ownedShips, oldShip],
       };
@@ -344,7 +350,10 @@ export function GameStateProvider({ children }) {
         storedAt: { systemSeed: prev.currentSystem.seed, stationId: prev.currentStationId },
         cargo: prev.ship.cargo,
         fuel: prev.ship.fuel,
+        modules: prev.ship.modules || getDefaultModules(prev.ship.type),
       };
+      const storedMods = stored.modules || getDefaultModules(stored.typeId);
+      const storedStats = computeShipStats(stored.typeId, storedMods);
       return {
         ...prev,
         ship: {
@@ -352,8 +361,9 @@ export function GameStateProvider({ children }) {
           name: stored.customName,
           cargo: stored.cargo || [],
           fuel: stored.fuel || shipType.fuelCapacity,
-          fuelCapacity: shipType.fuelCapacity,
-          cargoCapacity: shipType.cargoCapacity,
+          fuelCapacity: storedStats.fuelCapacity,
+          cargoCapacity: storedStats.cargoCapacity,
+          modules: storedMods,
         },
         ownedShips: [...prev.ownedShips.filter(s => s.id !== shipId), oldShip],
       };

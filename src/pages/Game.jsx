@@ -17,6 +17,7 @@ import FleetScreen from '@/components/game/FleetScreen';
 import CarrierScreen from '@/components/game/CarrierScreen';
 import AchievementsScreen from '@/components/game/AchievementsScreen';
 import SettingsScreen from '@/components/game/SettingsScreen';
+import OutfittingScreen from '@/components/game/OutfittingScreen';
 
 function GameContent() {
   const { state } = useGameState();
@@ -58,6 +59,8 @@ function GameContent() {
         return <AchievementsScreen />;
       case 'settings':
         return <SettingsScreen />;
+      case 'outfitting':
+        return <OutfittingScreen />;
       default:
         return <SystemOrrery />;
     }

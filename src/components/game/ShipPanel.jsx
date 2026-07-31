@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useGameState, SHIP_TYPES, SHIP_MAP, getAvailableShipsAtStation } from '@/lib/gameState';
 import { COMMODITY_MAP } from '@/lib/commodities';
-import { Package, Fuel, Ship as ShipIcon, Map, Trash2, ShoppingBag } from 'lucide-react';
+import { Package, Fuel, Ship as ShipIcon, Map, Trash2, ShoppingBag, Wrench } from 'lucide-react';
 
 export default function ShipPanel({ onNavigate }) {
   const { state, buyShip, addCredits, removeCargo, refuel } = useGameState();
@@ -14,6 +14,7 @@ export default function ShipPanel({ onNavigate }) {
     { id: 'cargo', label: 'Cargo Hold', icon: Package },
     { id: 'shipyard', label: 'Shipyard', icon: ShoppingBag },
     { id: 'navigation', label: 'Navigation', icon: Map },
+    { id: 'outfitting', label: 'Outfitting', icon: Wrench },
   ];
 
   return (
@@ -62,6 +63,20 @@ export default function ShipPanel({ onNavigate }) {
         )}
         {tab === 'navigation' && (
           <NavigationPanel onNavigate={onNavigate} />
+        )}
+        {tab === 'outfitting' && (
+          <div className="text-center py-8 space-y-3">
+            <Wrench className="w-8 h-8 mx-auto text-orange-500" />
+            <p className="text-orange-300 text-sm font-bold">Outfitting & Engineering</p>
+            <p className="text-orange-700 text-xs">Swap modules, install weapons, upgrade cargo racks, and apply engineering modifications.</p>
+            <button
+              onClick={() => onNavigate('outfitting')}
+              disabled={state.currentLocation !== 'station'}
+              className="px-4 py-2 border border-orange-500 text-orange-300 hover:bg-orange-950/50 text-xs font-bold disabled:opacity-30"
+            >
+              {state.currentLocation === 'station' ? 'OPEN OUTFITTING' : 'DOCK AT STATION FIRST'}
+            </button>
+          </div>
         )}
       </div>
     </div>
