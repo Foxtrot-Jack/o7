@@ -84,6 +84,7 @@ function createInitialState() {
       cargoCapacity: 4,
       modules: getDefaultModules('sidewinder'),
       integrity: 100,
+      moduleWear: 0,
     },
     currentSystem: STARTING_SYSTEM,
     currentLocation: 'station', // 'system' | 'station'
@@ -199,6 +200,7 @@ function createSandboxState() {
       cargoCapacity: 114,
       modules: getDefaultModules('anaconda'),
       integrity: 100,
+      moduleWear: 0,
     },
   };
 }
@@ -328,6 +330,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
       if (prev.heatSinkCharges > 0) wear *= 0.3;
       wear *= (1 - wearReduction);
       const newIntegrity = Math.max(0, (prev.ship.integrity ?? 100) - wear);
+      const newModuleWear = Math.min(100, (prev.ship.moduleWear ?? 0) + wear * 0.5);
       return {
         ...prev,
         currentSystem: system,
@@ -348,7 +351,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
         },
         fsdBoost: false,
         heatSinkCharges: Math.max(0, (prev.heatSinkCharges || 0) - (isNeutron ? 1 : 0)),
-        ship: { ...prev.ship, integrity: newIntegrity },
+        ship: { ...prev.ship, integrity: newIntegrity, moduleWear: newModuleWear },
         ...(system.seed === SOL_SYSTEM.seed && !prev.cheats?.unlocked ? {
           cheats: { ...prev.cheats, unlocked: true },
           achievements: {

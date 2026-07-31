@@ -89,6 +89,44 @@ export default function CommunityGoalsScreen() {
                 <Gift className="w-3 h-3" /> REWARD: {goal.reward.toLocaleString()} CR
               </div>
 
+              {/* Tiered rewards */}
+              {(() => {
+                const pct = (goal.progress / goal.target) * 100;
+                const tiers = [
+                  { threshold: 100, label: 'Champion', mult: 1.0 },
+                  { threshold: 75, label: 'Top Contributor', mult: 0.75 },
+                  { threshold: 50, label: 'Achiever', mult: 0.5 },
+                  { threshold: 25, label: 'Contributor', mult: 0.25 },
+                  { threshold: 10, label: 'Participant', mult: 0.1 },
+                ];
+                const currentTier = tiers.find(t => pct >= t.threshold) || null;
+                const nextTier = [...tiers].reverse().find(t => pct < t.threshold);
+                return (
+                  <div className="text-[10px] text-orange-600">
+                    Tier: <span className="text-orange-400">{currentTier ? currentTier.label : 'None'}</span>
+                    {currentTier && <span className="text-green-500 ml-2">({Math.round(goal.reward * currentTier.mult).toLocaleString()} CR)</span>}
+                    {nextTier && <span className="text-orange-700 ml-2">→ {nextTier.label} at {nextTier.threshold}%</span>}
+                  </div>
+                );
+              })()}
+
+              {/* Leaderboard */}
+              {!goal.claimed && !expired && (
+                <div className="border-t border-orange-950 pt-1 space-y-0.5">
+                  <div className="text-[9px] text-orange-700 uppercase">Leaderboard</div>
+                  {['Cmdr RedNova', 'Cmdr SteelDrift', 'Cmdr VoidRunner'].map((name, i) => (
+                    <div key={i} className="text-[9px] text-orange-600 flex justify-between">
+                      <span>{i + 1}. {name}</span>
+                      <span>{Math.floor(goal.progress * (0.15 - i * 0.04))}</span>
+                    </div>
+                  ))}
+                  <div className="text-[9px] text-cyan-400 flex justify-between font-bold">
+                    <span>★ YOU</span>
+                    <span>{goal.progress}</span>
+                  </div>
+                </div>
+              )}
+
               {/* Actions */}
               <div className="flex gap-2">
                 {canContribute && (

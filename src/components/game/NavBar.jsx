@@ -15,6 +15,7 @@ const NAV_GROUPS = [
       { id: 'conflictzone', label: 'Conflict Zones', icon: Swords },
       { id: 'res', label: 'Mining Sites', icon: Gem },
       { id: 'exobiology', label: 'Exobiology', icon: Leaf },
+      { id: 'piracy', label: 'Piracy', icon: Skull },
     ],
   },
   {
@@ -26,6 +27,7 @@ const NAV_GROUPS = [
       { id: 'engineering', label: 'Engineering', icon: FlaskConical },
       { id: 'multicrew', label: 'Multi-Crew', icon: Users },
       { id: 'cartography', label: 'Cartographics', icon: ScrollText },
+      { id: 'maintenance', label: 'Maintenance', icon: Wrench },
       { id: 'blackmarket', label: 'Black Market', icon: Skull },
       { id: 'bountyboard', label: 'Bounty Board', icon: Crosshair },
       { id: 'passengers', label: 'Passenger Lounge', icon: UserCheck },
@@ -77,6 +79,7 @@ const NAV_GROUPS = [
       { id: 'badgemaker', label: 'Badge Maker', icon: Palette },
       { id: 'profile', label: 'Profile', icon: User },
       { id: 'codex', label: 'Codex', icon: BookOpen },
+      { id: 'discoveries', label: 'Discoveries', icon: BookOpen },
       { id: 'cheats', label: 'Cheats', icon: Sparkles },
       { id: 'settings', label: 'Settings', icon: Settings },
     ],

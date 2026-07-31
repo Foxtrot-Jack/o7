@@ -11,6 +11,9 @@ export const GOAL_TYPES = [
   { type: 'mining', desc: 'Supply Tritium fuel', materialId: 'tritium', icon: '⛽' },
   { type: 'exploration', desc: 'Scan stellar bodies', icon: '🔭' },
   { type: 'exploration', desc: 'Map planetary surfaces', icon: '🛰️' },
+  { type: 'combat', desc: 'Bounty hunting sweep — eliminate hostiles', icon: '⚔️' },
+  { type: 'construction', desc: 'Deliver Metals for station construction', commodityCategory: 'Metals', icon: '🏗️' },
+  { type: 'construction', desc: 'Deliver Technology for megaship project', commodityCategory: 'Technology', icon: '🚀' },
 ];
 
 export const GOAL_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 days
@@ -52,4 +55,29 @@ export function getTimeRemaining(deadline) {
   if (days > 0) return `${days}d ${hours}h`;
   const mins = Math.floor((ms % 3600000) / 60000);
   return `${hours}h ${mins}m`;
+}
+
+export const REWARD_TIERS = [
+  { threshold: 100, label: 'Champion', mult: 1.0 },
+  { threshold: 75, label: 'Top Contributor', mult: 0.75 },
+  { threshold: 50, label: 'Achiever', mult: 0.5 },
+  { threshold: 25, label: 'Contributor', mult: 0.25 },
+  { threshold: 10, label: 'Participant', mult: 0.1 },
+];
+
+export function getCurrentTier(progressPct) {
+  for (const t of REWARD_TIERS) {
+    if (progressPct >= t.threshold) return t;
+  }
+  return null;
+}
+
+export function generateLeaderboard(goalProgress, playerContribution) {
+  const names = ['Cmdr RedNova', 'Cmdr SteelDrift', 'Cmdr VoidRunner', 'Cmdr NebulaHunter', 'Cmdr Ironclad'];
+  const entries = names.map((name, i) => ({
+    name,
+    contribution: Math.floor(goalProgress * (0.18 - i * 0.03)),
+  }));
+  entries.push({ name: 'YOU', contribution: playerContribution, isPlayer: true });
+  return entries.sort((a, b) => b.contribution - a.contribution);
 }

@@ -19,13 +19,36 @@ export function generateCrewName() {
   return `${fn} ${ln}`;
 }
 
+export const CREW_LEVELS = [
+  { level: 1, xpRequired: 0, bonusMult: 1.0, title: 'Rookie' },
+  { level: 2, xpRequired: 1000, bonusMult: 1.2, title: 'Trained' },
+  { level: 3, xpRequired: 5000, bonusMult: 1.5, title: 'Veteran' },
+  { level: 4, xpRequired: 20000, bonusMult: 2.0, title: 'Elite' },
+  { level: 5, xpRequired: 100000, bonusMult: 3.0, title: 'Elite I' },
+];
+
+export function getCrewLevel(xp) {
+  const totalXp = (xp || 0) + Math.floor(((Date.now() - 0) / 3600000) * 0); // stored XP only
+  let idx = 0;
+  for (let i = 0; i < CREW_LEVELS.length; i++) {
+    if (totalXp >= CREW_LEVELS[i].xpRequired) idx = i;
+  }
+  return { idx, ...CREW_LEVELS[idx] };
+}
+
+export function getCrewTotalXp(member) {
+  const hoursServed = (Date.now() - (member.hireDate || Date.now())) / 3600000;
+  return (member.xp || 0) + Math.floor(hoursServed * 50);
+}
+
 export function getCrewBonuses(crew) {
   const bonuses = { jumpRange: 0, shield: 0, damage: 0, scanValue: 0, wearReduction: 0 };
   for (const member of crew || []) {
     const role = CREW_ROLE_MAP[member.role];
     if (!role) continue;
+    const level = getCrewLevel(getCrewTotalXp(member));
     for (const [key, val] of Object.entries(role.bonus)) {
-      bonuses[key] = (bonuses[key] || 0) + val;
+      bonuses[key] = (bonuses[key] || 0) + val * level.bonusMult;
     }
   }
   return bonuses;

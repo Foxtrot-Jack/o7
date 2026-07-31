@@ -53,6 +53,9 @@ import FighterScreen from '@/components/game/FighterScreen';
 import BGSScreen from '@/components/game/BGSScreen';
 import ExobiologyScreen from '@/components/game/ExobiologyScreen';
 import CarrierLogisticsScreen from '@/components/game/CarrierLogisticsScreen';
+import MaintenanceScreen from '@/components/game/MaintenanceScreen';
+import PiracyScreen from '@/components/game/PiracyScreen';
+import DiscoveryDatabase from '@/components/game/DiscoveryDatabase';
 
 function GameContent() {
   const { state } = useGameState();
@@ -162,6 +165,12 @@ function GameContent() {
         return <ExobiologyScreen />;
       case 'carrierlogistics':
         return <CarrierLogisticsScreen />;
+      case 'maintenance':
+        return <MaintenanceScreen />;
+      case 'piracy':
+        return <PiracyScreen />;
+      case 'discoveries':
+        return <DiscoveryDatabase />;
       default:
         return <SystemOrrery />;
     }

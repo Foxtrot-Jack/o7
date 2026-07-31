@@ -27,6 +27,27 @@ export default function PowerPlayScreen() {
     });
   };
 
+  const handleConsolidate = () => {
+    const now = Date.now();
+    const last = pp.lastConsolidation || pp.joinedAt || now;
+    const hours = Math.max(0, (now - last) / 3600000);
+    const jumps = state.totalJumps - (pp.jumpsAtConsolidation || 0);
+    const merits = Math.floor(hours * 1000 + jumps * 500);
+    if (merits <= 0) return;
+    update({
+      powerPlay: { ...pp, reputation: (pp.reputation || 0) + merits, lastConsolidation: now, jumpsAtConsolidation: state.totalJumps },
+    });
+  };
+
+  const handleUndermine = () => {
+    const cost = 5000000;
+    if (!isSandbox && state.credits < cost) return;
+    if (!isSandbox) addCredits(-cost);
+    update({
+      powerPlay: { ...pp, reputation: (pp.reputation || 0) + 200000 },
+    });
+  };
+
   if (!pp) {
     return (
       <div className="w-full h-full overflow-y-auto p-4 space-y-4">
@@ -108,6 +129,37 @@ export default function PowerPlayScreen() {
           className="w-full py-1.5 border border-orange-500 text-orange-300 hover:bg-orange-950/50 text-xs font-bold disabled:opacity-30"
         >
           {isSandbox ? 'DONATE (FREE)' : 'DONATE 1,000,000 CR'}
+        </button>
+      </div>
+
+      {/* Merit consolidation */}
+      <div className="border border-orange-900 p-3 space-y-2">
+        <div className="flex items-center gap-2">
+          <Star className="w-4 h-4 text-orange-500" />
+          <span className="text-orange-400 text-sm font-bold uppercase">Consolidate Merits</span>
+        </div>
+        <div className="text-orange-700 text-[10px]">Convert recent activity (time pledged + jumps completed) into merit reputation.</div>
+        <button
+          onClick={handleConsolidate}
+          className="w-full py-1.5 border border-cyan-500 text-cyan-300 hover:bg-cyan-950/30 text-xs font-bold"
+        >
+          CONSOLIDATE MERITS
+        </button>
+      </div>
+
+      {/* Undermine rivals */}
+      <div className="border border-orange-900 p-3 space-y-2">
+        <div className="flex items-center gap-2">
+          <Star className="w-4 h-4 text-red-500" />
+          <span className="text-orange-400 text-sm font-bold uppercase">Undermine Rivals</span>
+        </div>
+        <div className="text-orange-700 text-[10px]">Fund covert operations against rival powers. Grants 200K reputation.</div>
+        <button
+          onClick={handleUndermine}
+          disabled={!isSandbox && state.credits < 5000000}
+          className="w-full py-1.5 border border-red-600 text-red-400 hover:bg-red-950/30 text-xs font-bold disabled:opacity-30"
+        >
+          {isSandbox ? 'UNDERMINE (FREE)' : 'UNDERMINE — 5,000,000 CR'}
         </button>
       </div>
 

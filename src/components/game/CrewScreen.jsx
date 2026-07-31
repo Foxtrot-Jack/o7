@@ -1,7 +1,7 @@
 // Crew Screen — hire and manage NPC co-pilots
 import React, { useState, useEffect } from 'react';
 import { useGameState } from '@/lib/gameState';
-import { CREW_ROLES, CREW_ROLE_MAP, generateCrewName, calculateSalaryOwed } from '@/lib/crew';
+import { CREW_ROLES, CREW_ROLE_MAP, generateCrewName, calculateSalaryOwed, getCrewLevel, CREW_LEVELS, getCrewTotalXp } from '@/lib/crew';
 import { Users, UserPlus, UserMinus, Coins } from 'lucide-react';
 
 export default function CrewScreen() {
@@ -42,6 +42,16 @@ export default function CrewScreen() {
     update({ crew: crew.map(c => ({ ...c, lastPaid: now })) });
   };
 
+  const handleTrain = (crewId) => {
+    const cost = 50000;
+    if (!isSandbox && state.credits < cost) return;
+    if (!isSandbox) addCredits(-cost);
+    update(prev => ({
+      ...prev,
+      crew: prev.crew.map(c => c.id === crewId ? { ...c, xp: (c.xp || 0) + 500 } : c),
+    }));
+  };
+
   return (
     <div className="w-full h-full overflow-y-auto p-4 space-y-4">
       <div className="border border-orange-700 p-4 flex items-center gap-2">
@@ -76,18 +86,45 @@ export default function CrewScreen() {
           {crew.map(member => {
             const role = CREW_ROLE_MAP[member.role];
             return (
-              <div key={member.id} className="border border-orange-900 p-3 flex items-center justify-between">
-                <div>
-                  <div className="text-orange-300 text-sm font-bold">{member.name}</div>
-                  <div className="text-orange-600 text-xs">{role.name} · {role.bonusLabel}</div>
-                  <div className="text-orange-700 text-[10px]">Salary: {role.salary.toLocaleString()} CR/hr</div>
+              <div key={member.id} className="border border-orange-900 p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-orange-300 text-sm font-bold">{member.name}</div>
+                    <div className="text-orange-600 text-xs">{role.name} · {role.bonusLabel}</div>
+                    <div className="text-orange-700 text-[10px]">Salary: {role.salary.toLocaleString()} CR/hr</div>
+                  </div>
+                  <button
+                    onClick={() => handleFire(member.id)}
+                    className="px-2 py-1 border border-red-800 text-red-500 hover:bg-red-950/30 text-[10px] flex items-center gap-1"
+                  >
+                    <UserMinus className="w-3 h-3" /> DISMISS
+                  </button>
                 </div>
-                <button
-                  onClick={() => handleFire(member.id)}
-                  className="px-2 py-1 border border-red-800 text-red-500 hover:bg-red-950/30 text-[10px] flex items-center gap-1"
-                >
-                  <UserMinus className="w-3 h-3" /> DISMISS
-                </button>
+                {(() => {
+                  const totalXp = getCrewTotalXp(member);
+                  const level = getCrewLevel(totalXp);
+                  const nextLevel = CREW_LEVELS[level.idx + 1];
+                  const pct = nextLevel ? Math.min(100, ((totalXp - level.xpRequired) / (nextLevel.xpRequired - level.xpRequired)) * 100) : 100;
+                  return (
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between text-[10px]">
+                        <span className="text-cyan-400">Lv.{level.level} {level.title}</span>
+                        <span className="text-orange-600">{totalXp.toLocaleString()} XP</span>
+                        <span className="text-orange-700">×{level.bonusMult} bonus</span>
+                      </div>
+                      <div className="w-full h-1.5 bg-black border border-orange-950">
+                        <div className="h-full bg-cyan-600" style={{ width: `${pct}%` }} />
+                      </div>
+                      <button
+                        onClick={() => handleTrain(member.id)}
+                        disabled={!isSandbox && state.credits < 50000}
+                        className="w-full py-1 border border-cyan-700 text-cyan-400 hover:bg-cyan-950/30 text-[9px] font-bold disabled:opacity-30"
+                      >
+                        {isSandbox ? 'TRAIN (FREE)' : 'TRAIN — 50K CR (+500 XP)'}
+                      </button>
+                    </div>
+                  );
+                })()}
               </div>
             );
           })}

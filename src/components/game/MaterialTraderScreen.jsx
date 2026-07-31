@@ -44,6 +44,20 @@ export default function MaterialTraderScreen() {
         Exchange raw materials at grade-based ratios. Same-grade swaps cost 6:1. Upgrading costs more; downgrading costs less.
       </div>
 
+      {/* Grade inventory summary */}
+      <div className="grid grid-cols-4 gap-2">
+        {[1, 2, 3, 4].map(grade => {
+          const count = ALL_MATERIAL_IDS.filter(m => MATERIAL_GRADES[m] === grade && (materials[m] || 0) > 0).length;
+          const total = ALL_MATERIAL_IDS.filter(m => MATERIAL_GRADES[m] === grade).length;
+          return (
+            <div key={grade} className="border border-orange-950 p-2 text-center">
+              <div className="text-orange-700 text-[9px] uppercase">{GRADE_NAMES[grade]}</div>
+              <div className={`font-bold text-sm ${count > 0 ? 'text-orange-300' : 'text-orange-800'}`}>{count}/{total}</div>
+            </div>
+          );
+        })}
+      </div>
+
       {/* Trade interface */}
       <div className="border border-orange-900 p-3 space-y-3">
         {/* Give selector */}
