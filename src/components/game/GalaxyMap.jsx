@@ -15,6 +15,7 @@ export default function GalaxyMap({ onJumpToSystem }) {
   const selectedLineRef = useRef(null);
   const shipMarkersRef = useRef(null);
   const colonyMarkersRef = useRef(null);
+  const missionMarkersRef = useRef(null);
   const trailRef = useRef(null);
   const overviewRef = useRef(null);
   const raycasterRef = useRef(new THREE.Raycaster());
@@ -25,7 +26,7 @@ export default function GalaxyMap({ onJumpToSystem }) {
   const [stars, setStars] = useState([]);
   const [loading, setLoading] = useState(true);
   const [hoveredStar, setHoveredStar] = useState(null);
-  const [filters, setFilters] = useState({ spectral: 'all', security: 'all', population: 'all', showParkedShips: true, showColonies: true });
+  const [filters, setFilters] = useState({ spectral: 'all', security: 'all', population: 'all', showParkedShips: true, showColonies: true, showMissions: true });
   const [showFilterPanel, setShowFilterPanel] = useState(false);
   const [showBookmarks, setShowBookmarks] = useState(false);
   const [showTrail, setShowTrail] = useState(true);
@@ -257,6 +258,23 @@ export default function GalaxyMap({ onJumpToSystem }) {
       }
     }
 
+    // Mission destination markers (gold)
+    if (missionMarkersRef.current) { sceneRef.current.remove(missionMarkersRef.current); missionMarkersRef.current.geometry.dispose(); missionMarkersRef.current.material.dispose(); missionMarkersRef.current = null; }
+    if (filters.showMissions) {
+      const missionSeeds = new Set((state.activeMissions || []).filter(m => m.destinationSystem).map(m => m.destinationSystem.seed));
+      const missionStars = stars.filter(s => missionSeeds.has(s.seed));
+      if (missionStars.length > 0) {
+        const mp = new Float32Array(missionStars.length * 3);
+        missionStars.forEach((s, i) => { mp[i*3] = s.x-center.x; mp[i*3+1] = s.y-center.y; mp[i*3+2] = s.z-center.z; });
+        const mg = new THREE.BufferGeometry();
+        mg.setAttribute('position', new THREE.BufferAttribute(mp, 3));
+        const mm = new THREE.PointsMaterial({ color: 0xffdd00, size: 12, sizeAttenuation: false, transparent: true, opacity: 0.95 });
+        const mps = new THREE.Points(mg, mm);
+        sceneRef.current.add(mps);
+        missionMarkersRef.current = mps;
+      }
+    }
+
     // Flight log trail — green line connecting last 50 visited systems
     if (trailRef.current) { sceneRef.current.remove(trailRef.current); trailRef.current.geometry.dispose(); trailRef.current.material.dispose(); trailRef.current = null; }
     if (showTrail && state.flightLog?.length > 1) {
@@ -298,7 +316,7 @@ export default function GalaxyMap({ onJumpToSystem }) {
 
     // Set initial zoom to show a good range
     rotState.current.targetDistance = 120;
-  }, [stars, state.currentSystem, filters, state.discoveredSystems, state.ownedShips, state.colonies, showTrail, state.flightLog]);
+  }, [stars, state.currentSystem, filters, state.discoveredSystems, state.ownedShips, state.colonies, state.activeMissions, showTrail, state.flightLog]);
 
   // Apply brightness changes without regenerating geometry
   useEffect(() => {
@@ -657,6 +675,7 @@ export default function GalaxyMap({ onJumpToSystem }) {
           <div className="flex gap-1 border-t border-orange-900 pt-1">
             <button onClick={() => setFilters({...filters, showParkedShips: !filters.showParkedShips})} className={`flex-1 py-0.5 border ${filters.showParkedShips ? 'border-cyan-600 text-cyan-400' : 'border-orange-900 text-orange-800'}`}>⚓ SHIPS</button>
             <button onClick={() => setFilters({...filters, showColonies: !filters.showColonies})} className={`flex-1 py-0.5 border ${filters.showColonies ? 'border-purple-600 text-purple-400' : 'border-orange-900 text-orange-800'}`}>★ COLONIES</button>
+            <button onClick={() => setFilters({...filters, showMissions: !filters.showMissions})} className={`flex-1 py-0.5 border ${filters.showMissions ? 'border-yellow-600 text-yellow-400' : 'border-orange-900 text-orange-800'}`}>◉ MISSIONS</button>
             </div>
             <button onClick={() => setShowTrail(!showTrail)} className={`w-full py-0.5 border mt-1 ${showTrail ? 'border-green-600 text-green-400' : 'border-orange-900 text-orange-800'}`}>~ FLIGHT TRAIL ({state.flightLog?.length || 0})</button>
             <div className="border-t border-orange-900 pt-1.5 space-y-1.5">
@@ -692,6 +711,12 @@ export default function GalaxyMap({ onJumpToSystem }) {
           <div className="flex items-center gap-1.5">
             <div className="w-2 h-2 bg-purple-400 rounded-full" />
             <span className="text-purple-400">COLONIES</span>
+          </div>
+        )}
+        {filters.showMissions && state.activeMissions?.length > 0 && (
+          <div className="flex items-center gap-1.5">
+            <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse" />
+            <span className="text-yellow-400">MISSION TARGETS</span>
           </div>
         )}
       </div>

@@ -3,6 +3,7 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { useGameState, MISSION_TYPES } from '@/lib/gameState';
 import { makeRng, randInt, randFloat, pick, pickWeighted } from '@/lib/prng';
 import { COMMODITIES } from '@/lib/commodities';
+import { generateStarsInRange, distance3D } from '@/lib/galaxy';
 import { ClipboardList, CheckCircle, Clock, MapPin, Package, Pickaxe, Telescope, Users, Wrench } from 'lucide-react';
 
 const MISSION_TEMPLATES = {
@@ -64,6 +65,14 @@ export default function MissionsScreen() {
     const count = randInt(rng, 4, 8);
     const missions = [];
 
+    // Generate nearby populated systems for mission destinations
+    const center = state.currentSystem;
+    const nearbyStars = generateStarsInRange(center.x, center.y, center.z, 40)
+      .filter(s => s.seed !== center.seed && s.population > 0)
+      .map(s => ({ ...s, dist: distance3D(center, s) }))
+      .sort((a, b) => a.dist - b.dist)
+      .slice(0, 15);
+
     for (let i = 0; i < count; i++) {
       const type = pickWeighted(rng, [
         { value: MISSION_TYPES.DELIVERY, weight: 30 },
@@ -81,9 +90,10 @@ export default function MissionsScreen() {
       const rewardMultiplier = randFloat(rng, 0.8, 2.5);
       const reward = Math.round(template.rewardBase * qty * rewardMultiplier / 10) * 10;
 
-      // Generate a destination name
-      const destNames = ['neighboring system', 'outpost sector', 'colony world', 'frontier station', 'deep space relay'];
-      const destination = pick(rng, destNames);
+      // Pick a destination system — local for mining/salvage/exploration, nearby for delivery/courier/passenger
+      const isLocal = [MISSION_TYPES.MINING, MISSION_TYPES.SALVAGE, MISSION_TYPES.EXPLORATION].includes(type);
+      const destStar = isLocal ? center : (nearbyStars.length > 0 ? pick(rng, nearbyStars) : null);
+      const destination = destStar ? destStar.name : 'unknown sector';
 
       const desc = template.desc
         .replace('{qty}', qty)
@@ -101,11 +111,13 @@ export default function MissionsScreen() {
         reward,
         deadline: Date.now() + randInt(rng, 1, 7) * 24 * 60 * 60 * 1000,
         reputation: randInt(rng, 1, 5),
+        destinationSystem: destStar ? { seed: destStar.seed, name: destStar.name, x: destStar.x, y: destStar.y, z: destStar.z } : null,
+        destinationSystemName: destination,
       });
     }
 
     return missions;
-  }, [station, systemData]);
+  }, [station, systemData, state.currentSystem]);
 
   const handleAccept = (mission) => {
     addMission(mission);

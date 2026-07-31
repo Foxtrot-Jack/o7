@@ -632,6 +632,12 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
           <div className="text-green-500 font-bold uppercase text-[10px] border-b border-green-900 pb-1">
             Available Stations — Request Docking
           </div>
+          {state.activeMissions?.some(m => m.destinationSystem?.seed === state.currentSystem.seed) && (
+            <div className="flex items-center gap-1.5 text-yellow-400 text-[10px] border border-yellow-900 bg-yellow-950/20 px-2 py-1">
+              <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse" />
+              ◉ MISSION TARGET SYSTEM
+            </div>
+          )}
           <div className="space-y-1">
             {systemData.stations.map(station => (
               <div key={station.id} className="flex items-center justify-between border border-orange-950 p-1.5">
