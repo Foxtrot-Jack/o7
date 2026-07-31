@@ -1,6 +1,6 @@
 // Navigation bar — dropdown-grouped access to all screens
 import React, { useState, useRef, useEffect } from 'react';
-import { Compass, Store, Package, ClipboardList, Pickaxe, Telescope, Home, Map, Rocket, Layers, Anchor, Trophy, Settings, Wrench, MapPin, TrendingUp, User, Hammer, BookOpen, Briefcase, ChevronDown, Lock, Sparkles, Medal, Palette, DoorOpen, ArrowLeftRight, FlaskConical, Users, Crown, Target, Skull, Newspaper, Crosshair, Swords, AlertTriangle, Gem, UserCheck } from 'lucide-react';
+import { Compass, Store, Package, ClipboardList, Pickaxe, Telescope, Home, Map, Rocket, Layers, Anchor, Trophy, Settings, Wrench, MapPin, TrendingUp, User, Hammer, BookOpen, Briefcase, ChevronDown, Lock, Sparkles, Medal, Palette, DoorOpen, ArrowLeftRight, FlaskConical, Users, Crown, Target, Skull, Newspaper, Crosshair, Swords, AlertTriangle, Gem, UserCheck, Building, ScrollText, Plane, Activity, Leaf, Route } from 'lucide-react';
 import { useGameState } from '@/lib/gameState';
 
 const NAV_GROUPS = [
@@ -14,6 +14,7 @@ const NAV_GROUPS = [
       { id: 'srv', label: 'SRV Rover', icon: Crosshair },
       { id: 'conflictzone', label: 'Conflict Zones', icon: Swords },
       { id: 'res', label: 'Mining Sites', icon: Gem },
+      { id: 'exobiology', label: 'Exobiology', icon: Leaf },
     ],
   },
   {
@@ -23,6 +24,8 @@ const NAV_GROUPS = [
       { id: 'market', label: 'Market', icon: Store },
       { id: 'outfitting', label: 'Outfitting', icon: Wrench },
       { id: 'engineering', label: 'Engineering', icon: FlaskConical },
+      { id: 'multicrew', label: 'Multi-Crew', icon: Users },
+      { id: 'cartography', label: 'Cartographics', icon: ScrollText },
       { id: 'blackmarket', label: 'Black Market', icon: Skull },
       { id: 'bountyboard', label: 'Bounty Board', icon: Crosshair },
       { id: 'passengers', label: 'Passenger Lounge', icon: UserCheck },
@@ -45,7 +48,9 @@ const NAV_GROUPS = [
       { id: 'ship', label: 'Ship', icon: Package },
       { id: 'fleet', label: 'Fleet Manager', icon: Layers },
       { id: 'wingmates', label: 'Wingmates', icon: Users },
+      { id: 'fighters', label: 'Fighter Hangar', icon: Plane },
       { id: 'carriers', label: 'Fleet Carriers', icon: Anchor },
+      { id: 'carrierlogistics', label: 'Carrier Logistics', icon: Route },
       { id: 'shipcreator', label: 'Ship Yard', icon: Hammer },
       { id: 'carriercreator', label: 'Carrier Yard', icon: Hammer },
       { id: 'carrierinterior', label: 'Carrier Interior', icon: DoorOpen },
@@ -56,6 +61,7 @@ const NAV_GROUPS = [
     items: [
       { id: 'mining', label: 'Mining', icon: Pickaxe },
       { id: 'colonization', label: 'Colonies', icon: Rocket },
+      { id: 'stationbuilder', label: 'Station Builder', icon: Building },
     ],
   },
   {
@@ -65,6 +71,7 @@ const NAV_GROUPS = [
       { id: 'leaderboard', label: 'Leaderboard', icon: Medal },
       { id: 'galnet', label: 'GalNet News', icon: Newspaper },
       { id: 'crime', label: 'Crime Status', icon: AlertTriangle },
+      { id: 'bgs', label: 'Faction Status', icon: Activity },
       { id: 'powerplay', label: 'Power Play', icon: Crown },
       { id: 'goals', label: 'Community Goals', icon: Target },
       { id: 'badgemaker', label: 'Badge Maker', icon: Palette },
@@ -76,7 +83,7 @@ const NAV_GROUPS = [
   },
 ];
 
-const STATION_ONLY_SCREENS = ['station', 'market', 'outfitting', 'materialtrader', 'synthesis', 'crew', 'blackmarket', 'engineering', 'bountyboard', 'passengers'];
+const STATION_ONLY_SCREENS = ['station', 'market', 'outfitting', 'materialtrader', 'synthesis', 'crew', 'blackmarket', 'engineering', 'bountyboard', 'passengers', 'multicrew', 'cartography'];
 
 export default function NavBar({ currentScreen, onNavigate, location }) {
   const [openGroup, setOpenGroup] = useState(null);

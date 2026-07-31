@@ -1,7 +1,7 @@
 // Station Screen — docking services overview
 import React, { useState } from 'react';
 import { useGameState, getOutfittingLevel, OUTFITTING_LEVELS } from '@/lib/gameState';
-import { Home, Fuel, Wrench, ShoppingCart, Ship as ShipIcon, Telescope, Map, Pickaxe, Rocket, LogOut, ClipboardList, Settings as SettingsIcon, ArrowLeftRight, FlaskConical, Users, Skull, Crosshair, UserCheck } from 'lucide-react';
+import { Home, Fuel, Wrench, ShoppingCart, Ship as ShipIcon, Telescope, Map, Pickaxe, Rocket, LogOut, ClipboardList, Settings as SettingsIcon, ArrowLeftRight, FlaskConical, Users, Skull, Crosshair, UserCheck, ScrollText } from 'lucide-react';
 
 export default function StationScreen({ onNavigate }) {
   const { state, getSystemData, leaveStation, refuel, addCredits, repairShip } = useGameState();
@@ -91,6 +91,8 @@ export default function StationScreen({ onNavigate }) {
           <ServiceButton icon={Skull} label="Black Market" available={state.currentSystem?.security === 'anarchy'} onClick={() => onNavigate('blackmarket')} />
           <ServiceButton icon={Crosshair} label="Bounty Board" available={true} onClick={() => onNavigate('bountyboard')} />
           <ServiceButton icon={UserCheck} label="Passenger Lounge" available={true} onClick={() => onNavigate('passengers')} />
+          <ServiceButton icon={ScrollText} label="Cartographics" available={true} onClick={() => onNavigate('cartography')} />
+          <ServiceButton icon={Users} label="Multi-Crew" available={true} onClick={() => onNavigate('multicrew')} />
         </div>
       </div>
 

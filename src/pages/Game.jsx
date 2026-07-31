@@ -46,6 +46,13 @@ import ConflictZoneScreen from '@/components/game/ConflictZoneScreen';
 import RESScreen from '@/components/game/RESScreen';
 import WingmateScreen from '@/components/game/WingmateScreen';
 import PassengerScreen from '@/components/game/PassengerScreen';
+import MultiCrewScreen from '@/components/game/MultiCrewScreen';
+import StationBuilderScreen from '@/components/game/StationBuilderScreen';
+import CartographyScreen from '@/components/game/CartographyScreen';
+import FighterScreen from '@/components/game/FighterScreen';
+import BGSScreen from '@/components/game/BGSScreen';
+import ExobiologyScreen from '@/components/game/ExobiologyScreen';
+import CarrierLogisticsScreen from '@/components/game/CarrierLogisticsScreen';
 
 function GameContent() {
   const { state } = useGameState();
@@ -141,6 +148,20 @@ function GameContent() {
         return <WingmateScreen />;
       case 'passengers':
         return <PassengerScreen />;
+      case 'multicrew':
+        return <MultiCrewScreen />;
+      case 'stationbuilder':
+        return <StationBuilderScreen />;
+      case 'cartography':
+        return <CartographyScreen />;
+      case 'fighters':
+        return <FighterScreen />;
+      case 'bgs':
+        return <BGSScreen />;
+      case 'exobiology':
+        return <ExobiologyScreen />;
+      case 'carrierlogistics':
+        return <CarrierLogisticsScreen />;
       default:
         return <SystemOrrery />;
     }

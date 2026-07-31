@@ -12,6 +12,8 @@ import { generateCommunityGoals } from './communityGoals';
 import { SYNTHESIS_MAP } from './synthesis';
 import { shouldTriggerEncounter, generateEncounter } from './encounters';
 import { CRIME_TYPES, getCleanRecordCost } from './crime';
+import { STATION_BUILD_COST, STATION_SERVICES, calculateStationRevenue } from './stationBuilder';
+import { FIGHTER_TYPES, getFighterHangarCapacity } from './fighters';
 
 const STORAGE_KEY = 'starfarer_save_v1';
 const STORAGE_KEY_SANDBOX = 'starfarer_sandbox_v1';
@@ -174,6 +176,10 @@ function createInitialState() {
     wingmates: [],
     passengerMissions: [],
     activeCombat: null,
+    crewRoles: { pilot: null, gunner: null, shield: null, engineer: null },
+    ownedStations: [],
+    fighters: [],
+    exobiologyCodex: {},
     createdAt: Date.now(),
   };
 }
@@ -248,6 +254,10 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
           wingmates: parsed.wingmates || [],
           passengerMissions: parsed.passengerMissions || [],
           activeCombat: parsed.activeCombat || null,
+          crewRoles: parsed.crewRoles || { pilot: null, gunner: null, shield: null, engineer: null },
+          ownedStations: parsed.ownedStations || [],
+          fighters: parsed.fighters || [],
+          exobiologyCodex: parsed.exobiologyCodex || {},
           saveMode: saveSlot,
           lightYearsTraveled: parsed.lightYearsTraveled || 0,
           lifetimeEarnings: parsed.lifetimeEarnings || 0,
@@ -1567,6 +1577,110 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     setState(prev => ({ ...prev, activeCombat: null }));
   }, []);
 
+  // ===== STATION BUILDER =====
+  const buildStation = useCallback((name, economyType, colonyId) => {
+    setState(prev => {
+      const isSb = prev.saveMode === 'sandbox';
+      if (!isSb && prev.credits < STATION_BUILD_COST) return prev;
+      const colony = prev.colonies.find(c => c.id === colonyId);
+      if (!colony) return prev;
+      if (prev.ownedStations?.some(s => s.colonyId === colonyId)) return prev;
+      const station = {
+        id: `station_${Date.now()}`,
+        name: name || `${colony.name} Station`,
+        colonyId,
+        systemSeed: prev.currentSystem.seed,
+        systemName: prev.currentSystem.name,
+        economy: economyType,
+        services: ['refuel', 'repair'],
+        lastRevenueCollection: Date.now(),
+        builtAt: Date.now(),
+      };
+      return {
+        ...prev,
+        credits: prev.credits - (isSb ? 0 : STATION_BUILD_COST),
+        ownedStations: [...(prev.ownedStations || []), station],
+      };
+    });
+  }, []);
+
+  const upgradeStationService = useCallback((stationId, serviceId) => {
+    setState(prev => {
+      const station = (prev.ownedStations || []).find(s => s.id === stationId);
+      if (!station) return prev;
+      const svc = STATION_SERVICES.find(s => s.id === serviceId);
+      if (!svc) return prev;
+      if (station.services?.includes(serviceId)) return prev;
+      const isSb = prev.saveMode === 'sandbox';
+      if (!isSb && prev.credits < svc.cost) return prev;
+      return {
+        ...prev,
+        credits: prev.credits - (isSb ? 0 : svc.cost),
+        ownedStations: prev.ownedStations.map(s => s.id === stationId ? { ...s, services: [...(s.services || []), serviceId] } : s),
+      };
+    });
+  }, []);
+
+  const collectStationRevenue = useCallback((stationId) => {
+    setState(prev => {
+      const station = (prev.ownedStations || []).find(s => s.id === stationId);
+      if (!station) return prev;
+      const revenue = calculateStationRevenue(station, station.lastRevenueCollection);
+      if (revenue <= 0) return prev;
+      return {
+        ...prev,
+        credits: prev.credits + revenue,
+        lifetimeEarnings: (prev.lifetimeEarnings || 0) + revenue,
+        ownedStations: prev.ownedStations.map(s => s.id === stationId ? { ...s, lastRevenueCollection: Date.now() } : s),
+      };
+    });
+  }, []);
+
+  // ===== FIGHTERS =====
+  const buildFighter = useCallback((fighterTypeId) => {
+    setState(prev => {
+      const fighterType = FIGHTER_TYPES.find(f => f.id === fighterTypeId);
+      if (!fighterType) return prev;
+      const shipType = SHIP_MAP[prev.ship.type];
+      const shipClass = shipType?.class || (prev.ship.type === 'custom' ? 2 : 1);
+      const capacity = getFighterHangarCapacity(shipClass);
+      if ((prev.fighters || []).filter(f => f.condition !== 'destroyed').length >= capacity) return prev;
+      const isSb = prev.saveMode === 'sandbox';
+      if (!isSb && prev.credits < fighterType.cost) return prev;
+      return {
+        ...prev,
+        credits: prev.credits - (isSb ? 0 : fighterType.cost),
+        fighters: [...(prev.fighters || []), {
+          id: `fighter_${Date.now()}`,
+          typeId: fighterTypeId,
+          name: fighterType.name,
+          damage: fighterType.damage,
+          hull: fighterType.hull,
+          condition: 'ready',
+          deployed: false,
+          pilotId: null,
+        }],
+      };
+    });
+  }, []);
+
+  const dismissFighter = useCallback((fighterId) => {
+    setState(prev => ({ ...prev, fighters: (prev.fighters || []).filter(f => f.id !== fighterId) }));
+  }, []);
+
+  // ===== EXOBIOLOGY =====
+  const recordExobiology = useCallback((speciesId, speciesName, bodyName, systemName) => {
+    setState(prev => {
+      const codex = { ...(prev.exobiologyCodex || {}) };
+      if (!codex[speciesId]) {
+        codex[speciesId] = { speciesName, firstSystem: systemName, firstBody: bodyName, date: Date.now(), count: 1 };
+      } else {
+        codex[speciesId] = { ...codex[speciesId], count: codex[speciesId].count + 1 };
+      }
+      return { ...prev, exobiologyCodex: codex };
+    });
+  }, []);
+
   const value = {
     state,
     isSandbox,
@@ -1652,6 +1766,12 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     completePassengerMission,
     startCombat,
     endCombat,
+    buildStation,
+    upgradeStationService,
+    collectStationRevenue,
+    buildFighter,
+    dismissFighter,
+    recordExobiology,
   };
 
   return (
