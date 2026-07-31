@@ -6,7 +6,7 @@ import { useGameState } from '@/lib/gameState';
 import { BODY_TYPES } from '@/lib/system';
 import { buildStationModel } from '@/lib/stationModelBuilder';
 
-export default function SystemOrrery({ onSelectBody, selectedBodyId }) {
+export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate }) {
   const mountRef = useRef(null);
   const sceneRef = useRef(null);
   const rendererRef = useRef(null);
@@ -19,7 +19,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId }) {
   const stationMeshesRef = useRef([]);
   const focusBodyRef = useRef(null);
 
-  const { state, getSystemData, scanBody, dockAtStation } = useGameState();
+  const { state, getSystemData, scanBody, dockAtStation, fssScanSystem, mapBody, landOnBody } = useGameState();
   const [selectedBody, setSelectedBody] = useState(null);
   const [hoveredBody, setHoveredBody] = useState(null);
   const [bodiesCollapsed, setBodiesCollapsed] = useState(state.settings?.miniScreen || false);
@@ -538,6 +538,17 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId }) {
     <div className="relative w-full h-full bg-black">
       <div ref={mountRef} className="w-full h-full" style={{ touchAction: 'none' }} />
 
+      {/* FSS scan prompt */}
+      {state.currentLocation !== 'station' && !state.fssScannedSystems?.[state.currentSystem.seed] && !selectedBody && (
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 border border-cyan-700 bg-black/95 p-4 text-center text-xs space-y-2 z-30">
+          <div className="text-cyan-300 font-bold uppercase">FSS Discovery Scanner</div>
+          <div className="text-cyan-600 text-[10px] max-w-48">Run a Full Spectrum System scan to discover all stellar bodies in this system.</div>
+          <button onClick={fssScanSystem} className="px-4 py-2 border border-cyan-500 text-cyan-300 hover:bg-cyan-950/30 text-xs font-bold">
+            RUN FSS SCAN
+          </button>
+        </div>
+      )}
+
       {/* Reset view button */}
       {selectedBody && (
         <button
@@ -687,6 +698,34 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId }) {
               </button>
             )}
           </div>
+          {selectedBody.landable && state.fssScannedSystems?.[state.currentSystem.seed] && (
+            <div className="border-t border-orange-900 pt-1 space-y-1">
+              {!state.mappedBodies?.[selectedBody.id] ? (
+                <button onClick={() => mapBody(selectedBody.id)} className="w-full py-1.5 border border-cyan-500 text-cyan-300 hover:bg-cyan-950/30 text-[10px] font-bold">
+                  LAUNCH SURFACE PROBES
+                </button>
+              ) : (
+                <>
+                  <div className="text-cyan-500 text-[10px]">✓ MAPPED — {selectedBody.surfaceSignals?.length || 0} SURFACE SIGNALS DETECTED</div>
+                  {selectedBody.surfaceSignals?.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {selectedBody.surfaceSignals.slice(0, 6).map(s => (
+                        <span key={s.id} className={`text-[9px] border px-1 ${s.type === 'biological' ? 'border-green-800 text-green-500' : s.type === 'geological' ? 'border-orange-800 text-orange-500' : 'border-cyan-800 text-cyan-500'}`}>
+                          {s.name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <button
+                    onClick={() => { landOnBody(selectedBody.id); if (onNavigate) onNavigate('survey'); }}
+                    className="w-full py-1.5 border border-green-500 text-green-300 hover:bg-green-950/30 text-[10px] font-bold"
+                  >
+                    LAND ON SURFACE
+                  </button>
+                </>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

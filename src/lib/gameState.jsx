@@ -101,6 +101,13 @@ function createInitialState() {
     materials: {}, // materialId -> qty
     // Navigation
     plottedRoute: null,
+    // Bookmarks
+    bookmarkedSystems: [],
+    // FSS & Surface scanning
+    fssScannedSystems: {},
+    mappedBodies: {},
+    surfaceDiscoveries: {},
+    currentSurfaceBody: null,
     // Fleet
     ownedShips: [],
     fleetCarriers: [],
@@ -146,6 +153,10 @@ export function GameStateProvider({ children }) {
           },
           ownedShips: parsed.ownedShips || [],
           fleetCarriers: parsed.fleetCarriers || [],
+          bookmarkedSystems: parsed.bookmarkedSystems || [],
+          fssScannedSystems: parsed.fssScannedSystems || {},
+          mappedBodies: parsed.mappedBodies || {},
+          surfaceDiscoveries: parsed.surfaceDiscoveries || {},
         };
           // Regenerate system data for the current system (not persisted since it's large)
           if (merged.currentSystem) {
@@ -500,7 +511,11 @@ export function GameStateProvider({ children }) {
           updatedDiscovered[seed] = sys;
         }
       }
-      const totalPayout = totalValue + systemBonus;
+      let surfaceValue = 0;
+      for (const [key, disc] of Object.entries(prev.surfaceDiscoveries || {})) {
+        surfaceValue += disc.value || 0;
+      }
+      const totalPayout = totalValue + systemBonus + surfaceValue;
       if (totalPayout === 0) return prev;
       return {
         ...prev,
@@ -508,6 +523,7 @@ export function GameStateProvider({ children }) {
         soldExplorationData: [...prev.soldExplorationData, { value: totalPayout, date: Date.now(), bodies: soldBodies.length }],
         scannedBodies: {},
         discoveredSystems: updatedDiscovered,
+        surfaceDiscoveries: {},
         rank: {
           ...prev.rank,
           exploration: updateRank(prev.rank.exploration, totalPayout),
@@ -602,6 +618,59 @@ export function GameStateProvider({ children }) {
     });
   }, []);
 
+  // Bookmark a system
+  const addBookmark = useCallback((system) => {
+    setState(prev => {
+      if (prev.bookmarkedSystems.find(s => s.seed === system.seed)) return prev;
+      return { ...prev, bookmarkedSystems: [...prev.bookmarkedSystems, {
+        seed: system.seed, name: system.name, x: system.x, y: system.y, z: system.z,
+        starClass: system.starClass, security: system.security, population: system.population,
+      }] };
+    });
+  }, []);
+
+  const removeBookmark = useCallback((seed) => {
+    setState(prev => ({ ...prev, bookmarkedSystems: prev.bookmarkedSystems.filter(s => s.seed !== seed) }));
+  }, []);
+
+  // FSS scan — reveals all bodies in the system
+  const fssScanSystem = useCallback(() => {
+    setState(prev => ({
+      ...prev,
+      fssScannedSystems: { ...prev.fssScannedSystems, [prev.currentSystem.seed]: true },
+    }));
+  }, []);
+
+  // Map a body with surface probes
+  const mapBody = useCallback((bodyId) => {
+    setState(prev => ({
+      ...prev,
+      mappedBodies: { ...prev.mappedBodies, [bodyId]: { mapped: true, date: Date.now() } },
+    }));
+  }, []);
+
+  // Collect a surface discovery
+  const collectSurfaceDiscovery = useCallback((bodyId, signal) => {
+    setState(prev => {
+      const key = `${bodyId}:${signal.id}`;
+      if (prev.surfaceDiscoveries[key]) return prev;
+      return {
+        ...prev,
+        surfaceDiscoveries: { ...prev.surfaceDiscoveries, [key]: { ...signal, bodyId, date: Date.now() } },
+      };
+    });
+  }, []);
+
+  // Land on a body
+  const landOnBody = useCallback((bodyId) => {
+    setState(prev => ({ ...prev, currentLocation: 'surface', currentSurfaceBody: bodyId }));
+  }, []);
+
+  // Depart from surface
+  const departSurface = useCallback(() => {
+    setState(prev => ({ ...prev, currentLocation: 'system', currentSurfaceBody: null }));
+  }, []);
+
   // Reset game
   const resetGame = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY);
@@ -638,6 +707,13 @@ export function GameStateProvider({ children }) {
     renameCarrier,
     decommissionCarrier,
     updateSettings,
+    addBookmark,
+    removeBookmark,
+    fssScanSystem,
+    mapBody,
+    collectSurfaceDiscovery,
+    landOnBody,
+    departSurface,
   };
 
   return (

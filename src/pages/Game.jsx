@@ -18,6 +18,7 @@ import CarrierScreen from '@/components/game/CarrierScreen';
 import AchievementsScreen from '@/components/game/AchievementsScreen';
 import SettingsScreen from '@/components/game/SettingsScreen';
 import OutfittingScreen from '@/components/game/OutfittingScreen';
+import SurfaceSurvey from '@/components/game/SurfaceSurvey';
 
 function GameContent() {
   const { state } = useGameState();
@@ -36,7 +37,7 @@ function GameContent() {
       case 'galaxy':
         return <GalaxyMap onJumpToSystem={() => setScreen('system')} />;
       case 'system':
-        return <SystemOrrery />;
+        return <SystemOrrery onNavigate={handleNavigate} />;
       case 'exploration':
         return <ExplorationScreen />;
       case 'station':
@@ -61,6 +62,8 @@ function GameContent() {
         return <SettingsScreen />;
       case 'outfitting':
         return <OutfittingScreen />;
+      case 'survey':
+        return <SurfaceSurvey />;
       default:
         return <SystemOrrery />;
     }

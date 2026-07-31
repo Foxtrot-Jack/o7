@@ -1,579 +1,335 @@
 // ============================================================
-// SHIP WIREFRAMES — Detailed per-ship 3D shapes
-// Each ship has a recognizable silhouette inspired by Elite Dangerous
+// SHIP WIREFRAMES — Clean, minimal, recognizable shapes
+// "Less is more" — each ship uses 3-6 pieces max
+// Hull + Wings + Engines = instantly readable as a ship
 // ============================================================
 import * as THREE from 'three';
 import { SHIP_MAP } from './gameState';
 
-const WIRE = new THREE.MeshBasicMaterial({ color: 0xff8800, wireframe: true });
-const ACCENT = new THREE.MeshBasicMaterial({ color: 0xff4400, wireframe: true });
-const DETAIL = new THREE.MeshBasicMaterial({ color: 0xffaa44, wireframe: true });
+const W = new THREE.MeshBasicMaterial({ color: 0xff8800, wireframe: true });
+const E = new THREE.MeshBasicMaterial({ color: 0xff4400, wireframe: true });
+const C = new THREE.MeshBasicMaterial({ color: 0xffcc66, wireframe: true });
 
-function addMesh(group, geom, mat, pos = [0,0,0], rot = [0,0,0]) {
-  const m = new THREE.Mesh(geom, mat);
-  m.position.set(...pos);
-  m.rotation.set(...rot);
-  group.add(m);
+function p(geo, mat, x, y, z, rx, ry, rz) {
+  const m = new THREE.Mesh(geo, mat);
+  m.position.set(x||0, y||0, z||0);
+  m.rotation.set(rx||0, ry||0, rz||0);
   return m;
 }
 
-export function buildShipWireframe(shipTypeId) {
-  const shipType = SHIP_MAP[shipTypeId];
-  if (!shipType) return new THREE.Group();
-  const s = 0.7 + (shipType.class - 1) * 0.25;
-  const g = new THREE.Group();
+// Geometry helpers — all low-poly for clean wireframe
+const cone4 = (r, h) => new THREE.ConeGeometry(r, h, 4);
+const cone6 = (r, h) => new THREE.ConeGeometry(r, h, 6);
+const box = (w, h, d) => new THREE.BoxGeometry(w, h, d);
+const cyl = (r, h) => new THREE.CylinderGeometry(r, r, h, 6);
+const eng = (r, h) => new THREE.CylinderGeometry(r, r * 0.85, h, 6);
+const wing = (w, d) => new THREE.BoxGeometry(w, 0.02, d);
 
-  const builder = SHIP_BUILDERS[shipTypeId];
-  if (builder) {
-    builder(g, s);
-  } else {
-    buildGeneric(g, s, shipTypeId);
-  }
+// Orientation: Nose = -Z, Engines = +Z, Left = -X, Right = +X, Up = +Y
+// Cone: rx = -PI/2 makes tip point -Z (forward)
+// Cylinder: rx = PI/2 makes axis go along Z (horizontal)
+
+export function buildShipWireframe(id) {
+  const st = SHIP_MAP[id];
+  if (!st) return new THREE.Group();
+  const s = 0.6 + (st.class - 1) * 0.2;
+  const g = new THREE.Group();
+  const builder = BUILDERS[id] || buildGeneric;
+  builder(g, s);
   return g;
 }
 
-// ---- Per-ship builders ----
+// ---- Small fighters (Class 1) ----
 
 function buildSidewinder(g, s) {
-  // Compact wedge with flat top, twin rear engines, ventral fin
-  addMesh(g, new THREE.ConeGeometry(0.45 * s, 1.6 * s, 4), WIRE, [0, 0, 0], [-Math.PI/2, 0, Math.PI/4]);
-  // Flattened top
-  addMesh(g, new THREE.BoxGeometry(0.5*s, 0.08, 0.9*s), WIRE, [0, 0.12*s, -0.1*s]);
-  // Wings — forward swept
-  for (const i of [-1, 1]) {
-    const w = new THREE.Mesh(new THREE.BoxGeometry(0.7*s, 0.03, 0.5*s), WIRE);
-    addMesh(g, w.geometry, WIRE, [i*0.4*s, -0.02*s, 0.15*s], [0, i*0.4, 0]);
-  }
-  // Twin engines at rear
-  for (const i of [-1, 1]) {
-    addMesh(g, new THREE.CylinderGeometry(0.12*s, 0.1*s, 0.4*s, 6), ACCENT, [i*0.18*s, 0, 0.8*s], [Math.PI/2, 0, 0]);
-  }
-  // Ventral fin
-  addMesh(g, new THREE.BoxGeometry(0.04, 0.25*s, 0.3*s), WIRE, [0, -0.2*s, 0.3*s]);
-  // Cockpit
-  addMesh(g, new THREE.SphereGeometry(0.12*s, 6, 4), DETAIL, [0, 0.14*s, -0.4*s]);
+  g.add(p(cone4(0.35*s, 1.3*s), W, 0, 0, 0, -Math.PI/2));
+  g.add(p(wing(0.5*s, 0.35*s), W, 0.35*s, 0, 0.05*s, 0, -0.2));
+  g.add(p(wing(0.5*s, 0.35*s), W, -0.35*s, 0, 0.05*s, 0, 0.2));
+  g.add(p(eng(0.08*s, 0.2*s), E, 0.1*s, 0, 0.6*s, Math.PI/2));
+  g.add(p(eng(0.08*s, 0.2*s), E, -0.1*s, 0, 0.6*s, Math.PI/2));
 }
 
 function buildEagle(g, s) {
-  // Central pod with 3 wings, single engine
-  addMesh(g, new THREE.ConeGeometry(0.35*s, 1.2*s, 6), WIRE, [0, 0, 0], [-Math.PI/2, 0, 0]);
-  // Three wings evenly spaced
-  for (let i = 0; i < 3; i++) {
-    const angle = (i / 3) * Math.PI * 2;
-    addMesh(g, new THREE.BoxGeometry(0.6*s, 0.03, 0.35*s), WIRE,
-      [Math.cos(angle)*0.3*s, -0.05*s, 0.1*s], [0, angle, 0]);
-  }
-  // Engine
-  addMesh(g, new THREE.CylinderGeometry(0.15*s, 0.12*s, 0.35*s, 6), ACCENT, [0, 0, 0.65*s], [Math.PI/2, 0, 0]);
-  // Cockpit
-  addMesh(g, new THREE.SphereGeometry(0.1*s, 6, 4), DETAIL, [0, 0.1*s, -0.35*s]);
+  g.add(p(cone4(0.3*s, 1.0*s), W, 0, 0, 0, -Math.PI/2));
+  g.add(p(wing(0.4*s, 0.3*s), W, 0.28*s, 0, 0.05*s, 0, 0.25));
+  g.add(p(wing(0.4*s, 0.3*s), W, -0.28*s, 0, 0.05*s, 0, -0.25));
+  g.add(p(eng(0.1*s, 0.25*s), E, 0, 0, 0.5*s, Math.PI/2));
 }
 
 function buildHauler(g, s) {
-  // Boxy hull with underbelly cargo pod
-  addMesh(g, new THREE.BoxGeometry(0.7*s, 0.5*s, 1.6*s), WIRE);
-  // Cargo pod underneath
-  addMesh(g, new THREE.BoxGeometry(0.5*s, 0.3*s, 1.0*s), ACCENT, [0, -0.35*s, 0]);
-  // Single engine
-  addMesh(g, new THREE.CylinderGeometry(0.15*s, 0.12*s, 0.35*s, 6), ACCENT, [0, 0, 0.9*s], [Math.PI/2, 0, 0]);
-  // Cockpit
-  addMesh(g, new THREE.BoxGeometry(0.3*s, 0.2*s, 0.2*s), DETAIL, [0, 0.3*s, -0.75*s]);
-  // Side fins
-  for (const i of [-1, 1]) {
-    addMesh(g, new THREE.BoxGeometry(0.04, 0.3*s, 0.4*s), WIRE, [i*0.4*s, 0.1*s, 0.3*s]);
-  }
+  g.add(p(box(0.5*s, 0.4*s, 1.3*s), W));
+  g.add(p(box(0.35*s, 0.2*s, 0.8*s), W, 0, -0.28*s, 0));
+  g.add(p(eng(0.12*s, 0.25*s), E, 0, 0, 0.7*s, Math.PI/2));
+  g.add(p(box(0.25*s, 0.15*s, 0.15*s), C, 0, 0.25*s, -0.65*s));
 }
 
 function buildAdder(g, s) {
-  // Wedge cargo ship with wide wings
-  addMesh(g, new THREE.BoxGeometry(0.8*s, 0.5*s, 1.4*s), WIRE);
-  // Wide wings
-  for (const i of [-1, 1]) {
-    addMesh(g, new THREE.BoxGeometry(0.7*s, 0.04, 0.6*s), WIRE, [i*0.6*s, -0.05*s, 0.1*s], [0, i*0.2, 0]);
-  }
-  // Twin engines on wingtips
-  for (const i of [-1, 1]) {
-    addMesh(g, new THREE.CylinderGeometry(0.12*s, 0.1*s, 0.35*s, 6), ACCENT, [i*0.7*s, -0.05*s, 0.5*s], [Math.PI/2, 0, 0]);
-  }
-  // Cockpit
-  addMesh(g, new THREE.SphereGeometry(0.15*s, 6, 4), DETAIL, [0, 0.2*s, -0.55*s]);
-}
-
-function buildCobra(g, s) {
-  // Long body, swept wings, dorsal fin, twin engines
-  addMesh(g, new THREE.BoxGeometry(0.55*s, 0.4*s, 1.6*s), WIRE);
-  // Pointed nose
-  addMesh(g, new THREE.ConeGeometry(0.28*s, 0.5*s, 4), WIRE, [0, 0, -0.95*s], [-Math.PI/2, 0, Math.PI/4]);
-  // Swept wings
-  for (const i of [-1, 1]) {
-    addMesh(g, new THREE.BoxGeometry(0.9*s, 0.03, 0.55*s), WIRE, [i*0.6*s, -0.05*s, 0.15*s], [0, i*0.35, 0]);
-  }
-  // Dorsal fin
-  addMesh(g, new THREE.BoxGeometry(0.04, 0.35*s, 0.35*s), WIRE, [0, 0.3*s, 0.25*s]);
-  // Twin engines
-  for (const i of [-1, 1]) {
-    addMesh(g, new THREE.CylinderGeometry(0.14*s, 0.11*s, 0.4*s, 6), ACCENT, [i*0.22*s, 0, 0.9*s], [Math.PI/2, 0, 0]);
-  }
-  // Cockpit
-  addMesh(g, new THREE.SphereGeometry(0.14*s, 6, 4), DETAIL, [0, 0.2*s, -0.5*s]);
+  g.add(p(box(0.55*s, 0.4*s, 1.2*s), W));
+  g.add(p(wing(0.5*s, 0.5*s), W, 0.45*s, -0.05*s, 0));
+  g.add(p(wing(0.5*s, 0.5*s), W, -0.45*s, -0.05*s, 0));
+  g.add(p(eng(0.1*s, 0.2*s), E, 0.4*s, -0.05*s, 0.5*s, Math.PI/2));
+  g.add(p(eng(0.1*s, 0.2*s), E, -0.4*s, -0.05*s, 0.5*s, Math.PI/2));
 }
 
 function buildViper(g, s) {
-  // Sleek combat ship with 4 engines
-  addMesh(g, new THREE.ConeGeometry(0.4*s, 1.8*s, 4), WIRE, [0, 0, 0], [-Math.PI/2, 0, Math.PI/4]);
-  // Wings
-  for (const i of [-1, 1]) {
-    addMesh(g, new THREE.BoxGeometry(0.7*s, 0.03, 0.5*s), WIRE, [i*0.5*s, -0.05*s, 0.1*s], [0, i*0.25, 0]);
-  }
-  // Four engines
-  for (const i of [-1, 1]) {
-    for (const j of [-1, 1]) {
-      addMesh(g, new THREE.CylinderGeometry(0.1*s, 0.08*s, 0.3*s, 6), ACCENT, [i*0.15*s, j*0.12*s, 0.85*s], [Math.PI/2, 0, 0]);
-    }
-  }
-  // Cockpit
-  addMesh(g, new THREE.BoxGeometry(0.22*s, 0.14*s, 0.3*s), DETAIL, [0, 0.18*s, -0.5*s]);
+  g.add(p(cone4(0.3*s, 1.5*s), W, 0, 0, 0, -Math.PI/2));
+  g.add(p(wing(0.45*s, 0.4*s), W, 0.32*s, 0, 0.1*s, 0, -0.2));
+  g.add(p(wing(0.45*s, 0.4*s), W, -0.32*s, 0, 0.1*s, 0, 0.2));
+  g.add(p(eng(0.09*s, 0.2*s), E, 0.12*s, 0, 0.7*s, Math.PI/2));
+  g.add(p(eng(0.09*s, 0.2*s), E, -0.12*s, 0, 0.7*s, Math.PI/2));
+}
+
+// ---- Medium ships (Class 2) ----
+
+function buildCobra(g, s) {
+  g.add(p(box(0.45*s, 0.3*s, 1.5*s), W));
+  g.add(p(cone4(0.22*s, 0.4*s), W, 0, 0, -0.85*s, -Math.PI/2));
+  g.add(p(wing(0.65*s, 0.5*s), W, 0.5*s, -0.05*s, 0.1*s, 0, -0.3));
+  g.add(p(wing(0.65*s, 0.5*s), W, -0.5*s, -0.05*s, 0.1*s, 0, 0.3));
+  g.add(p(eng(0.12*s, 0.25*s), E, 0.2*s, 0, 0.75*s, Math.PI/2));
+  g.add(p(eng(0.12*s, 0.25*s), E, -0.2*s, 0, 0.75*s, Math.PI/2));
 }
 
 function buildType6(g, s) {
-  // Boxy transport with side pods
-  addMesh(g, new THREE.BoxGeometry(0.8*s, 0.7*s, 1.8*s), WIRE);
-  // Side cargo pods
-  for (const i of [-1, 1]) {
-    addMesh(g, new THREE.BoxGeometry(0.3*s, 0.4*s, 1.2*s), ACCENT, [i*0.55*s, -0.1*s, 0]);
-  }
-  // Twin engines
-  for (const i of [-1, 1]) {
-    addMesh(g, new THREE.CylinderGeometry(0.13*s, 0.1*s, 0.35*s, 6), ACCENT, [i*0.3*s, 0, 0.95*s], [Math.PI/2, 0, 0]);
-  }
-  // Cockpit
-  addMesh(g, new THREE.BoxGeometry(0.35*s, 0.25*s, 0.2*s), DETAIL, [0, 0.35*s, -0.85*s]);
+  g.add(p(box(0.6*s, 0.55*s, 1.6*s), W));
+  g.add(p(box(0.2*s, 0.3*s, 1.0*s), W, 0.42*s, -0.1*s, 0));
+  g.add(p(box(0.2*s, 0.3*s, 1.0*s), W, -0.42*s, -0.1*s, 0));
+  g.add(p(eng(0.12*s, 0.25*s), E, 0.22*s, 0, 0.8*s, Math.PI/2));
+  g.add(p(eng(0.12*s, 0.25*s), E, -0.22*s, 0, 0.8*s, Math.PI/2));
 }
 
 function buildDiamondback(g, s) {
-  // Long thin body with large sensor dish on top
-  addMesh(g, new THREE.CylinderGeometry(0.35*s, 0.25*s, 1.8*s, 8), WIRE, [0, 0, 0], [0, 0, Math.PI/2]);
-  // Sensor dish
-  addMesh(g, new THREE.SphereGeometry(0.3*s, 8, 4, 0, Math.PI*2, 0, Math.PI/2), DETAIL, [0, 0.35*s, -0.2*s]);
-  // Wings
-  for (const i of [-1, 1]) {
-    addMesh(g, new THREE.BoxGeometry(0.8*s, 0.03, 0.7*s), WIRE, [i*0.5*s, 0, 0.1*s]);
-  }
-  // Twin engines
-  for (const i of [-1, 1]) {
-    addMesh(g, new THREE.CylinderGeometry(0.13*s, 0.1*s, 0.4*s, 6), ACCENT, [i*0.25*s, 0, 0.95*s], [Math.PI/2, 0, 0]);
-  }
-}
-
-function buildAsp(g, s) {
-  // Wide flat body with twin booms and engine nacelles
-  addMesh(g, new THREE.BoxGeometry(0.8*s, 0.35*s, 1.5*s), WIRE);
-  // Twin booms extending rear
-  for (const i of [-1, 1]) {
-    addMesh(g, new THREE.BoxGeometry(0.2*s, 0.2*s, 0.8*s), WIRE, [i*0.4*s, 0, 0.6*s]);
-  }
-  // Engine nacelles at end of booms
-  for (const i of [-1, 1]) {
-    addMesh(g, new THREE.CylinderGeometry(0.18*s, 0.15*s, 0.4*s, 8), ACCENT, [i*0.4*s, 0, 1.1*s], [Math.PI/2, 0, 0]);
-  }
-  // Wings
-  for (const i of [-1, 1]) {
-    addMesh(g, new THREE.BoxGeometry(0.6*s, 0.03, 0.6*s), WIRE, [i*0.65*s, -0.05*s, 0]);
-  }
-  // Cockpit — large canopy
-  addMesh(g, new THREE.SphereGeometry(0.2*s, 8, 6), DETAIL, [0, 0.18*s, -0.5*s]);
-}
-
-function buildType7(g, s) {
-  // Large boxy transport
-  addMesh(g, new THREE.BoxGeometry(0.9*s, 0.8*s, 2.0*s), WIRE);
-  // Cargo bay detail
-  for (const i of [-1, 1]) {
-    addMesh(g, new THREE.BoxGeometry(0.04, 0.4*s, 0.6*s), ACCENT, [i*0.45*s, -0.1*s, 0.2*s]);
-  }
-  // Twin engines
-  for (const i of [-1, 1]) {
-    addMesh(g, new THREE.CylinderGeometry(0.14*s, 0.11*s, 0.4*s, 6), ACCENT, [i*0.3*s, 0, 1.05*s], [Math.PI/2, 0, 0]);
-  }
-  // Cockpit
-  addMesh(g, new THREE.BoxGeometry(0.4*s, 0.3*s, 0.2*s), DETAIL, [0, 0.4*s, -0.95*s]);
-}
-
-function buildPython(g, s) {
-  // Wide rectangular body with side nacelles
-  addMesh(g, new THREE.BoxGeometry(0.9*s, 0.5*s, 1.8*s), WIRE);
-  // Side nacelles
-  for (const i of [-1, 1]) {
-    addMesh(g, new THREE.BoxGeometry(0.25*s, 0.3*s, 1.2*s), ACCENT, [i*0.55*s, -0.05*s, 0.2*s]);
-  }
-  // Engines in nacelles
-  for (const i of [-1, 1]) {
-    addMesh(g, new THREE.CylinderGeometry(0.15*s, 0.12*s, 0.35*s, 6), ACCENT, [i*0.55*s, -0.05*s, 0.9*s], [Math.PI/2, 0, 0]);
-  }
-  // Flat top with cockpit
-  addMesh(g, new THREE.BoxGeometry(0.5*s, 0.15*s, 0.5*s), DETAIL, [0, 0.3*s, -0.4*s]);
-  // Rounded nose
-  addMesh(g, new THREE.SphereGeometry(0.3*s, 8, 4, 0, Math.PI*2, 0, Math.PI/2), WIRE, [0, 0, -0.9*s], [-Math.PI/2, 0, 0]);
-}
-
-function buildAnaconda(g, s) {
-  // Very long narrow body with dorsal fin, multiple engines
-  addMesh(g, new THREE.CylinderGeometry(0.4*s, 0.3*s, 2.8*s, 8), WIRE, [0, 0, 0], [0, 0, Math.PI/2]);
-  // Pointed nose
-  addMesh(g, new THREE.ConeGeometry(0.3*s, 0.6*s, 8), WIRE, [0, 0, -1.7*s], [Math.PI/2, 0, 0]);
-  // Dorsal fin
-  addMesh(g, new THREE.BoxGeometry(0.04, 0.5*s, 0.6*s), WIRE, [0, 0.35*s, 0.2*s]);
-  // Wings
-  for (const i of [-1, 1]) {
-    addMesh(g, new THREE.BoxGeometry(0.8*s, 0.03, 0.7*s), WIRE, [i*0.5*s, -0.05*s, 0.3*s]);
-  }
-  // Triple engine arrangement
-  addMesh(g, new THREE.CylinderGeometry(0.16*s, 0.13*s, 0.4*s, 8), ACCENT, [0, 0, 1.5*s], [Math.PI/2, 0, 0]);
-  for (const i of [-1, 1]) {
-    addMesh(g, new THREE.CylinderGeometry(0.13*s, 0.1*s, 0.35*s, 6), ACCENT, [i*0.25*s, 0, 1.4*s], [Math.PI/2, 0, 0]);
-  }
-  // Cockpit
-  addMesh(g, new THREE.BoxGeometry(0.3*s, 0.18*s, 0.35*s), DETAIL, [0, 0.25*s, -1.0*s]);
-  // Sensor array on nose
-  addMesh(g, new THREE.BoxGeometry(0.04, 0.2*s, 0.04), DETAIL, [0, 0.2*s, -1.3*s]);
-}
-
-function buildVulture(g, s) {
-  // Wide fighter with large engine nacelles
-  addMesh(g, new THREE.ConeGeometry(0.35*s, 1.4*s, 4), WIRE, [0, 0, 0], [-Math.PI/2, 0, Math.PI/4]);
-  // Large engine nacelles on sides
-  for (const i of [-1, 1]) {
-    addMesh(g, new THREE.CylinderGeometry(0.22*s, 0.18*s, 0.9*s, 8), ACCENT, [i*0.45*s, -0.05*s, 0.3*s], [Math.PI/2, 0, 0]);
-  }
-  // Wings connecting nacelles
-  for (const i of [-1, 1]) {
-    addMesh(g, new THREE.BoxGeometry(0.3*s, 0.03, 0.5*s), WIRE, [i*0.3*s, -0.05*s, 0]);
-  }
-  // Cockpit
-  addMesh(g, new THREE.SphereGeometry(0.18*s, 8, 6), DETAIL, [0, 0.15*s, -0.4*s]);
-}
-
-function buildImperialCourier(g, s) {
-  // Sleek dart shape
-  addMesh(g, new THREE.ConeGeometry(0.3*s, 1.8*s, 6), WIRE, [0, 0, 0], [-Math.PI/2, 0, 0]);
-  // Swept wings
-  for (const i of [-1, 1]) {
-    addMesh(g, new THREE.BoxGeometry(0.9*s, 0.02, 0.6*s), ACCENT, [i*0.5*s, -0.03*s, 0.15*s], [0, i*0.3, 0]);
-  }
-  // Twin engines
-  for (const i of [-1, 1]) {
-    addMesh(g, new THREE.CylinderGeometry(0.12*s, 0.1*s, 0.35*s, 6), ACCENT, [i*0.15*s, 0, 0.85*s], [Math.PI/2, 0, 0]);
-  }
-  // Cockpit
-  addMesh(g, new THREE.SphereGeometry(0.12*s, 6, 4), DETAIL, [0, 0.08*s, -0.5*s]);
-}
-
-function buildImperialClipper(g, s) {
-  // Wide swept-wing design
-  addMesh(g, new THREE.ConeGeometry(0.35*s, 2.0*s, 6), WIRE, [0, 0, 0], [-Math.PI/2, 0, 0]);
-  // Large swept wings
-  for (const i of [-1, 1]) {
-    addMesh(g, new THREE.BoxGeometry(1.2*s, 0.02, 0.8*s), ACCENT, [i*0.7*s, -0.03*s, 0.1*s], [0, i*0.35, 0]);
-  }
-  // Twin engines on wings
-  for (const i of [-1, 1]) {
-    addMesh(g, new THREE.CylinderGeometry(0.15*s, 0.12*s, 0.4*s, 6), ACCENT, [i*0.5*s, -0.03*s, 0.7*s], [Math.PI/2, 0, 0]);
-  }
-  // Fin
-  addMesh(g, new THREE.BoxGeometry(0.04, 0.4*s, 0.4*s), WIRE, [0, 0.3*s, 0.3*s]);
-  // Cockpit
-  addMesh(g, new THREE.SphereGeometry(0.15*s, 8, 6), DETAIL, [0, 0.15*s, -0.6*s]);
-}
-
-function buildImperialCutter(g, s) {
-  // Very large elegant swept design
-  addMesh(g, new THREE.ConeGeometry(0.4*s, 2.5*s, 6), WIRE, [0, 0, 0], [-Math.PI/2, 0, 0]);
-  // Very large swept wings
-  for (const i of [-1, 1]) {
-    addMesh(g, new THREE.BoxGeometry(1.5*s, 0.02, 1.0*s), ACCENT, [i*0.8*s, -0.03*s, 0.15*s], [0, i*0.4, 0]);
-  }
-  // Quad engines
-  for (const i of [-1, 1]) {
-    for (const j of [0, 1]) {
-      addMesh(g, new THREE.CylinderGeometry(0.14*s, 0.11*s, 0.4*s, 6), ACCENT, [i*0.5*s, -0.03*s + j*0.12*s, 1.0*s], [Math.PI/2, 0, 0]);
-    }
-  }
-  // Fin
-  addMesh(g, new THREE.BoxGeometry(0.04, 0.5*s, 0.5*s), WIRE, [0, 0.35*s, 0.3*s]);
-  // Cockpit
-  addMesh(g, new THREE.SphereGeometry(0.18*s, 8, 6), DETAIL, [0, 0.18*s, -0.8*s]);
-}
-
-function buildFederalCorvette(g, s) {
-  // Large military battleship
-  addMesh(g, new THREE.BoxGeometry(0.7*s, 0.6*s, 2.5*s), WIRE);
-  // Pointed nose
-  addMesh(g, new THREE.ConeGeometry(0.35*s, 0.8*s, 4), WIRE, [0, 0, -1.65*s], [Math.PI/2, 0, Math.PI/4]);
-  // Military wings with weapon mounts
-  for (const i of [-1, 1]) {
-    addMesh(g, new THREE.BoxGeometry(0.9*s, 0.08, 0.8*s), ACCENT, [i*0.6*s, -0.05*s, 0.2*s]);
-  }
-  // Quad engine nacelles
-  for (const i of [-1, 1]) {
-    for (const j of [-1, 1]) {
-      addMesh(g, new THREE.CylinderGeometry(0.13*s, 0.1*s, 0.4*s, 6), ACCENT, [i*0.2*s, j*0.15*s, 1.3*s], [Math.PI/2, 0, 0]);
-    }
-  }
-  // Bridge tower
-  addMesh(g, new THREE.BoxGeometry(0.4*s, 0.25*s, 0.4*s), DETAIL, [0, 0.4*s, -0.3*s]);
-}
-
-function buildFederalDropship(g, s) {
-  // Blocky military ship with side pods
-  addMesh(g, new THREE.BoxGeometry(0.8*s, 0.6*s, 1.8*s), WIRE);
-  // Side pods
-  for (const i of [-1, 1]) {
-    addMesh(g, new THREE.BoxGeometry(0.3*s, 0.35*s, 0.8*s), ACCENT, [i*0.5*s, -0.05*s, 0.1*s]);
-  }
-  // Twin engines
-  for (const i of [-1, 1]) {
-    addMesh(g, new THREE.CylinderGeometry(0.14*s, 0.11*s, 0.35*s, 6), ACCENT, [i*0.25*s, 0, 0.95*s], [Math.PI/2, 0, 0]);
-  }
-  // Cockpit
-  addMesh(g, new THREE.BoxGeometry(0.35*s, 0.22*s, 0.25*s), DETAIL, [0, 0.35*s, -0.8*s]);
-}
-
-function buildAllianceChieftain(g, s) {
-  // Angular combat ship with forward-swept wings
-  addMesh(g, new THREE.ConeGeometry(0.4*s, 1.8*s, 4), WIRE, [0, 0, 0], [-Math.PI/2, 0, Math.PI/4]);
-  // Forward-swept wings
-  for (const i of [-1, 1]) {
-    addMesh(g, new THREE.BoxGeometry(0.8*s, 0.04, 0.6*s), ACCENT, [i*0.5*s, -0.05*s, 0.2*s], [0, i*-0.3, 0]);
-  }
-  // Twin engine nacelles
-  for (const i of [-1, 1]) {
-    addMesh(g, new THREE.CylinderGeometry(0.16*s, 0.13*s, 0.5*s, 8), ACCENT, [i*0.3*s, 0, 0.9*s], [Math.PI/2, 0, 0]);
-  }
-  // Cockpit
-  addMesh(g, new THREE.BoxGeometry(0.25*s, 0.16*s, 0.3*s), DETAIL, [0, 0.2*s, -0.55*s]);
-  // Tail fins
-  for (const i of [-1, 1]) {
-    addMesh(g, new THREE.BoxGeometry(0.04, 0.3*s, 0.25*s), WIRE, [i*0.2*s, 0.2*s, 0.6*s]);
-  }
-}
-
-function buildKrait(g, s) {
-  // Wide flat body with twin booms
-  addMesh(g, new THREE.BoxGeometry(0.9*s, 0.35*s, 1.5*s), WIRE);
-  // Twin booms
-  for (const i of [-1, 1]) {
-    addMesh(g, new THREE.BoxGeometry(0.18*s, 0.18*s, 0.7*s), WIRE, [i*0.4*s, 0, 0.55*s]);
-  }
-  // Engine nacelles
-  for (const i of [-1, 1]) {
-    addMesh(g, new THREE.CylinderGeometry(0.16*s, 0.13*s, 0.4*s, 8), ACCENT, [i*0.4*s, 0, 1.0*s], [Math.PI/2, 0, 0]);
-  }
-  // Wings
-  for (const i of [-1, 1]) {
-    addMesh(g, new THREE.BoxGeometry(0.5*s, 0.03, 0.5*s), WIRE, [i*0.6*s, -0.05*s, 0]);
-  }
-  // Cockpit
-  addMesh(g, new THREE.SphereGeometry(0.18*s, 8, 6), DETAIL, [0, 0.15*s, -0.45*s]);
-}
-
-function buildMamba(g, s) {
-  // Sleek racing-inspired fighter
-  addMesh(g, new THREE.ConeGeometry(0.35*s, 1.8*s, 4), WIRE, [0, 0, 0], [-Math.PI/2, 0, Math.PI/4]);
-  // Swept wings
-  for (const i of [-1, 1]) {
-    addMesh(g, new THREE.BoxGeometry(0.6*s, 0.03, 0.5*s), ACCENT, [i*0.4*s, -0.05*s, 0.2*s], [0, i*0.35, 0]);
-  }
-  // Large single engine
-  addMesh(g, new THREE.CylinderGeometry(0.2*s, 0.16*s, 0.45*s, 8), ACCENT, [0, 0, 0.9*s], [Math.PI/2, 0, 0]);
-  // Cockpit
-  addMesh(g, new THREE.SphereGeometry(0.15*s, 8, 6), DETAIL, [0, 0.15*s, -0.5*s]);
-}
-
-function buildType9(g, s) {
-  // Very large boxy freighter
-  addMesh(g, new THREE.BoxGeometry(1.0*s, 0.9*s, 2.2*s), WIRE);
-  // Cargo bay lines
-  for (let i = -1; i <= 1; i++) {
-    addMesh(g, new THREE.BoxGeometry(1.02*s, 0.02, 0.02), ACCENT, [0, 0, i*0.5*s]);
-  }
-  // Four engine nacelles
-  for (const i of [-1, 1]) {
-    for (const j of [-1, 1]) {
-      addMesh(g, new THREE.CylinderGeometry(0.14*s, 0.11*s, 0.4*s, 6), ACCENT, [i*0.35*s, j*0.25*s, 1.15*s], [Math.PI/2, 0, 0]);
-    }
-  }
-  // Cockpit
-  addMesh(g, new THREE.BoxGeometry(0.4*s, 0.3*s, 0.2*s), DETAIL, [0, 0.45*s, -1.0*s]);
-}
-
-function buildOrca(g, s) {
-  // Sleek passenger liner
-  addMesh(g, new THREE.CylinderGeometry(0.35*s, 0.25*s, 2.2*s, 8), WIRE, [0, 0, 0], [0, 0, Math.PI/2]);
-  // Pointed nose
-  addMesh(g, new THREE.ConeGeometry(0.25*s, 0.5*s, 8), WIRE, [0, 0, -1.35*s], [Math.PI/2, 0, 0]);
-  // Observation lounge ring
-  addMesh(g, new THREE.TorusGeometry(0.35*s, 0.06, 4, 12), ACCENT, [0, 0, -0.3*s], [0, Math.PI/2, 0]);
-  // Wings
-  for (const i of [-1, 1]) {
-    addMesh(g, new THREE.BoxGeometry(0.6*s, 0.03, 0.7*s), WIRE, [i*0.45*s, -0.05*s, 0.2*s]);
-  }
-  // Twin engines
-  for (const i of [-1, 1]) {
-    addMesh(g, new THREE.CylinderGeometry(0.13*s, 0.1*s, 0.4*s, 6), ACCENT, [i*0.2*s, 0, 1.1*s], [Math.PI/2, 0, 0]);
-  }
-}
-
-function buildBeluga(g, s) {
-  // Large whale-shaped passenger ship
-  addMesh(g, new THREE.CylinderGeometry(0.45*s, 0.35*s, 2.4*s, 8), WIRE, [0, 0, 0], [0, 0, Math.PI/2]);
-  // Rounded nose
-  addMesh(g, new THREE.SphereGeometry(0.45*s, 8, 6), WIRE, [0, 0, -1.2*s]);
-  // Observation ring
-  addMesh(g, new THREE.TorusGeometry(0.4*s, 0.08, 4, 12), ACCENT, [0, 0, -0.5*s], [0, Math.PI/2, 0]);
-  // Large wings
-  for (const i of [-1, 1]) {
-    addMesh(g, new THREE.BoxGeometry(0.7*s, 0.04, 0.8*s), WIRE, [i*0.55*s, -0.05*s, 0.2*s]);
-  }
-  // Triple engines
-  addMesh(g, new THREE.CylinderGeometry(0.15*s, 0.12*s, 0.4*s, 6), ACCENT, [0, 0, 1.25*s], [Math.PI/2, 0, 0]);
-  for (const i of [-1, 1]) {
-    addMesh(g, new THREE.CylinderGeometry(0.12*s, 0.1*s, 0.35*s, 6), ACCENT, [i*0.25*s, 0, 1.2*s], [Math.PI/2, 0, 0]);
-  }
+  g.add(p(cyl(0.25*s, 1.6*s), W, 0, 0, 0, Math.PI/2));
+  g.add(p(wing(0.65*s, 0.6*s), W, 0.5*s, 0, 0));
+  g.add(p(wing(0.65*s, 0.6*s), W, -0.5*s, 0, 0));
+  g.add(p(eng(0.12*s, 0.3*s), E, 0.22*s, 0, 0.8*s, Math.PI/2));
+  g.add(p(eng(0.12*s, 0.3*s), E, -0.22*s, 0, 0.8*s, Math.PI/2));
 }
 
 function buildDolphin(g, s) {
-  // Small sleek passenger ship
-  addMesh(g, new THREE.CylinderGeometry(0.3*s, 0.22*s, 1.6*s, 8), WIRE, [0, 0, 0], [0, 0, Math.PI/2]);
-  // Rounded nose
-  addMesh(g, new THREE.SphereGeometry(0.3*s, 8, 6), WIRE, [0, 0, -0.8*s]);
-  // Wings
-  for (const i of [-1, 1]) {
-    addMesh(g, new THREE.BoxGeometry(0.5*s, 0.03, 0.5*s), WIRE, [i*0.4*s, -0.05*s, 0.1*s]);
-  }
-  // Twin engines
-  for (const i of [-1, 1]) {
-    addMesh(g, new THREE.CylinderGeometry(0.12*s, 0.1*s, 0.35*s, 6), ACCENT, [i*0.18*s, 0, 0.85*s], [Math.PI/2, 0, 0]);
-  }
-  // Observation window
-  addMesh(g, new THREE.TorusGeometry(0.25*s, 0.04, 4, 8), DETAIL, [0, 0, -0.4*s], [0, Math.PI/2, 0]);
+  g.add(p(cyl(0.22*s, 1.4*s), W, 0, 0, 0, Math.PI/2));
+  g.add(p(cone6(0.22*s, 0.3*s), W, 0, 0, -0.75*s, -Math.PI/2));
+  g.add(p(wing(0.4*s, 0.4*s), W, 0.35*s, -0.05*s, 0.1*s));
+  g.add(p(wing(0.4*s, 0.4*s), W, -0.35*s, -0.05*s, 0.1*s));
+  g.add(p(eng(0.1*s, 0.25*s), E, 0.15*s, 0, 0.7*s, Math.PI/2));
+  g.add(p(eng(0.1*s, 0.25*s), E, -0.15*s, 0, 0.7*s, Math.PI/2));
+}
+
+function buildAsp(g, s) {
+  g.add(p(box(0.6*s, 0.25*s, 1.3*s), W));
+  g.add(p(box(0.15*s, 0.15*s, 0.6*s), W, 0.35*s, 0, 0.65*s));
+  g.add(p(box(0.15*s, 0.15*s, 0.6*s), W, -0.35*s, 0, 0.65*s));
+  g.add(p(cyl(0.16*s, 0.4*s), E, 0.35*s, 0, 1.0*s, Math.PI/2));
+  g.add(p(cyl(0.16*s, 0.4*s), E, -0.35*s, 0, 1.0*s, Math.PI/2));
+  g.add(p(cone6(0.18*s, 0.2*s), C, 0, 0.12*s, -0.55*s));
+}
+
+function buildVulture(g, s) {
+  g.add(p(cone4(0.35*s, 1.3*s), W, 0, 0, 0, -Math.PI/2));
+  g.add(p(cyl(0.2*s, 0.8*s), E, 0.4*s, -0.05*s, 0.3*s, Math.PI/2));
+  g.add(p(cyl(0.2*s, 0.8*s), E, -0.4*s, -0.05*s, 0.3*s, Math.PI/2));
+  g.add(p(wing(0.25*s, 0.4*s), W, 0.3*s, -0.05*s, 0));
+  g.add(p(wing(0.25*s, 0.4*s), W, -0.3*s, -0.05*s, 0));
 }
 
 function buildMandalay(g, s) {
-  // Explorer with large sensor array
-  addMesh(g, new THREE.CylinderGeometry(0.35*s, 0.25*s, 1.8*s, 8), WIRE, [0, 0, 0], [0, 0, Math.PI/2]);
-  // Large sensor dish
-  addMesh(g, new THREE.SphereGeometry(0.35*s, 8, 4, 0, Math.PI*2, 0, Math.PI/2), DETAIL, [0, 0.3*s, -0.3*s]);
-  // Long wings
-  for (const i of [-1, 1]) {
-    addMesh(g, new THREE.BoxGeometry(0.9*s, 0.03, 0.7*s), WIRE, [i*0.55*s, 0, 0.1*s]);
-  }
-  // Twin engines on wingtips
-  for (const i of [-1, 1]) {
-    addMesh(g, new THREE.CylinderGeometry(0.14*s, 0.11*s, 0.4*s, 6), ACCENT, [i*0.5*s, 0, 0.7*s], [Math.PI/2, 0, 0]);
-  }
-  // Cockpit
-  addMesh(g, new THREE.SphereGeometry(0.15*s, 8, 6), DETAIL, [0, 0.15*s, -0.6*s]);
+  g.add(p(cyl(0.25*s, 1.6*s), W, 0, 0, 0, Math.PI/2));
+  g.add(p(wing(0.75*s, 0.6*s), W, 0.55*s, 0, 0));
+  g.add(p(wing(0.75*s, 0.6*s), W, -0.55*s, 0, 0));
+  g.add(p(eng(0.13*s, 0.3*s), E, 0.5*s, 0, 0.7*s, Math.PI/2));
+  g.add(p(eng(0.13*s, 0.3*s), E, -0.5*s, 0, 0.7*s, Math.PI/2));
+}
+
+function buildKrait(g, s) {
+  g.add(p(box(0.65*s, 0.25*s, 1.3*s), W));
+  g.add(p(box(0.15*s, 0.15*s, 0.5*s), W, 0.38*s, 0, 0.6*s));
+  g.add(p(box(0.15*s, 0.15*s, 0.5*s), W, -0.38*s, 0, 0.6*s));
+  g.add(p(cyl(0.17*s, 0.4*s), E, 0.38*s, 0, 0.95*s, Math.PI/2));
+  g.add(p(cyl(0.17*s, 0.4*s), E, -0.38*s, 0, 0.95*s, Math.PI/2));
+  g.add(p(wing(0.4*s, 0.4*s), W, 0.55*s, -0.05*s, 0));
+  g.add(p(wing(0.4*s, 0.4*s), W, -0.55*s, -0.05*s, 0));
+}
+
+function buildMamba(g, s) {
+  g.add(p(cone4(0.3*s, 1.5*s), W, 0, 0, 0, -Math.PI/2));
+  g.add(p(wing(0.5*s, 0.45*s), W, 0.38*s, -0.05*s, 0.15*s, 0, -0.3));
+  g.add(p(wing(0.5*s, 0.45*s), W, -0.38*s, -0.05*s, 0.15*s, 0, 0.3));
+  g.add(p(eng(0.18*s, 0.35*s), E, 0, 0, 0.8*s, Math.PI/2));
+}
+
+function buildImperialCourier(g, s) {
+  g.add(p(cone6(0.25*s, 1.5*s), W, 0, 0, 0, -Math.PI/2));
+  g.add(p(wing(0.6*s, 0.5*s), W, 0.45*s, -0.03*s, 0.1*s, 0, -0.25));
+  g.add(p(wing(0.6*s, 0.5*s), W, -0.45*s, -0.03*s, 0.1*s, 0, 0.25));
+  g.add(p(eng(0.1*s, 0.25*s), E, 0.12*s, 0, 0.75*s, Math.PI/2));
+  g.add(p(eng(0.1*s, 0.25*s), E, -0.12*s, 0, 0.75*s, Math.PI/2));
+}
+
+// ---- Large ships (Class 3-4) ----
+
+function buildType7(g, s) {
+  g.add(p(box(0.7*s, 0.65*s, 1.8*s), W));
+  g.add(p(eng(0.13*s, 0.3*s), E, 0.25*s, 0, 0.9*s, Math.PI/2));
+  g.add(p(eng(0.13*s, 0.3*s), E, -0.25*s, 0, 0.9*s, Math.PI/2));
+}
+
+function buildFederalDropship(g, s) {
+  g.add(p(box(0.65*s, 0.5*s, 1.5*s), W));
+  g.add(p(box(0.22*s, 0.3*s, 0.7*s), W, 0.48*s, -0.05*s, 0.1*s));
+  g.add(p(box(0.22*s, 0.3*s, 0.7*s), W, -0.48*s, -0.05*s, 0.1*s));
+  g.add(p(eng(0.13*s, 0.25*s), E, 0.22*s, 0, 0.8*s, Math.PI/2));
+  g.add(p(eng(0.13*s, 0.25*s), E, -0.22*s, 0, 0.8*s, Math.PI/2));
+}
+
+function buildAllianceChieftain(g, s) {
+  g.add(p(cone4(0.35*s, 1.5*s), W, 0, 0, 0, -Math.PI/2));
+  g.add(p(wing(0.6*s, 0.5*s), W, 0.45*s, -0.05*s, 0.15*s, 0, 0.3));
+  g.add(p(wing(0.6*s, 0.5*s), W, -0.45*s, -0.05*s, 0.15*s, 0, -0.3));
+  g.add(p(cyl(0.15*s, 0.4*s), E, 0.28*s, 0, 0.8*s, Math.PI/2));
+  g.add(p(cyl(0.15*s, 0.4*s), E, -0.28*s, 0, 0.8*s, Math.PI/2));
+}
+
+function buildImperialClipper(g, s) {
+  g.add(p(cone6(0.3*s, 1.8*s), W, 0, 0, 0, -Math.PI/2));
+  g.add(p(wing(0.8*s, 0.65*s), W, 0.6*s, -0.03*s, 0.1*s, 0, -0.3));
+  g.add(p(wing(0.8*s, 0.65*s), W, -0.6*s, -0.03*s, 0.1*s, 0, 0.3));
+  g.add(p(eng(0.13*s, 0.3*s), E, 0.4*s, -0.03*s, 0.8*s, Math.PI/2));
+  g.add(p(eng(0.13*s, 0.3*s), E, -0.4*s, -0.03*s, 0.8*s, Math.PI/2));
+}
+
+function buildPython(g, s) {
+  g.add(p(box(0.7*s, 0.35*s, 1.5*s), W));
+  g.add(p(box(0.22*s, 0.25*s, 1.0*s), W, 0.5*s, -0.05*s, 0.2*s));
+  g.add(p(box(0.22*s, 0.25*s, 1.0*s), W, -0.5*s, -0.05*s, 0.2*s));
+  g.add(p(eng(0.13*s, 0.25*s), E, 0.5*s, -0.05*s, 0.8*s, Math.PI/2));
+  g.add(p(eng(0.13*s, 0.25*s), E, -0.5*s, -0.05*s, 0.8*s, Math.PI/2));
+}
+
+function buildOrca(g, s) {
+  g.add(p(cyl(0.25*s, 1.8*s), W, 0, 0, 0, Math.PI/2));
+  g.add(p(cone6(0.25*s, 0.4*s), W, 0, 0, -1.0*s, -Math.PI/2));
+  g.add(p(wing(0.5*s, 0.55*s), W, 0.42*s, -0.05*s, 0.15*s));
+  g.add(p(wing(0.5*s, 0.55*s), W, -0.42*s, -0.05*s, 0.15*s));
+  g.add(p(eng(0.12*s, 0.3*s), E, 0.18*s, 0, 0.9*s, Math.PI/2));
+  g.add(p(eng(0.12*s, 0.3*s), E, -0.18*s, 0, 0.9*s, Math.PI/2));
 }
 
 function buildType8(g, s) {
-  // Medium boxy transport
-  addMesh(g, new THREE.BoxGeometry(0.85*s, 0.75*s, 1.9*s), WIRE);
-  // Side cargo detail
-  for (const i of [-1, 1]) {
-    addMesh(g, new THREE.BoxGeometry(0.04, 0.5*s, 1.2*s), ACCENT, [i*0.43*s, -0.05*s, 0.1*s]);
-  }
-  // Twin engines
-  for (const i of [-1, 1]) {
-    addMesh(g, new THREE.CylinderGeometry(0.14*s, 0.11*s, 0.38*s, 6), ACCENT, [i*0.28*s, 0, 1.0*s], [Math.PI/2, 0, 0]);
-  }
-  // Cockpit
-  addMesh(g, new THREE.BoxGeometry(0.38*s, 0.28*s, 0.2*s), DETAIL, [0, 0.38*s, -0.9*s]);
+  g.add(p(box(0.65*s, 0.6*s, 1.7*s), W));
+  g.add(p(eng(0.13*s, 0.28*s), E, 0.24*s, 0, 0.85*s, Math.PI/2));
+  g.add(p(eng(0.13*s, 0.28*s), E, -0.24*s, 0, 0.85*s, Math.PI/2));
+}
+
+function buildBeluga(g, s) {
+  g.add(p(cyl(0.35*s, 2.0*s), W, 0, 0, 0, Math.PI/2));
+  g.add(p(cone6(0.35*s, 0.3*s), W, 0, 0, -1.05*s, -Math.PI/2));
+  g.add(p(wing(0.55*s, 0.6*s), W, 0.5*s, -0.05*s, 0.15*s));
+  g.add(p(wing(0.55*s, 0.6*s), W, -0.5*s, -0.05*s, 0.15*s));
+  g.add(p(eng(0.13*s, 0.3*s), E, 0, 0, 1.05*s, Math.PI/2));
+  g.add(p(eng(0.11*s, 0.28*s), E, 0.22*s, 0, 1.0*s, Math.PI/2));
+  g.add(p(eng(0.11*s, 0.28*s), E, -0.22*s, 0, 1.0*s, Math.PI/2));
+}
+
+// ---- Very large ships (Class 4) ----
+
+function buildAnaconda(g, s) {
+  g.add(p(cyl(0.28*s, 2.5*s), W, 0, 0, 0, Math.PI/2));
+  g.add(p(cone6(0.28*s, 0.5*s), W, 0, 0, -1.4*s, -Math.PI/2));
+  g.add(p(wing(0.65*s, 0.55*s), W, 0.5*s, -0.05*s, 0.2*s));
+  g.add(p(wing(0.65*s, 0.55*s), W, -0.5*s, -0.05*s, 0.2*s));
+  g.add(p(eng(0.14*s, 0.3*s), E, 0, 0, 1.3*s, Math.PI/2));
+  g.add(p(eng(0.12*s, 0.28*s), E, 0.22*s, 0, 1.25*s, Math.PI/2));
+  g.add(p(eng(0.12*s, 0.28*s), E, -0.22*s, 0, 1.25*s, Math.PI/2));
+}
+
+function buildType9(g, s) {
+  g.add(p(box(0.8*s, 0.7*s, 2.0*s), W));
+  g.add(p(eng(0.12*s, 0.3*s), E, 0.3*s, 0.15*s, 1.0*s, Math.PI/2));
+  g.add(p(eng(0.12*s, 0.3*s), E, -0.3*s, 0.15*s, 1.0*s, Math.PI/2));
+  g.add(p(eng(0.12*s, 0.3*s), E, 0.3*s, -0.15*s, 1.0*s, Math.PI/2));
+  g.add(p(eng(0.12*s, 0.3*s), E, -0.3*s, -0.15*s, 1.0*s, Math.PI/2));
+}
+
+function buildFederalCorvette(g, s) {
+  g.add(p(box(0.65*s, 0.5*s, 2.2*s), W));
+  g.add(p(cone4(0.3*s, 0.6*s), W, 0, 0, -1.3*s, -Math.PI/2));
+  g.add(p(wing(0.65*s, 0.6*s), W, 0.55*s, -0.05*s, 0.2*s));
+  g.add(p(wing(0.65*s, 0.6*s), W, -0.55*s, -0.05*s, 0.2*s));
+  g.add(p(eng(0.12*s, 0.3*s), E, 0.25*s, 0.12*s, 1.1*s, Math.PI/2));
+  g.add(p(eng(0.12*s, 0.3*s), E, -0.25*s, 0.12*s, 1.1*s, Math.PI/2));
+  g.add(p(eng(0.12*s, 0.3*s), E, 0.25*s, -0.12*s, 1.1*s, Math.PI/2));
+  g.add(p(eng(0.12*s, 0.3*s), E, -0.25*s, -0.12*s, 1.1*s, Math.PI/2));
+}
+
+function buildImperialCutter(g, s) {
+  g.add(p(cone6(0.35*s, 2.2*s), W, 0, 0, 0, -Math.PI/2));
+  g.add(p(wing(0.85*s, 0.7*s), W, 0.7*s, -0.03*s, 0.15*s, 0, -0.3));
+  g.add(p(wing(0.85*s, 0.7*s), W, -0.7*s, -0.03*s, 0.15*s, 0, 0.3));
+  g.add(p(eng(0.13*s, 0.3*s), E, 0.4*s, -0.03*s, 1.0*s, Math.PI/2));
+  g.add(p(eng(0.13*s, 0.3*s), E, -0.4*s, -0.03*s, 1.0*s, Math.PI/2));
+  g.add(p(eng(0.11*s, 0.28*s), E, 0.2*s, -0.03*s, 1.05*s, Math.PI/2));
+  g.add(p(eng(0.11*s, 0.28*s), E, -0.2*s, -0.03*s, 1.05*s, Math.PI/2));
 }
 
 function buildType10(g, s) {
-  // Very large heavy freighter/defender
-  addMesh(g, new THREE.BoxGeometry(1.1*s, 1.0*s, 2.4*s), WIRE);
-  // Armor plating detail
-  for (const i of [-1, 1]) {
-    addMesh(g, new THREE.BoxGeometry(1.12*s, 0.04, 0.04), ACCENT, [0, i*0.3*s, 0.3*s]);
-  }
-  // Six engine nacelles
-  for (const i of [-1, 1]) {
-    for (const j of [-1, 0, 1]) {
-      addMesh(g, new THREE.CylinderGeometry(0.12*s, 0.1*s, 0.4*s, 6), ACCENT, [i*0.4*s, j*0.2*s, 1.25*s], [Math.PI/2, 0, 0]);
+  g.add(p(box(0.9*s, 0.8*s, 2.2*s), W));
+  for (const dx of [-0.35, 0, 0.35]) {
+    for (const dy of [-0.2, 0.2]) {
+      g.add(p(eng(0.1*s, 0.3*s), E, dx*s, dy*s, 1.1*s, Math.PI/2));
     }
-  }
-  // Cockpit
-  addMesh(g, new THREE.BoxGeometry(0.45*s, 0.32*s, 0.2*s), DETAIL, [0, 0.5*s, -1.1*s]);
-  // Weapon hardpoints on top
-  for (const i of [-1, 1]) {
-    addMesh(g, new THREE.BoxGeometry(0.04, 0.15*s, 0.15*s), DETAIL, [i*0.4*s, 0.55*s, 0]);
   }
 }
 
 function buildPythonMk2(g, s) {
-  // Python-based combat variant
-  addMesh(g, new THREE.BoxGeometry(0.9*s, 0.5*s, 1.7*s), WIRE);
-  // Side nacelles with weapon mounts
-  for (const i of [-1, 1]) {
-    addMesh(g, new THREE.BoxGeometry(0.25*s, 0.3*s, 1.0*s), ACCENT, [i*0.55*s, -0.05*s, 0.15*s]);
-  }
-  // Engines
-  for (const i of [-1, 1]) {
-    addMesh(g, new THREE.CylinderGeometry(0.15*s, 0.12*s, 0.35*s, 6), ACCENT, [i*0.55*s, -0.05*s, 0.8*s], [Math.PI/2, 0, 0]);
-  }
-  // Extra combat hardpoints on top
-  for (const i of [-1, 1]) {
-    addMesh(g, new THREE.BoxGeometry(0.04, 0.2*s, 0.04), DETAIL, [i*0.3*s, 0.35*s, -0.1*s]);
-  }
-  // Cockpit
-  addMesh(g, new THREE.BoxGeometry(0.5*s, 0.15*s, 0.5*s), DETAIL, [0, 0.3*s, -0.35*s]);
+  g.add(p(box(0.7*s, 0.35*s, 1.4*s), W));
+  g.add(p(box(0.22*s, 0.25*s, 0.9*s), W, 0.5*s, -0.05*s, 0.15*s));
+  g.add(p(box(0.22*s, 0.25*s, 0.9*s), W, -0.5*s, -0.05*s, 0.15*s));
+  g.add(p(eng(0.13*s, 0.25*s), E, 0.5*s, -0.05*s, 0.75*s, Math.PI/2));
+  g.add(p(eng(0.13*s, 0.25*s), E, -0.5*s, -0.05*s, 0.75*s, Math.PI/2));
 }
 
-// ---- Ship builder registry ----
-const SHIP_BUILDERS = {
+// ---- Builder registry ----
+const BUILDERS = {
   sidewinder: buildSidewinder,
   eagle: buildEagle,
   hauler: buildHauler,
   adder: buildAdder,
+  viper: buildViper,
   cobra: buildCobra,
   cobramk4: buildCobra,
   cobramk5: buildCobra,
-  viper: buildViper,
   type6: buildType6,
   diamondback: buildDiamondback,
+  dolphin: buildDolphin,
   asp: buildAsp,
   type7: buildType7,
-  python: buildPython,
-  python_mk2: buildPythonMk2,
-  type9: buildType9,
-  anaconda: buildAnaconda,
-  vulture: buildVulture,
-  imperial_courier: buildImperialCourier,
-  imperial_clipper: buildImperialClipper,
-  imperial_cutter: buildImperialCutter,
   federal_dropship: buildFederalDropship,
   federal_assault: buildFederalDropship,
-  federal_corvette: buildFederalCorvette,
-  alliance_chieftain: buildAllianceChieftain,
-  alliance_crusader: buildAllianceChieftain,
-  alliance_challenger: buildAllianceChieftain,
+  vulture: buildVulture,
+  mandalay: buildMandalay,
   krait_phantom: buildKrait,
   krait_mk2: buildKrait,
   mamba: buildMamba,
-  type8: buildType8,
-  type10: buildType10,
+  imperial_courier: buildImperialCourier,
+  imperial_clipper: buildImperialClipper,
+  python: buildPython,
+  python_mk2: buildPythonMk2,
   orca: buildOrca,
+  type8: buildType8,
+  type9: buildType9,
   beluga: buildBeluga,
-  dolphin: buildDolphin,
-  mandalay: buildMandalay,
+  anaconda: buildAnaconda,
+  federal_corvette: buildFederalCorvette,
+  imperial_cutter: buildImperialCutter,
+  type10: buildType10,
+  alliance_chieftain: buildAllianceChieftain,
+  alliance_crusader: buildAllianceChieftain,
+  alliance_challenger: buildAllianceChieftain,
 };
 
-// Generic fallback (shouldn't be needed — all ships have builders)
-function buildGeneric(g, s, shipTypeId) {
-  addMesh(g, new THREE.ConeGeometry(0.4*s, 1.6*s, 6), WIRE, [0, 0, 0], [-Math.PI/2, 0, 0]);
-  for (const i of [-1, 1]) {
-    addMesh(g, new THREE.BoxGeometry(0.7*s, 0.04, 0.5*s), WIRE, [i*0.5*s, -0.05*s, 0.1*s], [0, i*0.2, 0]);
-  }
-  addMesh(g, new THREE.CylinderGeometry(0.12*s, 0.1*s, 0.4*s, 6), ACCENT, [0, 0, 0.8*s], [Math.PI/2, 0, 0]);
+function buildGeneric(g, s) {
+  g.add(p(box(0.5*s, 0.3*s, 1.4*s), W));
+  g.add(p(wing(0.5*s, 0.4*s), W, 0.4*s, -0.05*s, 0.1*s));
+  g.add(p(wing(0.5*s, 0.4*s), W, -0.4*s, -0.05*s, 0.1*s));
+  g.add(p(eng(0.11*s, 0.25*s), E, 0, 0, 0.7*s, Math.PI/2));
 }

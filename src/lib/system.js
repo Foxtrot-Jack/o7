@@ -39,6 +39,64 @@ export const PLANET_TYPES = [
   { id: 'carbon', name: 'Carbon World', color: '#444444', habitable: false, weight: 4 },
 ];
 
+// Surface signal definitions — biological, geological, mineral
+export const SURFACE_SIGNALS = {
+  biological: [
+    { id: 'bacterial_colony', name: 'Bacterial Colony', value: 5000 },
+    { id: 'fungal_cluster', name: 'Fungal Cluster', value: 8000 },
+    { id: 'tubus_conifer', name: 'Tubus Conifer', value: 12000 },
+    { id: 'stratum_techtonicus', name: 'Stratum Techtonicus', value: 15000 },
+    { id: 'tussocks', name: 'Tussocks', value: 9000 },
+    { id: 'bark_mounds', name: 'Bark Mounds', value: 14000 },
+    { id: 'sinuous_tubers', name: 'Sinuous Tubers', value: 11000 },
+  ],
+  geological: [
+    { id: 'fumarole', name: 'Fumarole', value: 3000 },
+    { id: 'geyser', name: 'Geiser', value: 3500 },
+    { id: 'lava_spout', name: 'Lava Spout', value: 4000 },
+    { id: 'crystalline_shard', name: 'Crystalline Shard', value: 8000 },
+    { id: 'ice_geyser', name: 'Ice Geyser', value: 3500 },
+  ],
+  mineral: [
+    { id: 'crystal_cluster', name: 'Crystal Cluster', value: 4000 },
+    { id: 'mineral_deposit', name: 'Mineral Deposit', value: 2500 },
+    { id: 'brain_trees', name: 'Brain Trees', value: 7000 },
+    { id: 'metallic_deposits', name: 'Metallic Deposits', value: 3500 },
+  ],
+};
+
+// Generate surface signals for a body — uses separate RNG to not affect system gen
+function generateSurfaceSignals(bodyId, planetType) {
+  const rng = makeRng(bodyId + ':signals');
+  const signals = [];
+  const habitable = ['earthlike', 'water_world', 'terracformed'].includes(planetType);
+  const volcanic = planetType === 'lava' || planetType === 'high_metal_content';
+
+  const pickN = (pool, count) => {
+    const avail = [...pool];
+    for (let i = 0; i < count && avail.length > 0; i++) {
+      const idx = Math.floor(rng() * avail.length);
+      signals.push({ ...avail[idx], type: pool === SURFACE_SIGNALS.biological ? 'biological' : pool === SURFACE_SIGNALS.geological ? 'geological' : 'mineral' });
+      avail.splice(idx, 1);
+    }
+  };
+
+  if (habitable || planetType === 'ammonia' || planetType === 'desert') {
+    pickN(SURFACE_SIGNALS.biological, habitable ? randInt(rng, 2, 6) : randInt(rng, 0, 2));
+  }
+  if (volcanic || planetType === 'lava') {
+    pickN(SURFACE_SIGNALS.geological, randInt(rng, 1, 4));
+  }
+  if (['rocky', 'metal_rich', 'high_metal_content', 'carbon', 'rocky_ice', 'icy'].includes(planetType)) {
+    pickN(SURFACE_SIGNALS.mineral, randInt(rng, 1, 3));
+  }
+  if (planetType === 'icy' && rng() < 0.3) {
+    pickN(SURFACE_SIGNALS.geological, randInt(rng, 0, 2));
+  }
+
+  return signals;
+}
+
 // Generate a complete system from a seed
 export function generateSystem(starSeed, parentStarClass) {
   const rng = makeRng(starSeed + ':system');
@@ -222,6 +280,7 @@ function generatePlanet(rng, parentId, rootLetter, orbitIndex, orbitRadius, pare
     scanned: false,
     discovered: false,
     landable: !planetType.id.startsWith('gas_giant') && !planetType.id.startsWith('helium'),
+    surfaceSignals: generateSurfaceSignals(`${parentId}_p${orbitIndex}`, planetType.id),
   };
 }
 
@@ -268,6 +327,7 @@ function generateMoon(rng, parentPlanet, moonIndex, moonLetter) {
     scanned: false,
     discovered: false,
     landable: true,
+    surfaceSignals: generateSurfaceSignals(`${parentPlanet.id}_m${moonIndex}`, moonType),
   };
 }
 

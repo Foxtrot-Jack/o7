@@ -18,13 +18,14 @@ export default function GalaxyMap({ onJumpToSystem }) {
   const raycasterRef = useRef(new THREE.Raycaster());
   const animationIdRef = useRef(null);
 
-  const { state, setCurrentSystem } = useGameState();
+  const { state, setCurrentSystem, addBookmark, removeBookmark } = useGameState();
   const [selectedStar, setSelectedStar] = useState(null);
   const [stars, setStars] = useState([]);
   const [loading, setLoading] = useState(true);
   const [hoveredStar, setHoveredStar] = useState(null);
   const [filters, setFilters] = useState({ spectral: 'all', security: 'all', population: 'all', showParkedShips: true, showColonies: true });
   const [showFilterPanel, setShowFilterPanel] = useState(false);
+  const [showBookmarks, setShowBookmarks] = useState(false);
 
   // Rotation/zoom state
   const rotState = useRef({
@@ -539,6 +540,27 @@ export default function GalaxyMap({ onJumpToSystem }) {
       <button onClick={() => setShowFilterPanel(!showFilterPanel)} className="absolute top-2 left-1/2 -translate-x-1/2 px-2 py-0.5 border border-orange-900 text-orange-600 hover:text-orange-400 text-[10px] z-30">
         {showFilterPanel ? '▼ HIDE FILTERS' : '▲ FILTERS'}
       </button>
+      <button onClick={() => setShowBookmarks(!showBookmarks)} className="absolute top-2 left-1/2 translate-x-16 px-2 py-0.5 border border-yellow-900 text-yellow-600 hover:text-yellow-400 text-[10px] z-30">
+        ★ ({state.bookmarkedSystems?.length || 0})
+      </button>
+      {showBookmarks && (
+        <div className="absolute top-8 left-1/2 translate-x-16 w-64 max-w-[80%] border border-yellow-900 bg-black/95 p-2 space-y-1 text-[10px] z-30 max-h-60 overflow-y-auto">
+          <div className="text-yellow-700 uppercase mb-1">Bookmarked Systems</div>
+          {state.bookmarkedSystems?.length === 0 && <div className="text-orange-800">No bookmarks yet.</div>}
+          {state.bookmarkedSystems?.map(bm => (
+            <div key={bm.seed} className="flex items-center justify-between border border-yellow-950 p-1.5">
+              <div className="min-w-0 flex-1">
+                <div className="text-yellow-400 truncate">{bm.name}</div>
+                <div className="text-yellow-800 text-[9px]">{bm.starClass?.class || bm.starClass} · {bm.population > 0 ? bm.population.toLocaleString() : 'Uninhabited'}</div>
+              </div>
+              <div className="flex gap-1 flex-shrink-0">
+                <button onClick={() => { setSelectedStar(bm); setShowBookmarks(false); }} className="px-1.5 py-0.5 border border-yellow-700 text-yellow-400 text-[9px]">SELECT</button>
+                <button onClick={() => removeBookmark(bm.seed)} className="px-1.5 py-0.5 border border-red-900 text-red-600 text-[9px]">✕</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Filter panel */}
       {showFilterPanel && (
@@ -612,6 +634,16 @@ export default function GalaxyMap({ onJumpToSystem }) {
             <div>FUEL COST: <span className="text-orange-300">{fuelCost} T</span></div>
             <div>POPULATION: <span className="text-orange-300">{selectedStar.population > 0 ? selectedStar.population.toLocaleString() : 'Uninhabited'}</span></div>
           </div>
+          <button
+            onClick={() => {
+              const isBookmarked = state.bookmarkedSystems?.find(s => s.seed === selectedStar.seed);
+              if (isBookmarked) removeBookmark(selectedStar.seed);
+              else addBookmark(selectedStar);
+            }}
+            className="w-full py-1.5 border border-yellow-700 text-yellow-400 hover:bg-yellow-950/30 text-xs font-bold"
+          >
+            {state.bookmarkedSystems?.find(s => s.seed === selectedStar.seed) ? '★ REMOVE BOOKMARK' : '☆ BOOKMARK SYSTEM'}
+          </button>
           <button
             onClick={handleJump}
             disabled={fuelCost > state.ship.fuel}
