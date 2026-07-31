@@ -344,7 +344,7 @@ The company tracks your reputation level, which grows as you collect income. Hig
 • Income per hour = (cargo capacity × 50,000) + (jump range × 10,000)
 • Reputation multiplier applies on top (up to +50%)
 
-A Type-6 Transporter (50 cargo, 15 jump) earns ~2.65M CR/hr.
+A Caravan Mk-VI (50 cargo, 15 jump) earns ~2.65M CR/hr.
 A Roc (114 cargo, 18 jump) earns ~5.88M CR/hr.
 
 Income accumulates over time even while you're exploring, mining, or doing other activities. Collect periodically from the Company screen. You can recall a ship from a contract at any time — it returns to your fleet at your current location.
@@ -405,10 +405,10 @@ Cargo capacity is determined by your ship type and installed cargo racks. The MK
         title: 'Buying New Ships',
         body: `The Shipyard tab (available when docked) lists ships available for purchase at the current station. Available ships depend on system population:
 
-• Small population — Sparrowhawk, Eagle, Hauler, Osprey
-• Medium population — Falcon, Kestrel, Type-6, Kingfisher, Dolphin, Falcon Mk-V
-• Large population — Heron, Albatross, Harrier, Mandalay, Federal Dropship, Vulture, Imperial Courier
-• Huge population — Federal Corvette, Imperial Cutter, Type-10, Roc, Beluga
+• Small population — Sparrowhawk, Peregrine, Packmule, Osprey
+• Medium population — Falcon, Kestrel, Caravan Mk-VI, Kingfisher, Narwhal, Falcon Mk-V
+• Large population — Heron, Albatross, Harrier, Wanderer, Republic Trooper, Raven, Dynast Courier
+• Huge population — Republic Dreadnought, Dynast Sovereign, Bastion Mk-X, Roc, Leviathan Liner
 
 Over 30 ship models are available from manufacturers: Falcon Deacy, Lakon Spaceways, Core Dynamics, Zorgon Peterson, Saud Kruger, and Gutamaya.
 

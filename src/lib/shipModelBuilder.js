@@ -20,7 +20,7 @@ export function buildShipModel(shipClass) {
     const wing = new THREE.BoxGeometry(0.5, 0.03, 0.2);
     group.add(new THREE.Mesh(wing, mat));
   } else if (shipClass === 3) {
-    // Class 3 — Large bulky (Python / Type-7)
+    // Class 3 — Large bulky (Albatross / Caravan Mk-VII)
     const body = new THREE.BoxGeometry(0.25, 0.15, 0.6);
     group.add(new THREE.Mesh(body, mat));
     const nose = new THREE.ConeGeometry(0.12, 0.25, 4);
