@@ -138,6 +138,8 @@ function createInitialState() {
       systemsScanned: 0,
       totalBodiesScanned: 0,
     },
+    // Leaderboard records
+    records: {},
     // Settings
     settings: {
       crtEffect: true,
@@ -197,6 +199,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
           shipyard: parsed.shipyard || null,
           company: parsed.company || null,
           cheats: { unlocked: false, active: {}, ...(parsed.cheats || {}) },
+          records: parsed.records || {},
           bookmarkedSystems: parsed.bookmarkedSystems || [],
           fssScannedSystems: parsed.fssScannedSystems || {},
           mappedBodies: parsed.mappedBodies || {},
@@ -567,10 +570,44 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
         if (body.habitable && !ach.firstDiscoveries.habitable_world) ach.firstDiscoveries.habitable_world = { system: sysName, date: Date.now() };
         if (body.planetType === 'terracformed' && !ach.firstDiscoveries.terraformed_world) ach.firstDiscoveries.terraformed_world = { system: sysName, date: Date.now() };
       }
+      // Check leaderboard records
+      const records = { ...(prev.records || {}) };
+      const sysData = prev.currentSystemData;
+      const checkRecord = (key, value, bodyName, isMax = true) => {
+        if (value == null || isNaN(value)) return;
+        const existing = records[key];
+        const isNew = !existing || (isMax ? value > existing.value : value < existing.value);
+        if (isNew) records[key] = { value, bodyName, systemName: sysName, date: Date.now() };
+      };
+      if (body.type === 'star') {
+        checkRecord('smallest_sun', body.radius, body.name, false);
+        checkRecord('largest_sun', body.radius, body.name, true);
+        checkRecord('hottest_star', body.temperature, body.name, true);
+        checkRecord('coldest_star', body.temperature, body.name, false);
+      }
+      if (body.type === 'planet' || body.type === 'moon') {
+        checkRecord('hottest_planet', body.temperature, body.name, true);
+        checkRecord('coldest_planet', body.temperature, body.name, false);
+        checkRecord('fastest_orbit', body.orbitPeriod, body.name, false);
+        checkRecord('slowest_orbit', body.orbitPeriod, body.name, true);
+        checkRecord('highest_gravity', body.gravity, body.name, true);
+        checkRecord('lowest_gravity', body.gravity, body.name, false);
+        checkRecord('closest_to_star', body.orbitRadius, body.name, false);
+        checkRecord('farthest_from_star', body.orbitRadius, body.name, true);
+      }
+      if (body.type === 'planet') {
+        checkRecord('largest_planet', body.radius, body.name, true);
+        checkRecord('smallest_planet', body.radius, body.name, false);
+        if (sysData?.bodies) {
+          const moonCount = sysData.bodies.filter(b => b.type === 'moon' && b.parent === body.id).length;
+          checkRecord('most_moons', moonCount, body.name, true);
+        }
+      }
       return {
         ...prev,
         scannedBodies: { ...prev.scannedBodies, [body.id]: { scanType: 'detailed', value: body.scanValue, date: Date.now() } },
         achievements: ach,
+        records,
       };
     });
   }, []);

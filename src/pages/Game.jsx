@@ -26,6 +26,7 @@ import ShipCreator from '@/components/game/ShipCreator';
 import Codex from '@/components/game/Codex';
 import CompanyScreen from '@/components/game/CompanyScreen';
 import CheatsScreen from '@/components/game/CheatsScreen';
+import LeaderboardScreen from '@/components/game/LeaderboardScreen';
 
 function GameContent() {
   const { state } = useGameState();
@@ -65,6 +66,8 @@ function GameContent() {
         return <CarrierScreen />;
       case 'achievements':
         return <AchievementsScreen />;
+      case 'leaderboard':
+        return <LeaderboardScreen />;
       case 'settings':
         return <SettingsScreen />;
       case 'outfitting':
