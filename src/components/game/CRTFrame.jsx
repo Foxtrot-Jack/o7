@@ -1,11 +1,12 @@
 // CRT visual effect wrapper — scanlines, glow, curvature, flicker
 import React from 'react';
 
-export default function CRTFrame({ children, enabled = true }) {
-  if (!enabled) return <>{children}</>;
+export default function CRTFrame({ children, enabled = true, brightness = 100 }) {
+  const brightnessStyle = { filter: `brightness(${brightness}%)` };
+  if (!enabled) return <div className="w-full h-full" style={brightnessStyle}>{children}</div>;
 
   return (
-    <div className="crt-container relative w-full h-full overflow-hidden bg-black">
+    <div className="crt-container relative w-full h-full overflow-hidden bg-black" style={brightnessStyle}>
       {/* Main content */}
       <div className="crt-content relative z-10 w-full h-full">
         {children}

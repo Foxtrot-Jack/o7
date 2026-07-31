@@ -13,6 +13,8 @@ export default function GalaxyMap({ onJumpToSystem }) {
   const playerMarkerRef = useRef(null);
   const selectedRef = useRef(null);
   const selectedLineRef = useRef(null);
+  const shipMarkersRef = useRef(null);
+  const colonyMarkersRef = useRef(null);
   const raycasterRef = useRef(new THREE.Raycaster());
   const animationIdRef = useRef(null);
 
@@ -21,7 +23,8 @@ export default function GalaxyMap({ onJumpToSystem }) {
   const [stars, setStars] = useState([]);
   const [loading, setLoading] = useState(true);
   const [hoveredStar, setHoveredStar] = useState(null);
-  const [filter, setFilter] = useState('all');
+  const [filters, setFilters] = useState({ spectral: 'all', security: 'all', population: 'all', showParkedShips: true, showColonies: true });
+  const [showFilterPanel, setShowFilterPanel] = useState(false);
 
   // Rotation/zoom state
   const rotState = useRef({
@@ -148,6 +151,19 @@ export default function GalaxyMap({ onJumpToSystem }) {
     const sizes = new Float32Array(stars.length);
 
     const visited = state.discoveredSystems || {};
+    const spectralMap = { O: ['O', 'B'], A: ['A', 'F'], G: ['G'], K: ['K'], M: ['M'], NS: ['NS'], BH: ['BH'] };
+    const passesFilter = (star) => {
+      if (filters.spectral !== 'all' && !spectralMap[filters.spectral]?.includes(star.starClass.class)) return false;
+      if (filters.security !== 'all' && star.security !== filters.security) return false;
+      if (filters.population !== 'all') {
+        const p = star.population || 0;
+        if (filters.population === 'uninhabited' && p > 0) return false;
+        if (filters.population === 'low' && (p === 0 || p > 1000000)) return false;
+        if (filters.population === 'medium' && (p <= 1000000 || p > 1000000000)) return false;
+        if (filters.population === 'high' && p <= 1000000000) return false;
+      }
+      return true;
+    };
     stars.forEach((star, i) => {
       positions[i * 3] = star.x - center.x;
       positions[i * 3 + 1] = star.y - center.y;
@@ -156,8 +172,7 @@ export default function GalaxyMap({ onJumpToSystem }) {
       const isVisited = !!visited[star.seed];
       const color = new THREE.Color(getStarColor(star.starClass));
       if (isVisited) color.lerp(new THREE.Color(0x00ff66), 0.4);
-      if (filter === 'visited' && !isVisited) color.multiplyScalar(0.08);
-      if (filter === 'unvisited' && isVisited) color.multiplyScalar(0.08);
+      if (!passesFilter(star)) color.multiplyScalar(0.05);
       colors[i * 3] = color.r;
       colors[i * 3 + 1] = color.g;
       colors[i * 3 + 2] = color.b;
@@ -196,9 +211,46 @@ export default function GalaxyMap({ onJumpToSystem }) {
     sceneRef.current.add(marker);
     playerMarkerRef.current = marker;
 
+    // Clean old markers
+    if (shipMarkersRef.current) { sceneRef.current.remove(shipMarkersRef.current); shipMarkersRef.current.geometry.dispose(); shipMarkersRef.current.material.dispose(); shipMarkersRef.current = null; }
+    if (colonyMarkersRef.current) { sceneRef.current.remove(colonyMarkersRef.current); colonyMarkersRef.current.geometry.dispose(); colonyMarkersRef.current.material.dispose(); colonyMarkersRef.current = null; }
+
+    // Parked ship markers (cyan)
+    if (filters.showParkedShips) {
+      const shipSystems = new Set();
+      state.ownedShips.forEach(s => { if (s.storedAt?.systemSeed) shipSystems.add(s.storedAt.systemSeed); });
+      const shipStars = stars.filter(s => shipSystems.has(s.seed));
+      if (shipStars.length > 0) {
+        const sp = new Float32Array(shipStars.length * 3);
+        shipStars.forEach((s, i) => { sp[i*3] = s.x-center.x; sp[i*3+1] = s.y-center.y; sp[i*3+2] = s.z-center.z; });
+        const sg = new THREE.BufferGeometry();
+        sg.setAttribute('position', new THREE.BufferAttribute(sp, 3));
+        const sm = new THREE.PointsMaterial({ color: 0x00ccff, size: 10, sizeAttenuation: false, transparent: true, opacity: 0.9 });
+        const sps = new THREE.Points(sg, sm);
+        sceneRef.current.add(sps);
+        shipMarkersRef.current = sps;
+      }
+    }
+
+    // Colony markers (purple)
+    if (filters.showColonies) {
+      const colonySystems = new Set(state.colonies.map(c => c.systemSeed));
+      const colStars = stars.filter(s => colonySystems.has(s.seed));
+      if (colStars.length > 0) {
+        const cp = new Float32Array(colStars.length * 3);
+        colStars.forEach((s, i) => { cp[i*3] = s.x-center.x; cp[i*3+1] = s.y-center.y; cp[i*3+2] = s.z-center.z; });
+        const cg = new THREE.BufferGeometry();
+        cg.setAttribute('position', new THREE.BufferAttribute(cp, 3));
+        const cm = new THREE.PointsMaterial({ color: 0xcc44ff, size: 10, sizeAttenuation: false, transparent: true, opacity: 0.9 });
+        const cps = new THREE.Points(cg, cm);
+        sceneRef.current.add(cps);
+        colonyMarkersRef.current = cps;
+      }
+    }
+
     // Set initial zoom to show a good range
     rotState.current.targetDistance = 120;
-  }, [stars, state.currentSystem, filter, state.discoveredSystems]);
+  }, [stars, state.currentSystem, filters, state.discoveredSystems, state.ownedShips, state.colonies]);
 
   // Mouse + touch interaction — rotate, pinch, two-finger pan, tap to select
   useEffect(() => {
@@ -483,19 +535,63 @@ export default function GalaxyMap({ onJumpToSystem }) {
         ))}
       </div>
 
-      {/* Filter controls */}
-      <div className="absolute top-2 left-1/2 -translate-x-1/2 flex gap-1 text-[10px]">
-        {['all', 'visited', 'unvisited'].map(f => (
-          <button key={f} onClick={() => setFilter(f)} className={`px-2 py-0.5 border ${filter === f ? 'border-orange-500 bg-orange-950/40 text-orange-300' : 'border-orange-900 text-orange-700 hover:text-orange-500'}`}>{f.toUpperCase()}</button>
-        ))}
-      </div>
+      {/* Filter toggle */}
+      <button onClick={() => setShowFilterPanel(!showFilterPanel)} className="absolute top-2 left-1/2 -translate-x-1/2 px-2 py-0.5 border border-orange-900 text-orange-600 hover:text-orange-400 text-[10px] z-30">
+        {showFilterPanel ? '▼ HIDE FILTERS' : '▲ FILTERS'}
+      </button>
 
-      {/* Player marker indicator */}
-      <div className="absolute bottom-2 left-2 text-xs pointer-events-none">
+      {/* Filter panel */}
+      {showFilterPanel && (
+        <div className="absolute top-8 left-1/2 -translate-x-1/2 w-72 max-w-[90%] border border-orange-900 bg-black/95 p-2 space-y-2 text-[10px] z-30">
+          <div>
+            <div className="text-orange-700 uppercase mb-0.5">Star Type</div>
+            <div className="flex flex-wrap gap-0.5">
+              {['all', 'O', 'A', 'G', 'K', 'M', 'NS', 'BH'].map(f => (
+                <button key={f} onClick={() => setFilters({...filters, spectral: f})} className={`px-1.5 py-0.5 border ${filters.spectral === f ? 'border-orange-500 bg-orange-950/40 text-orange-300' : 'border-orange-900 text-orange-700'}`}>{f}</button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <div className="text-orange-700 uppercase mb-0.5">Security</div>
+            <div className="flex flex-wrap gap-0.5">
+              {['all', 'high', 'medium', 'low', 'anarchy'].map(f => (
+                <button key={f} onClick={() => setFilters({...filters, security: f})} className={`px-1.5 py-0.5 border ${filters.security === f ? 'border-orange-500 bg-orange-950/40 text-orange-300' : 'border-orange-900 text-orange-700'}`}>{f.slice(0, 4)}</button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <div className="text-orange-700 uppercase mb-0.5">Population</div>
+            <div className="flex flex-wrap gap-0.5">
+              {['all', 'uninhabited', 'low', 'medium', 'high'].map(f => (
+                <button key={f} onClick={() => setFilters({...filters, population: f})} className={`px-1.5 py-0.5 border ${filters.population === f ? 'border-orange-500 bg-orange-950/40 text-orange-300' : 'border-orange-900 text-orange-700'}`}>{f.slice(0, 4)}</button>
+              ))}
+            </div>
+          </div>
+          <div className="flex gap-1 border-t border-orange-900 pt-1">
+            <button onClick={() => setFilters({...filters, showParkedShips: !filters.showParkedShips})} className={`flex-1 py-0.5 border ${filters.showParkedShips ? 'border-cyan-600 text-cyan-400' : 'border-orange-900 text-orange-800'}`}>⚓ SHIPS</button>
+            <button onClick={() => setFilters({...filters, showColonies: !filters.showColonies})} className={`flex-1 py-0.5 border ${filters.showColonies ? 'border-purple-600 text-purple-400' : 'border-orange-900 text-orange-800'}`}>★ COLONIES</button>
+          </div>
+        </div>
+      )}
+
+      {/* Player marker indicator + marker legend */}
+      <div className="absolute bottom-2 left-2 text-xs pointer-events-none space-y-0.5">
         <div className="flex items-center gap-1.5">
           <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-          <span className="text-green-500">CURRENT POSITION: {state.currentSystem.name}</span>
+          <span className="text-green-500">CURRENT: {state.currentSystem.name}</span>
         </div>
+        {filters.showParkedShips && state.ownedShips.length > 0 && (
+          <div className="flex items-center gap-1.5">
+            <div className="w-2 h-2 bg-cyan-400 rounded-full" />
+            <span className="text-cyan-400">PARKED SHIPS</span>
+          </div>
+        )}
+        {filters.showColonies && state.colonies.length > 0 && (
+          <div className="flex items-center gap-1.5">
+            <div className="w-2 h-2 bg-purple-400 rounded-full" />
+            <span className="text-purple-400">COLONIES</span>
+          </div>
+        )}
       </div>
 
       {/* Selected star panel */}

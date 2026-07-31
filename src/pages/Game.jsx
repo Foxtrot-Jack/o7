@@ -16,6 +16,7 @@ import ColonizationScreen from '@/components/game/ColonizationScreen';
 import FleetScreen from '@/components/game/FleetScreen';
 import CarrierScreen from '@/components/game/CarrierScreen';
 import AchievementsScreen from '@/components/game/AchievementsScreen';
+import SettingsScreen from '@/components/game/SettingsScreen';
 
 function GameContent() {
   const { state } = useGameState();
@@ -55,6 +56,8 @@ function GameContent() {
         return <CarrierScreen />;
       case 'achievements':
         return <AchievementsScreen />;
+      case 'settings':
+        return <SettingsScreen />;
       default:
         return <SystemOrrery />;
     }
@@ -63,8 +66,8 @@ function GameContent() {
   const isFullScreen = screen === 'galaxy' || screen === 'system';
 
   return (
-    <div className="w-full h-screen bg-black flex flex-col overflow-hidden">
-      <CRTFrame enabled={state.settings.crtEffect}>
+    <div className={`w-full h-screen bg-black flex flex-col overflow-hidden ${state.settings?.miniScreen ? 'mini-screen' : ''}`}>
+      <CRTFrame enabled={state.settings.crtEffect} brightness={state.settings.textBrightness || 100}>
         <div className="flex flex-col h-full">
           <StatusHeader />
           <NavBar

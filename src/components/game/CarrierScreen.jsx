@@ -2,13 +2,13 @@
 import React, { useState } from 'react';
 import { useGameState, SHIP_MAP } from '@/lib/gameState';
 import { generateStarsInRange, distance3D } from '@/lib/galaxy';
-import { Rocket, Fuel, Banknote, Plus, Edit2, Check, Anchor } from 'lucide-react';
+import { Rocket, Fuel, Banknote, Plus, Edit2, Check, Anchor, Trash2 } from 'lucide-react';
 
 const CARRIER_COST = 5000000000;
 const MAX_CARRIERS = 5;
 
 export default function CarrierScreen() {
-  const { state, buyFleetCarrier, jumpCarrier, renameCarrier } = useGameState();
+  const { state, buyFleetCarrier, jumpCarrier, renameCarrier, decommissionCarrier } = useGameState();
   const [showBuy, setShowBuy] = useState(false);
   const [carrierName, setCarrierName] = useState('');
   const [editingId, setEditingId] = useState(null);
@@ -143,6 +143,16 @@ export default function CarrierScreen() {
                     </div>
                   </div>
                 )}
+
+                {/* Decommission */}
+                <div className="border-t border-orange-900 pt-2">
+                  <button
+                    onClick={() => { if (confirm(`Decommission ${c.name}? You'll receive 3.75B CR (75% refund). Ships on this carrier will be relocated to ${c.systemName || 'its system'}.`)) decommissionCarrier(c.id); }}
+                    className="w-full py-1 border border-red-900 text-red-600 hover:bg-red-950/30 text-[10px] flex items-center justify-center gap-1"
+                  >
+                    <Trash2 className="w-3 h-3" /> DECOMMISSION (75% REFUND)
+                  </button>
+                </div>
               </div>
             );
           })}

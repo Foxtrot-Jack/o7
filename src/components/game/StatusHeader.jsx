@@ -7,6 +7,7 @@ export default function StatusHeader() {
   const { state } = useGameState();
 
   const cargoUsed = state.ship.cargo.reduce((sum, c) => sum + c.qty, 0);
+  const systemsVisited = Object.keys(state.discoveredSystems || {}).length;
   const fuelPct = (state.ship.fuel / state.ship.fuelCapacity) * 100;
 
   const formatCredits = (n) => {
@@ -71,6 +72,10 @@ export default function StatusHeader() {
         <div className="flex flex-col">
           <span className="text-orange-700 text-[10px] uppercase">Rank</span>
           <span className="text-orange-400">{state.rank.exploration.name}</span>
+        </div>
+        <div className="flex flex-col">
+          <span className="text-orange-700 text-[10px] uppercase">Explored</span>
+          <span className="text-orange-400">{systemsVisited} / 4B</span>
         </div>
       </div>
     </div>

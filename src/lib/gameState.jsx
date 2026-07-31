@@ -114,6 +114,8 @@ function createInitialState() {
     settings: {
       crtEffect: true,
       scanlines: true,
+      textBrightness: 100,
+      miniScreen: false,
     },
     createdAt: Date.now(),
   };
@@ -559,6 +561,31 @@ export function GameStateProvider({ children }) {
     setState(prev => ({ ...prev, plottedRoute: route }));
   }, []);
 
+  // Update display settings
+  const updateSettings = useCallback((updates) => {
+    setState(prev => ({ ...prev, settings: { ...prev.settings, ...updates } }));
+  }, []);
+
+  // Decommission a fleet carrier (75% refund, ships relocated)
+  const decommissionCarrier = useCallback((carrierId) => {
+    setState(prev => {
+      const carrier = prev.fleetCarriers.find(c => c.id === carrierId);
+      if (!carrier) return prev;
+      const refund = Math.floor(5000000000 * 0.75);
+      const updatedShips = prev.ownedShips.map(s =>
+        s.storedAt?.carrierId === carrierId
+          ? { ...s, storedAt: { systemSeed: carrier.systemSeed, stationId: null } }
+          : s
+      );
+      return {
+        ...prev,
+        credits: prev.credits + refund,
+        fleetCarriers: prev.fleetCarriers.filter(c => c.id !== carrierId),
+        ownedShips: updatedShips,
+      };
+    });
+  }, []);
+
   // Reset game
   const resetGame = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY);
@@ -593,6 +620,8 @@ export function GameStateProvider({ children }) {
     buyFleetCarrier,
     jumpCarrier,
     renameCarrier,
+    decommissionCarrier,
+    updateSettings,
   };
 
   return (

@@ -17,11 +17,12 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId }) {
   const raycasterRef = useRef(new THREE.Raycaster());
   const selectedMarkerRef = useRef(null);
   const stationMeshesRef = useRef([]);
+  const focusBodyRef = useRef(null);
 
   const { state, getSystemData, scanBody, dockAtStation } = useGameState();
   const [selectedBody, setSelectedBody] = useState(null);
   const [hoveredBody, setHoveredBody] = useState(null);
-  const [bodiesCollapsed, setBodiesCollapsed] = useState(false);
+  const [bodiesCollapsed, setBodiesCollapsed] = useState(state.settings?.miniScreen || false);
 
   const rotState = useRef({
     azimuth: Math.PI / 4,
@@ -30,6 +31,10 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId }) {
     targetAzimuth: Math.PI / 4,
     targetPolar: Math.PI / 3,
     targetDistance: 80,
+    focusX: 0,
+    focusZ: 0,
+    targetFocusX: 0,
+    targetFocusZ: 0,
   });
 
   const systemData = getSystemData();
@@ -70,6 +75,12 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId }) {
       rs.azimuth += (rs.targetAzimuth - rs.azimuth) * 0.1;
       rs.polar += (rs.targetPolar - rs.polar) * 0.1;
       rs.distance += (rs.targetDistance - rs.distance) * 0.1;
+      rs.focusX += (rs.targetFocusX - rs.focusX) * 0.08;
+      rs.focusZ += (rs.targetFocusZ - rs.focusZ) * 0.08;
+      if (focusBodyRef.current) {
+        rs.targetFocusX = focusBodyRef.current.group.position.x;
+        rs.targetFocusZ = focusBodyRef.current.group.position.z;
+      }
       updateCameraPosition(camera, rs);
 
       // Update body positions (slow, realistic orbital motion)
@@ -89,8 +100,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId }) {
       // Update orbital station positions
       for (const sm of stationMeshesRef.current) {
         const st = Date.now() * 0.0001;
-        const planetRadius = Math.max(0.3, Math.min(4, sm.parentBody.radius * 1.5));
-        const orbitR = planetRadius * 2.5;
+        const orbitR = (sm.planetVisualRadius || 1) * 2.5;
         const angle = st * 2 / Math.sqrt(orbitR) + sm.phaseOffset;
         sm.model.position.x = Math.cos(angle) * orbitR;
         sm.model.position.z = Math.sin(angle) * orbitR;
@@ -172,8 +182,8 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId }) {
       let mesh = null;
 
       if (body.type === BODY_TYPES.STAR) {
-        // Star — glowing wireframe sphere
-        const radius = Math.max(1, Math.min(8, body.radius * 2));
+        // Star — glowing wireframe sphere (much larger than planets)
+        const radius = Math.max(3, Math.min(10, body.radius * 1.2));
         const geom = new THREE.SphereGeometry(radius, 16, 12);
         const mat = new THREE.MeshBasicMaterial({
           color: new THREE.Color(body.color),
@@ -191,7 +201,12 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId }) {
         });
         group.add(new THREE.Mesh(glowGeom, glowMat));
       } else if (body.type === BODY_TYPES.PLANET || body.type === BODY_TYPES.MOON) {
-        const radius = Math.max(0.3, Math.min(4, body.radius * 1.5));
+        const isGasGiant = body.planetType?.startsWith('gas_giant') || body.planetType?.startsWith('helium');
+        const radius = body.type === BODY_TYPES.MOON
+          ? Math.max(0.1, Math.min(0.4, body.radius * 0.4))
+          : isGasGiant
+            ? Math.max(1, Math.min(3, body.radius * 0.12))
+            : Math.max(0.3, Math.min(1.2, body.radius * 0.4));
         const geom = new THREE.SphereGeometry(radius, 12, 8);
         const mat = new THREE.MeshBasicMaterial({
           color: new THREE.Color(body.color),
@@ -271,10 +286,22 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId }) {
       }
 
       scene.add(group);
+      const getVisualRadius = (b) => {
+        if (b.type === BODY_TYPES.STAR) return Math.max(3, Math.min(10, b.radius * 1.2));
+        if (b.type === BODY_TYPES.PLANET) {
+          const gg = b.planetType?.startsWith('gas_giant') || b.planetType?.startsWith('helium');
+          return gg ? Math.max(1, Math.min(3, b.radius * 0.12)) : Math.max(0.3, Math.min(1.2, b.radius * 0.4));
+        }
+        if (b.type === BODY_TYPES.MOON) return Math.max(0.1, Math.min(0.4, b.radius * 0.4));
+        if (b.type === BODY_TYPES.ASTEROID) return Math.max(0.1, b.radius * 2);
+        return 1;
+      };
+
       bodyMeshesRef.current.push({
         body,
         group,
         mesh,
+        visualRadius: getVisualRadius(body),
         phaseOffset: Math.random() * Math.PI * 2,
       });
     }
@@ -287,8 +314,13 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId }) {
       if (!parentEntry) continue;
 
       const stationModel = buildStationModel(station.type);
-      const planetVisualRadius = Math.max(0.3, Math.min(4, parentBody.radius * 1.5));
-      const stationScale = Math.max(0.15, planetVisualRadius * 0.25);
+      const isGasGiant = parentBody.planetType?.startsWith('gas_giant') || parentBody.planetType?.startsWith('helium');
+      const planetVisualRadius = parentBody.type === BODY_TYPES.MOON
+        ? Math.max(0.1, Math.min(0.4, parentBody.radius * 0.4))
+        : isGasGiant
+          ? Math.max(1, Math.min(3, parentBody.radius * 0.12))
+          : Math.max(0.3, Math.min(1.2, parentBody.radius * 0.4));
+      const stationScale = Math.max(0.03, Math.min(0.1, planetVisualRadius * 0.08));
       stationModel.scale.setScalar(stationScale);
 
       if (station.isOrbital) {
@@ -298,6 +330,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId }) {
           station,
           model: stationModel,
           parentBody,
+          planetVisualRadius,
           phaseOffset: Math.random() * Math.PI * 2,
         });
       } else {
@@ -460,6 +493,11 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId }) {
 
   const handleSelectBody = useCallback((body) => {
     setSelectedBody(body);
+    const entry = bodyMeshesRef.current.find(bm => bm.body.id === body.id);
+    focusBodyRef.current = entry || null;
+    if (entry && entry.visualRadius) {
+      rotState.current.targetDistance = Math.max(entry.visualRadius * 5, 3);
+    }
     if (onSelectBody) onSelectBody(body);
   }, [onSelectBody]);
 
@@ -478,14 +516,35 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId }) {
     <div className="relative w-full h-full bg-black">
       <div ref={mountRef} className="w-full h-full" style={{ touchAction: 'none' }} />
 
+      {/* Reset view button */}
+      {selectedBody && (
+        <button
+          onClick={() => {
+            focusBodyRef.current = null;
+            setSelectedBody(null);
+            const maxOrbit = Math.max(...systemData.bodies.map(b => b.orbitRadius || 0), 20);
+            rotState.current.targetDistance = maxOrbit * 2.5;
+            rotState.current.targetFocusX = 0;
+            rotState.current.targetFocusZ = 0;
+          }}
+          className="absolute top-2 left-1/2 -translate-x-1/2 px-2 py-0.5 border border-orange-700 bg-black/80 text-orange-400 hover:bg-orange-950/30 text-[10px] z-30"
+        >
+          ⟲ RESET VIEW
+        </button>
+      )}
+
       {/* System info - top left */}
       <div className="absolute top-2 left-2 text-xs space-y-0.5 pointer-events-none">
         <div className="text-orange-300 font-bold">{state.currentSystem.name}</div>
-        <div className="text-orange-600">FACTION: {systemData.faction}</div>
-        <div className="text-orange-600">ECONOMY: {systemData.economy.name}</div>
-        <div className="text-orange-600">BODIES: {systemData.bodyCount}</div>
-        <div className="text-orange-600">STARS: {systemData.stars.length}</div>
-        <div className="text-orange-800 text-[10px] mt-1">DRAG TO ROTATE · PINCH/SCROLL TO ZOOM · TAP BODY TO SELECT</div>
+        {!state.settings?.miniScreen && (
+          <>
+            <div className="text-orange-600">FACTION: {systemData.faction}</div>
+            <div className="text-orange-600">ECONOMY: {systemData.economy.name}</div>
+            <div className="text-orange-600">BODIES: {systemData.bodyCount}</div>
+            <div className="text-orange-600">STARS: {systemData.stars.length}</div>
+            <div className="text-orange-800 text-[10px] mt-1">DRAG TO ROTATE · PINCH/SCROLL TO ZOOM · TAP BODY TO SELECT</div>
+          </>
+        )}
       </div>
 
       {/* Body list - right side (collapsible) */}
@@ -616,6 +675,6 @@ function updateCameraPosition(camera, rs) {
   const x = rs.distance * Math.sin(rs.polar) * Math.cos(rs.azimuth);
   const y = rs.distance * Math.cos(rs.polar);
   const z = rs.distance * Math.sin(rs.polar) * Math.sin(rs.azimuth);
-  camera.position.set(x, y, z);
-  camera.lookAt(0, 0, 0);
+  camera.position.set(x + rs.focusX, y, z + rs.focusZ);
+  camera.lookAt(rs.focusX, 0, rs.focusZ);
 }
