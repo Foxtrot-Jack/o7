@@ -1,10 +1,10 @@
 // Station Screen — docking services overview
 import React, { useState } from 'react';
 import { useGameState, getOutfittingLevel, OUTFITTING_LEVELS } from '@/lib/gameState';
-import { Home, Fuel, Wrench, ShoppingCart, Ship as ShipIcon, Telescope, Map, Pickaxe, Rocket, LogOut, ClipboardList, Settings as SettingsIcon } from 'lucide-react';
+import { Home, Fuel, Wrench, ShoppingCart, Ship as ShipIcon, Telescope, Map, Pickaxe, Rocket, LogOut, ClipboardList, Settings as SettingsIcon, ArrowLeftRight, FlaskConical, Users } from 'lucide-react';
 
 export default function StationScreen({ onNavigate }) {
-  const { state, getSystemData, leaveStation, refuel, addCredits } = useGameState();
+  const { state, getSystemData, leaveStation, refuel, addCredits, repairShip } = useGameState();
   const [refuelAmount, setRefuelAmount] = useState(0);
   const systemData = getSystemData();
   const station = systemData?.stations.find(s => s.id === state.currentStationId);
@@ -84,6 +84,9 @@ export default function StationScreen({ onNavigate }) {
           <ServiceButton icon={Pickaxe} label="Refinery & Mining" available={true} onClick={() => onNavigate('mining')} />
           <ServiceButton icon={Rocket} label="Colonization Office" available={true} onClick={() => onNavigate('colonization')} />
           <ServiceButton icon={Home} label="System Map" available={true} onClick={() => onNavigate('system')} />
+          <ServiceButton icon={ArrowLeftRight} label="Material Trader" available={true} onClick={() => onNavigate('materialtrader')} />
+          <ServiceButton icon={FlaskConical} label="Synthesis" available={true} onClick={() => onNavigate('synthesis')} />
+          <ServiceButton icon={Users} label="Crew Quarters" available={true} onClick={() => onNavigate('crew')} />
         </div>
       </div>
 
@@ -145,15 +148,38 @@ export default function StationScreen({ onNavigate }) {
       )}
 
       {/* Repair panel */}
-      {station.services.repair && (
-        <div className="border border-orange-900 p-3 bg-black">
-          <div className="flex items-center gap-2">
-            <Wrench className="w-4 h-4 text-orange-500" />
-            <h3 className="text-orange-400 text-sm font-bold uppercase">Maintenance & Repair</h3>
+      {station.services.repair && (() => {
+        const integrity = state.ship.integrity ?? 100;
+        const damage = 100 - integrity;
+        const repairCost = isSandbox ? 0 : Math.ceil(damage * 10000);
+        const intColor = integrity > 70 ? 'text-green-500' : integrity > 30 ? 'text-yellow-500' : 'text-red-500';
+        const barColor = integrity > 70 ? 'bg-green-600' : integrity > 30 ? 'bg-yellow-600' : 'bg-red-600';
+        return (
+          <div className="border border-orange-900 p-3 bg-black">
+            <div className="flex items-center gap-2 mb-2">
+              <Wrench className="w-4 h-4 text-orange-500" />
+              <h3 className="text-orange-400 text-sm font-bold uppercase">Maintenance & Repair</h3>
+            </div>
+            <div className="text-xs space-y-1">
+              <div>SHIP INTEGRITY: <span className={intColor}>{integrity.toFixed(1)}%</span></div>
+              <div className="w-full h-2 bg-black border border-orange-900">
+                <div className={`h-full ${barColor} transition-all`} style={{ width: `${integrity}%` }} />
+              </div>
+              {damage > 0 ? (
+                <button
+                  onClick={() => { repairShip(damage); if (!isSandbox) addCredits(-repairCost); }}
+                  disabled={!isSandbox && state.credits < repairCost}
+                  className="mt-2 w-full py-1.5 border border-orange-500 text-orange-300 hover:bg-orange-950/50 text-xs font-bold disabled:opacity-30"
+                >
+                  {isSandbox ? 'FULL REPAIR — FREE' : `FULL REPAIR — ${repairCost.toLocaleString()} CR`}
+                </button>
+              ) : (
+                <p className="text-green-500 text-[10px] mt-1">All systems nominal. No repairs needed.</p>
+              )}
+            </div>
           </div>
-          <p className="text-orange-700 text-xs mt-1">Ship integrity: <span className="text-green-500">100%</span> — No repairs needed.</p>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Undock */}
       <button

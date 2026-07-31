@@ -1,6 +1,7 @@
 // Commander Profile — career statistics, fleet record, exploration log
 import React from 'react';
 import { useGameState, SHIP_MAP } from '@/lib/gameState';
+import { SOL_SYSTEM, distance3D } from '@/lib/galaxy';
 import { User, Rocket, Ship, Map, Globe, DollarSign, Route, Trophy, Anchor, Clock, Zap, Telescope, Pickaxe } from 'lucide-react';
 import BadgeDisplay from './BadgeDisplay';
 
@@ -43,6 +44,7 @@ export default function CommanderProfile() {
         <Stat label="Light Years Traveled" value={`${fmt(state.lightYearsTraveled || 0)} LY`} icon={Route} />
         <Stat label="Total Jumps" value={(state.totalJumps || 0).toLocaleString()} icon={Zap} />
         <Stat label="Systems Visited" value={systemsDiscovered.toLocaleString()} icon={Map} />
+        <Stat label="Distance from Sol" value={`${fmt(distance3D(state.currentSystem, SOL_SYSTEM))} LY`} icon={Globe} />
       </Section>
 
       <Section title="Fleet & Assets" icon={Ship}>

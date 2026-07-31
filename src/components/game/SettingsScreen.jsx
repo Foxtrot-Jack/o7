@@ -1,7 +1,7 @@
 // Display Settings — brightness, mini-screen, CRT, reset
 import React from 'react';
 import { useGameState } from '@/lib/gameState';
-import { Settings, Sun, Monitor, Tv, RotateCcw, ArrowLeftRight, Palette } from 'lucide-react';
+import { Settings, Sun, Monitor, Tv, RotateCcw, ArrowLeftRight, Palette, Download, Upload } from 'lucide-react';
 import { THEME_LIST } from '@/lib/themes';
 
 export default function SettingsScreen() {
@@ -78,6 +78,59 @@ export default function SettingsScreen() {
         </div>
         <div className="text-orange-700 text-[10px]">Return to save selection to switch between Commander and Sandbox profiles.</div>
         <button onClick={() => switchSave()} className="w-full py-2 border border-cyan-700 text-cyan-400 hover:bg-cyan-950/30 text-xs font-bold">SWITCH SAVE SLOT</button>
+      </div>
+
+      <div className="border border-cyan-900 p-4 space-y-2">
+        <div className="flex items-center gap-2">
+          <Download className="w-4 h-4 text-cyan-500" />
+          <h3 className="text-cyan-400 text-sm font-bold uppercase">Export Save Data</h3>
+        </div>
+        <div className="text-orange-700 text-[10px]">Download a backup of your save file. Store it safely.</div>
+        <button
+          onClick={() => {
+            const key = state.saveMode === 'sandbox' ? 'starfarer_sandbox_v1' : 'starfarer_save_v1';
+            const data = localStorage.getItem(key);
+            if (!data) return;
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `dogstar_${state.saveMode}_${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+          }}
+          className="w-full py-2 border border-cyan-700 text-cyan-400 hover:bg-cyan-950/30 text-xs font-bold"
+        >DOWNLOAD SAVE FILE</button>
+      </div>
+
+      <div className="border border-cyan-900 p-4 space-y-2">
+        <div className="flex items-center gap-2">
+          <Upload className="w-4 h-4 text-cyan-500" />
+          <h3 className="text-cyan-400 text-sm font-bold uppercase">Import Save Data</h3>
+        </div>
+        <div className="text-orange-700 text-[10px]">Restore from a backup file. This overwrites your current save.</div>
+        <input
+          type="file"
+          accept=".json"
+          onChange={(e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+              try {
+                JSON.parse(ev.target.result);
+                const key = state.saveMode === 'sandbox' ? 'starfarer_sandbox_v1' : 'starfarer_save_v1';
+                localStorage.setItem(key, ev.target.result);
+                alert('Save imported! Reloading...');
+                window.location.reload();
+              } catch (err) {
+                alert('Invalid save file.');
+              }
+            };
+            reader.readAsText(file);
+          }}
+          className="text-orange-500 text-xs w-full"
+        />
       </div>
 
       <div className="border border-red-900 p-4 space-y-2">

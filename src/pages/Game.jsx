@@ -30,6 +30,11 @@ import LeaderboardScreen from '@/components/game/LeaderboardScreen';
 import BadgeMaker from '@/components/game/BadgeMaker';
 import CarrierCreator from '@/components/game/CarrierCreator';
 import CarrierInterior from '@/components/game/CarrierInterior';
+import CrewScreen from '@/components/game/CrewScreen';
+import PowerPlayScreen from '@/components/game/PowerPlayScreen';
+import MaterialTraderScreen from '@/components/game/MaterialTraderScreen';
+import CommunityGoalsScreen from '@/components/game/CommunityGoalsScreen';
+import SynthesisScreen from '@/components/game/SynthesisScreen';
 
 function GameContent() {
   const { state } = useGameState();
@@ -95,6 +100,16 @@ function GameContent() {
         return <CompanyScreen />;
       case 'cheats':
         return <CheatsScreen />;
+      case 'crew':
+        return <CrewScreen />;
+      case 'powerplay':
+        return <PowerPlayScreen />;
+      case 'materialtrader':
+        return <MaterialTraderScreen />;
+      case 'goals':
+        return <CommunityGoalsScreen />;
+      case 'synthesis':
+        return <SynthesisScreen />;
       default:
         return <SystemOrrery />;
     }

@@ -23,10 +23,12 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
   const shipMeshRef = useRef(null);
   const shipPosRef = useRef({ x: 0, y: 0, z: 5 });
   const travelRef = useRef(null);
+  const scoopFrameRef = useRef(0);
+  const npcShipsRef = useRef([]);
   const orbitAnchorRef = useRef(null);
   const lastTimeRef = useRef(0);
 
-  const { state, getSystemData, scanBody, dockAtStation, fssScanSystem, mapBody, landOnBody } = useGameState();
+  const { state, getSystemData, scanBody, dockAtStation, fssScanSystem, mapBody, landOnBody, refuel } = useGameState();
   const [selectedBody, setSelectedBody] = useState(null);
   const [hoveredBody, setHoveredBody] = useState(null);
   const [bodiesCollapsed, setBodiesCollapsed] = useState(state.settings?.miniScreen || false);
@@ -172,6 +174,36 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
         shipPosRef.current.z = oz;
         shipMeshRef.current.position.set(ox, 0, oz);
         shipMeshRef.current.rotation.y = angle + Math.PI / 2;
+
+        // Fuel scoop — auto-scoop when orbiting a star with a fuel scoop installed
+        if (anchor.body.type === BODY_TYPES.STAR) {
+          const modules = state.ship.modules || {};
+          const scoopMod = Object.values(modules).find(id => typeof id === 'string' && id.startsWith('fsc_'));
+          if (scoopMod && state.ship.fuel < state.ship.fuelCapacity) {
+            scoopFrameRef.current++;
+            if (scoopFrameRef.current >= 30) {
+              scoopFrameRef.current = 0;
+              const scoopSize = parseInt(scoopMod.split('_')[1].replace('a', '')) || 1;
+              refuel(scoopSize * 0.5);
+            }
+          }
+        }
+      }
+
+      // NPC ship traffic
+      for (const npc of npcShipsRef.current) {
+        const dx = npc.targetX - npc.x;
+        const dz = npc.targetZ - npc.z;
+        const nd = Math.hypot(dx, dz);
+        if (nd < 1) {
+          npc.targetX = (Math.random() - 0.5) * 40;
+          npc.targetZ = (Math.random() - 0.5) * 40;
+        } else {
+          npc.x += (dx / nd) * npc.speed * dt;
+          npc.z += (dz / nd) * npc.speed * dt;
+          npc.model.position.set(npc.x, 0, npc.z);
+          npc.model.rotation.y = Math.atan2(dx, dz);
+        }
       }
 
       renderer.render(scene, camera);
@@ -436,6 +468,29 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
     shipModel.position.set(shipPosRef.current.x, 0, shipPosRef.current.z);
     travelRef.current = null;
     setTravelInfo(null);
+
+    // Create NPC traffic
+    for (const sm of npcShipsRef.current) {
+      scene.remove(sm.model);
+      sm.model.traverse(child => { if (child.geometry) child.geometry.dispose(); if (child.material) child.material.dispose(); });
+    }
+    npcShipsRef.current = [];
+    const popBoost = (state.currentSystem.population || 0) > 0 ? 2 : 0;
+    const numNpc = Math.min(8, Math.max(0, Math.floor((systemData.stations.length || 1) * 1.5) + popBoost));
+    for (let i = 0; i < numNpc; i++) {
+      const npcClass = 1 + Math.floor(Math.random() * 3);
+      const npcModel = buildShipModel(npcClass);
+      npcModel.scale.setScalar(0.4);
+      scene.add(npcModel);
+      npcShipsRef.current.push({
+        model: npcModel,
+        x: (Math.random() - 0.5) * 40,
+        z: (Math.random() - 0.5) * 40,
+        targetX: (Math.random() - 0.5) * 40,
+        targetZ: (Math.random() - 0.5) * 40,
+        speed: 2 + Math.random() * 3,
+      });
+    }
 
     // Auto-fit camera to system
     const maxOrbit = Math.max(...allBodies.map(b => b.orbitRadius || 0), 20);
@@ -711,6 +766,20 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
           </button>
         </div>
       )}
+
+      {/* Fuel scoop indicator */}
+      {state.currentLocation !== 'station' && (() => {
+        const modules = state.ship.modules || {};
+        const hasScoop = Object.values(modules).some(id => typeof id === 'string' && id.startsWith('fsc_'));
+        if (hasScoop && state.ship.fuel < state.ship.fuelCapacity) {
+          return (
+            <div className="absolute top-14 right-44 sm:right-56 border border-cyan-700 bg-black/95 px-3 py-1 text-[10px] text-cyan-500 z-30">
+              ⚡ FUEL SCOOP READY
+            </div>
+          );
+        }
+        return null;
+      })()}
 
       {/* Travel progress */}
       {travelInfo && (

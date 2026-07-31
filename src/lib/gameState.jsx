@@ -7,6 +7,9 @@ import { generateSystem } from './system';
 import { COMMODITIES, COMMODITY_MAP, COMMODITY_CATEGORIES } from './commodities';
 import { computeCustomShipStats } from './shipParts';
 import { getDefaultModules, computeShipStats } from './shipOutfitting';
+import { getCrewBonuses } from './crew';
+import { generateCommunityGoals } from './communityGoals';
+import { SYNTHESIS_MAP } from './synthesis';
 
 const STORAGE_KEY = 'starfarer_save_v1';
 const STORAGE_KEY_SANDBOX = 'starfarer_sandbox_v1';
@@ -76,6 +79,7 @@ function createInitialState() {
       fuelCapacity: 8,
       cargoCapacity: 4,
       modules: getDefaultModules('sidewinder'),
+      integrity: 100,
     },
     currentSystem: STARTING_SYSTEM,
     currentLocation: 'station', // 'system' | 'station'
@@ -156,6 +160,12 @@ function createInitialState() {
       miniScreen: false,
       colorTheme: 'elite',
     },
+    crew: [],
+    powerPlay: null,
+    communityGoals: [],
+    lastGoalRefresh: Date.now(),
+    fsdBoost: false,
+    heatSinkCharges: 0,
     createdAt: Date.now(),
   };
 }
@@ -174,6 +184,7 @@ function createSandboxState() {
       fuelCapacity: 64,
       cargoCapacity: 114,
       modules: getDefaultModules('anaconda'),
+      integrity: 100,
     },
   };
 }
@@ -217,6 +228,12 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
           savedBadges: parsed.savedBadges || [],
           customCarrierDesigns: parsed.customCarrierDesigns || [],
           lastOrbitBodyId: parsed.lastOrbitBodyId || null,
+          crew: parsed.crew || [],
+          powerPlay: parsed.powerPlay || null,
+          communityGoals: parsed.communityGoals || [],
+          lastGoalRefresh: parsed.lastGoalRefresh || Date.now(),
+          fsdBoost: parsed.fsdBoost || false,
+          heatSinkCharges: parsed.heatSinkCharges || 0,
           saveMode: saveSlot,
           lightYearsTraveled: parsed.lightYearsTraveled || 0,
           lifetimeEarnings: parsed.lifetimeEarnings || 0,
@@ -277,35 +294,49 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
   // Set current system and generate its data
   const setCurrentSystem = useCallback((system) => {
     const systemData = generateSystem(system.seed, system.starClass);
-    setState(prev => ({
-      ...prev,
-      currentSystem: system,
-      currentSystemData: systemData,
-      currentLocation: 'system',
-      currentStationId: null,
-      totalJumps: prev.totalJumps + 1,
-      lightYearsTraveled: (prev.lightYearsTraveled || 0) + distance3D(prev.currentSystem, system),
-      flightLog: [...(prev.flightLog || []), { seed: system.seed, name: system.name, x: system.x, y: system.y, z: system.z }].slice(-50),
-      discoveredSystems: {
-        ...prev.discoveredSystems,
-        [system.seed]: prev.discoveredSystems[system.seed] || {
-          name: system.name,
-          firstDiscovered: true,
-          bodyCount: systemData.bodyCount,
-          scanValue: 0,
-        },
-      },
-      ...(system.seed === SOL_SYSTEM.seed && !prev.cheats?.unlocked ? {
-        cheats: { ...prev.cheats, unlocked: true },
-        achievements: {
-          ...prev.achievements,
-          milestones: {
-            ...prev.achievements?.milestones,
-            found_sol: prev.achievements?.milestones?.found_sol || { date: Date.now() },
+    setState(prev => {
+      const dist = distance3D(prev.currentSystem, system);
+      const isNeutron = system.starClass?.class === 'NS';
+      const crewBonuses = getCrewBonuses(prev.crew);
+      const wearReduction = crewBonuses.wearReduction || 0;
+      let wear = dist * 0.01;
+      if (isNeutron) wear += 5;
+      if (prev.heatSinkCharges > 0) wear *= 0.3;
+      wear *= (1 - wearReduction);
+      const newIntegrity = Math.max(0, (prev.ship.integrity ?? 100) - wear);
+      return {
+        ...prev,
+        currentSystem: system,
+        currentSystemData: systemData,
+        currentLocation: 'system',
+        currentStationId: null,
+        totalJumps: prev.totalJumps + 1,
+        lightYearsTraveled: (prev.lightYearsTraveled || 0) + dist,
+        flightLog: [...(prev.flightLog || []), { seed: system.seed, name: system.name, x: system.x, y: system.y, z: system.z }].slice(-50),
+        discoveredSystems: {
+          ...prev.discoveredSystems,
+          [system.seed]: prev.discoveredSystems[system.seed] || {
+            name: system.name,
+            firstDiscovered: true,
+            bodyCount: systemData.bodyCount,
+            scanValue: 0,
           },
         },
-      } : {}),
-    }));
+        fsdBoost: false,
+        heatSinkCharges: Math.max(0, (prev.heatSinkCharges || 0) - (isNeutron ? 1 : 0)),
+        ship: { ...prev.ship, integrity: newIntegrity },
+        ...(system.seed === SOL_SYSTEM.seed && !prev.cheats?.unlocked ? {
+          cheats: { ...prev.cheats, unlocked: true },
+          achievements: {
+            ...prev.achievements,
+            milestones: {
+              ...prev.achievements?.milestones,
+              found_sol: prev.achievements?.milestones?.found_sol || { date: Date.now() },
+            },
+          },
+        } : {}),
+      };
+    });
   }, []);
 
   // Dock at a station
@@ -650,7 +681,9 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
       for (const [key, disc] of Object.entries(prev.surfaceDiscoveries || {})) {
         surfaceValue += disc.value || 0;
       }
-      const totalPayout = totalValue + systemBonus + surfaceValue;
+      const crewBonuses = getCrewBonuses(prev.crew);
+      const scanMult = 1 + (crewBonuses.scanValue || 0);
+      const totalPayout = Math.floor((totalValue + systemBonus + surfaceValue) * scanMult);
       if (totalPayout === 0) return prev;
       return {
         ...prev,
@@ -1250,6 +1283,126 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
 
   const isSandbox = state.saveMode === 'sandbox';
 
+  // ===== COMMUNITY GOALS =====
+  const refreshCommunityGoals = useCallback(() => {
+    setState(prev => {
+      const now = Date.now();
+      const goals = prev.communityGoals || [];
+      const hasActive = goals.some(g => !g.claimed && g.deadline > now);
+      if (hasActive && goals.length > 0) return prev;
+      return { ...prev, communityGoals: generateCommunityGoals(), lastGoalRefresh: now };
+    });
+  }, []);
+
+  const contributeToGoal = useCallback((goalId) => {
+    let result = { contributed: 0 };
+    setState(prev => {
+      const goal = (prev.communityGoals || []).find(g => g.id === goalId);
+      if (!goal || goal.completed || goal.claimed) return prev;
+      if (goal.type === 'trade') {
+        const cargo = prev.ship.cargo.map(c => ({ ...c }));
+        let contributed = 0;
+        for (const item of cargo) {
+          const comm = COMMODITY_MAP[item.commodity];
+          if (comm && comm.category === goal.commodityCategory) {
+            const need = goal.target - goal.progress;
+            const give = Math.min(item.qty, need);
+            item.qty -= give;
+            contributed += give;
+          }
+        }
+        if (contributed === 0) return prev;
+        result.contributed = contributed;
+        return {
+          ...prev,
+          ship: { ...prev.ship, cargo: cargo.filter(c => c.qty > 0) },
+          communityGoals: prev.communityGoals.map(g => g.id === goalId ? { ...g, progress: Math.min(g.target, g.progress + contributed), completed: g.progress + contributed >= g.target } : g),
+        };
+      }
+      if (goal.type === 'mining') {
+        const matId = goal.materialId;
+        const have = prev.materials?.[matId] || 0;
+        if (have === 0) return prev;
+        const need = goal.target - goal.progress;
+        const give = Math.min(have, need);
+        result.contributed = give;
+        return {
+          ...prev,
+          materials: { ...prev.materials, [matId]: have - give },
+          communityGoals: prev.communityGoals.map(g => g.id === goalId ? { ...g, progress: Math.min(g.target, g.progress + give), completed: g.progress + give >= g.target } : g),
+        };
+      }
+      if (goal.type === 'exploration') {
+        const scanCount = Object.keys(prev.scannedBodies || {}).length;
+        const mapCount = Object.keys(prev.mappedBodies || {}).length;
+        const available = goal.desc.includes('Map') ? mapCount : scanCount;
+        if (available === 0) return prev;
+        const need = goal.target - goal.progress;
+        const give = Math.min(available, need);
+        result.contributed = give;
+        return {
+          ...prev,
+          communityGoals: prev.communityGoals.map(g => g.id === goalId ? { ...g, progress: Math.min(g.target, g.progress + give), completed: g.progress + give >= g.target } : g),
+        };
+      }
+      return prev;
+    });
+    return result;
+  }, []);
+
+  const claimGoalReward = useCallback((goalId) => {
+    setState(prev => {
+      const goal = (prev.communityGoals || []).find(g => g.id === goalId);
+      if (!goal || !goal.completed || goal.claimed) return prev;
+      return {
+        ...prev,
+        credits: prev.credits + goal.reward,
+        lifetimeEarnings: (prev.lifetimeEarnings || 0) + goal.reward,
+        communityGoals: prev.communityGoals.map(g => g.id === goalId ? { ...g, claimed: true } : g),
+      };
+    });
+  }, []);
+
+  // ===== SYNTHESIS =====
+  const synthesize = useCallback((recipeId) => {
+    let result = null;
+    setState(prev => {
+      const recipe = SYNTHESIS_MAP[recipeId];
+      if (!recipe) return prev;
+      const mats = { ...prev.materials };
+      for (const [matId, qty] of Object.entries(recipe.inputs)) {
+        if ((mats[matId] || 0) < qty) return prev;
+      }
+      for (const [matId, qty] of Object.entries(recipe.inputs)) {
+        mats[matId] -= qty;
+      }
+      let updates = { materials: mats };
+      if (recipe.effect === 'fsd_boost') updates.fsdBoost = true;
+      if (recipe.effect === 'hull_repair') updates.ship = { ...prev.ship, integrity: Math.min(100, (prev.ship.integrity ?? 100) + 20) };
+      if (recipe.effect === 'afm_refill') updates.ship = { ...prev.ship, integrity: Math.min(100, (prev.ship.integrity ?? 100) + 10) };
+      if (recipe.effect === 'heat_sink') updates.heatSinkCharges = (prev.heatSinkCharges || 0) + 3;
+      if (recipe.effect === 'limpets') {
+        const cargo = [...prev.ship.cargo];
+        const existing = cargo.find(c => c.commodity === 'limpets');
+        if (existing) existing.qty += 4;
+        else cargo.push({ commodity: 'limpets', qty: 4 });
+        updates.ship = { ...prev.ship, cargo };
+      }
+      result = { name: recipe.name, effectLabel: recipe.effectLabel };
+      return { ...prev, ...updates };
+    });
+    return result;
+  }, []);
+
+  // ===== SHIP REPAIR =====
+  const repairShip = useCallback((amount) => {
+    setState(prev => {
+      const integrity = prev.ship.integrity ?? 100;
+      const newIntegrity = Math.min(100, integrity + amount);
+      return { ...prev, ship: { ...prev.ship, integrity: newIntegrity } };
+    });
+  }, []);
+
   const value = {
     state,
     isSandbox,
@@ -1318,6 +1471,11 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     saveCustomCarrierDesign,
     deleteCustomCarrierDesign,
     applyCarrierDesign,
+    refreshCommunityGoals,
+    contributeToGoal,
+    claimGoalReward,
+    synthesize,
+    repairShip,
   };
 
   return (

@@ -2,6 +2,7 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import * as THREE from 'three';
 import { generateStarsInRange, distance3D, getStarColor, GALACTIC_RADIUS, generateGalaxyOverview } from '@/lib/galaxy';
+import { getRegionName } from '@/lib/regions';
 import { useGameState } from '@/lib/gameState';
 
 export default function GalaxyMap({ onJumpToSystem }) {
@@ -576,7 +577,7 @@ export default function GalaxyMap({ onJumpToSystem }) {
       ).toFixed(1)
     : null;
 
-  const fuelCost = selectedStar ? Math.ceil(parseFloat(jumpDistance) * 0.5) : null;
+  const fuelCost = selectedStar ? Math.ceil(parseFloat(jumpDistance) * (state.fsdBoost ? 0.25 : 0.5)) : null;
   const fuelCheat = state.cheats?.unlocked && (state.cheats?.active?.instant_jumps || state.cheats?.active?.infinite_fuel);
   const galaxyFlip = state.cheats?.unlocked && state.cheats?.active?.galaxy_flip;
 
@@ -594,6 +595,7 @@ export default function GalaxyMap({ onJumpToSystem }) {
       {/* HUD overlay - top left */}
       <div className="absolute top-2 left-2 text-orange-600 text-xs space-y-0.5 pointer-events-none">
         <div>GALACTIC POSITION: {state.currentSystem.x.toFixed(0)}, {state.currentSystem.y.toFixed(0)}, {state.currentSystem.z.toFixed(0)}</div>
+        <div>REGION: {getRegionName(state.currentSystem.x, state.currentSystem.y, state.currentSystem.z)}</div>
         <div>STARS IN RANGE: {stars.length}</div>
         <div className="text-orange-800">DRAG TO ROTATE · 2-FINGER PAN/PINCH · SCROLL TO ZOOM · TAP STAR TO SELECT</div>
       </div>
@@ -743,6 +745,7 @@ export default function GalaxyMap({ onJumpToSystem }) {
             <div>SECURITY: <span className="text-orange-300 capitalize">{selectedStar.security}</span></div>
             <div>FUEL COST: <span className="text-orange-300">{fuelCheat ? 'FREE' : `${fuelCost} T`}</span></div>
             <div>POPULATION: <span className="text-orange-300">{selectedStar.population > 0 ? selectedStar.population.toLocaleString() : 'Uninhabited'}</span></div>
+            <div>REGION: <span className="text-orange-300">{getRegionName(selectedStar.x, selectedStar.y, selectedStar.z)}</span></div>
           </div>
           <button
             onClick={() => {
