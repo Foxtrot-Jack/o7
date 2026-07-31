@@ -15,9 +15,9 @@ const ROOMS = [
 
 const ALE_TYPES = [
   { name: 'Tritium Ale', cost: 50, desc: 'A refined blend with notes of rocket fuel. Surprisingly smooth.' },
-  { name: 'Void Walker', cost: 120, desc: 'Aged in the hull of a decommissioned Anaconda. Peaty.' },
+  { name: 'Void Walker', cost: 120, desc: 'Aged in the hull of a decommissioned Roc. Peaty.' },
   { name: 'Neutron Stout', cost: 200, desc: 'Dark as space, strong as a white dwarf. Drink responsibly.' },
-  { name: 'Diamondback Cider', cost: 80, desc: 'Crisp, refreshing, faintly radioactive. A crowd favorite.' },
+  { name: 'Kingfisher Cider', cost: 80, desc: 'Crisp, refreshing, faintly radioactive. A crowd favorite.' },
   { name: 'Sagittarius Shot', cost: 350, desc: 'A shot of pure liquid courage. Named after the galactic core.' },
 ];
 
@@ -48,7 +48,7 @@ const GALAXY_FACTS = [
   'Black holes produce visual lensing effects but deal no damage to ships.',
   'The oldest known star is estimated to be 13 billion years old.',
   'Some nebulae span hundreds of light years across.',
-  'A Commander once crossed the galaxy in a Sidewinder. It took 42 days.',
+  'A Commander once crossed the galaxy in a Sparrowhawk. It took 42 days.',
   'Water worlds cover roughly 1 in 50,000 surveyed systems.',
   'The first discovered ammonia world sparked a wave of colonization fever.',
 ];

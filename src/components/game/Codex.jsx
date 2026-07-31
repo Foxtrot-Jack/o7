@@ -11,9 +11,9 @@ const CODEX = [
         title: 'Commander vs Sandbox Save',
         body: `Two save slots are available from the main menu:
 
-• COMMANDER — Standard play. You start with 100,000 credits and a Sidewinder Mk-I. All ships, parts, and features must be earned or purchased. Lifetime statistics (light years traveled, earnings, ships purchased) are tracked for your profile.
+• COMMANDER — Standard play. You start with 100,000 credits and a Sparrowhawk Mk-I. All ships, parts, and features must be earned or purchased. Lifetime statistics (light years traveled, earnings, ships purchased) are tracked for your profile.
 
-• SANDBOX — Unrestricted mode. You start with 1 billion credits and an Anaconda. All ship parts are unlocked, purchases are free, carrier jumps cost no tritium, and you can teleport to any searched system instantly. Ideal for experimentation.
+• SANDBOX — Unrestricted mode. You start with 1 billion credits and a Roc. All ship parts are unlocked, purchases are free, carrier jumps cost no tritium, and you can teleport to any searched system instantly. Ideal for experimentation.
 
 Switch saves anytime from the Settings screen. Each slot persists independently in your browser's local storage.`,
       },
@@ -345,7 +345,7 @@ The company tracks your reputation level, which grows as you collect income. Hig
 • Reputation multiplier applies on top (up to +50%)
 
 A Type-6 Transporter (50 cargo, 15 jump) earns ~2.65M CR/hr.
-An Anaconda (114 cargo, 18 jump) earns ~5.88M CR/hr.
+A Roc (114 cargo, 18 jump) earns ~5.88M CR/hr.
 
 Income accumulates over time even while you're exploring, mining, or doing other activities. Collect periodically from the Company screen. You can recall a ship from a contract at any time — it returns to your fleet at your current location.
 
@@ -405,10 +405,10 @@ Cargo capacity is determined by your ship type and installed cargo racks. The MK
         title: 'Buying New Ships',
         body: `The Shipyard tab (available when docked) lists ships available for purchase at the current station. Available ships depend on system population:
 
-• Small population — Sidewinder, Eagle, Hauler, Adder
-• Medium population — Cobra, Viper, Type-6, Diamondback, Dolphin, Cobra Mk-V
-• Large population — Asp, Python, Krait, Mandalay, Federal Dropship, Vulture, Imperial Courier
-• Huge population — Federal Corvette, Imperial Cutter, Type-10, Anaconda, Beluga
+• Small population — Sparrowhawk, Eagle, Hauler, Osprey
+• Medium population — Falcon, Kestrel, Type-6, Kingfisher, Dolphin, Falcon Mk-V
+• Large population — Heron, Albatross, Harrier, Mandalay, Federal Dropship, Vulture, Imperial Courier
+• Huge population — Federal Corvette, Imperial Cutter, Type-10, Roc, Beluga
 
 Over 30 ship models are available from manufacturers: Falcon Deacy, Lakon Spaceways, Core Dynamics, Zorgon Peterson, Saud Kruger, and Gutamaya.
 
@@ -852,6 +852,226 @@ Themes apply a hue-rotate filter to the entire interface for instant visual chan
 • RESET — Permanently delete your current save and start fresh. Requires confirmation.
 
 Saves are stored locally in your browser. Clearing browser data will erase all progress.`,
+      },
+    ],
+  },
+  {
+    category: 'Combat & Piracy',
+    icon: '⚔️',
+    entries: [
+      {
+        title: 'Multi-Crew System',
+        body: `Assign hired crew to four active combat roles: Pilot, Gunner, Shield Operator, and Engineer. Each role unlocks a unique ability usable during ship combat:
+
+• PILOT — Evasive Maneuver: +15% flee chance for one round (3-round cooldown).
+• GUNNER — Overcharge Weapons: +50% damage for one round (3-round cooldown).
+• SHIELD OPERATOR — Shield Boost: Restore 30% shields instantly (4-round cooldown).
+• ENGINEER — Emergency Repair: Restore 15% hull instantly (5-round cooldown).
+
+Queue abilities before choosing a combat tactic. The ability applies to that round, then enters cooldown. Access the Multi-Crew screen at any station.`,
+      },
+      {
+        title: 'Fighter Hangar',
+        body: `Class 3 and larger ships can equip a fighter hangar (1 slot for Class 3, 2 slots for Class 4). Build fighters from three types:
+
+• Taipan — Balanced multirole (50K CR).
+• GU-97 — Fast interceptor, fragile hull (80K CR).
+• Trident — Heavy assault fighter (120K CR).
+
+Assign a wingmate as pilot for full effectiveness, or run autonomous (reduced damage). Deployed fighters add extra attacks each combat round alongside wingmate support.`,
+      },
+      {
+        title: 'Piracy & Interdiction',
+        body: `In Low Security and Anarchy systems, scan for NPC traders and demand their cargo. Traders may comply (drop cargo) or fight back based on their compliance chance.
+
+Combat resolution compares your ship's total combat power (damage + shield + hull) against the trader's. Win to seize all cargo; lose and take hull damage.
+
+Piracy is a crime — each act increases your notoriety and bounty. Stolen cargo can be fenced at Black Markets in anarchy systems.`,
+      },
+      {
+        title: 'Mission Chains',
+        body: `Multi-part story missions with branching narratives and escalating rewards. Each chain has 3–4 steps that advance the story:
+
+• The Lost Surveyor — Track a missing explorer.
+• Trade War — Side with a faction in a trade dispute.
+• Pirate King Takedown — Build a case and eliminate a pirate king.
+• The Alien Artifact — Race rival scavengers to an ancient relic.
+
+Completing each step grants credits; finishing the chain awards a large bonus and a unique title.`,
+      },
+    ],
+  },
+  {
+    category: 'Exploration Tools',
+    icon: '🔭',
+    entries: [
+      {
+        title: 'FSS Scanner',
+        body: `The Full Spectrum Scanner lets you tune into four frequency bands (Low, Mid, High, Ultra) to discover all bodies in a system. Each band reveals the stellar/planetary bodies resonating at that frequency.
+
+Tuning takes a moment per band. Completing all four bands registers a full system scan, boosting exploration data value and revealing all bodies on the orrery.
+
+Access the FSS Scanner from the Explore menu while in a system.`,
+      },
+      {
+        title: 'Exobiology Scanner',
+        body: `When landed on a mapped body with biological signals, use the Exobiology scanner to collect genetic samples. Each species requires 3 samples to complete a full analysis.
+
+Completed analyses pay out immediately (base value 10K–25K CR per species) and are recorded in your persistent species Codex. Track your discoveries across the galaxy.`,
+      },
+      {
+        title: 'Discovery Database',
+        body: `A living catalogue of everything you've encountered. Tracks:
+
+• 12 stellar body types (O-class through White Dwarfs, Neutron Stars, Black Holes).
+• 9 planet types (Rocky, Icy, Gas Giants, Earth-Like, Ammonia, Water Worlds, etc.).
+• Special milestones (first Earth-Like, first Neutron Star, first Black Hole).
+• Biological species from your exobiology Codex.
+
+Completing categories unlocks cosmetic badges and progression bonuses. Access from the Commander menu.`,
+      },
+      {
+        title: 'Cartography & Data Sale',
+        body: `Universal Cartographics (station service) lets you review and sell exploration data. Data is grouped by galactic region (Core, Inner Sphere, Middle Regions, Outer Rim, Deep Space), with regional bonus multipliers — more distant data is worth more.
+
+You can only sell data while docked at a station. First discoveries and mapped bodies both contribute to total payout.`,
+      },
+    ],
+  },
+  {
+    category: 'Economy & Fleet',
+    icon: '💼',
+    entries: [
+      {
+        title: 'Material Trader',
+        body: `Exchange raw materials at grade-based ratios. Materials are graded Common (G1), Standard (G2), Rare (G3), and Very Rare (G4).
+
+Same-grade swaps cost 6:1. Upgrading to a higher grade costs more; downgrading yields more. The grade inventory summary at the top shows how many materials you own at each tier.
+
+Access from station services. Use this to convert surplus materials into what you need for engineering and synthesis.`,
+      },
+      {
+        title: 'Market Analysis AI',
+        body: `An AI-powered trade advisory that generates in-character market reports for your current system. The report analyzes system security, population, and economy to recommend which commodity categories are in demand.
+
+Also shows a price snapshot table with best buys (low variance) and best sells (high variance), plus percentage indicators for each commodity.
+
+Access from the Commerce menu.`,
+      },
+      {
+        title: 'Station Builder',
+        body: `Build orbital stations at your colonies for 50M CR. Choose from 5 economy types (Agricultural, Industrial, Mining, High Tech, Refinery) — each has a different revenue multiplier.
+
+Install services (Market, Outfitting, Shipyard, Refuel, Repair) to increase passive trade revenue. Revenue accumulates over time based on services and economy type. Collect anytime from the Station Builder screen.
+
+Access from the Industry menu.`,
+      },
+      {
+        title: 'Loadout Presets',
+        body: `Save your current module configuration as a named preset (e.g., "Exploration Build", "Combat Build"). Apply presets instantly at stations to switch between roles without manual module swapping.
+
+Presets are ship-type-specific — a preset saved for an Albatross won't work on a Roc. The summary shows module type counts per preset.
+
+Access from the Fleet menu.`,
+      },
+      {
+        title: 'Carrier Command Dashboard',
+        body: `A unified management view for all fleet carriers. See tritium levels, pending revenue, active orders, docked ships, and service status for every carrier in one screen.
+
+Collect all pending revenue, check docked ship rosters, and review which services are enabled — all without switching between individual carrier screens.
+
+Access from the Fleet menu.`,
+      },
+      {
+        title: 'Carrier Logistics',
+        body: `Plan multi-jump routes for your fleet carrier using bookmarked systems as waypoints. The route planner calculates total tritium cost and distance across all jumps.
+
+Execute jumps one at a time, with tritium automatically deducted per jump. The carrier stays at its current system until you execute the next jump.
+
+Access from the Fleet menu.`,
+      },
+    ],
+  },
+  {
+    category: 'Commander & Events',
+    icon: '🎖️',
+    entries: [
+      {
+        title: 'Power Play',
+        body: `Pledge allegiance to one of six galactic powers. Each power grants unique passive bonuses (trade profit, mission rewards, ship stats, scan value, etc.).
+
+Earn reputation through:
+• DONATE — Convert credits to reputation.
+• CONSOLIDATE MERITS — Convert time pledged and jumps completed into reputation.
+• UNDERMINE — Spend 5M CR to fund covert operations against rivals (+200K rep).
+
+Eight ranks from Outsider to Patron, each requiring increasing reputation thresholds.`,
+      },
+      {
+        title: 'Crew Progression',
+        body: `Hired crew earn XP passively from time served (50 XP/hour) and actively through training (50K CR for 500 XP). Five levels: Rookie, Trained, Veteran, Elite, Elite I.
+
+Each level increases the crew member's bonus multiplier (1.0× → 3.0×), scaling all their passive bonuses. A Veteran pilot gives +50% more jump range bonus than a Rookie.
+
+Access crew management from station services → Crew Quarters.`,
+      },
+      {
+        title: 'Player Reputation',
+        body: `Track your standing with five galactic factions (Federation, Empire, Alliance, Independent, Pirate Syndicates). Reputation ranges from -100 (Hostile) to +100 (Allied ★).
+
+Donate credits to improve standing. High reputation unlocks better missions, station discounts, and exclusive services. Low reputation restricts docking access.
+
+Betray the Pirate Syndicates to lose their favor — useful if you want to go straight.`,
+      },
+      {
+        title: 'Player Titles',
+        body: `Earn cosmetic titles from gameplay milestones — Starfarer (first jump), Trailblazer (10 systems), Trade Baron (100M earnings), World Discoverer (first Earth-Like), and many more.
+
+Equip one title at a time to display alongside your commander name on leaderboards and in your profile. Titles are purely cosmetic with no mechanical impact.
+
+Access from the Commander menu → Titles.`,
+      },
+      {
+        title: 'Ship Maintenance & AFMU',
+        body: `Modules degrade with use — jumps, combat, and neutron star exposure accumulate module wear (0–100%). At high wear, FSD range, shield strength, weapon damage, and speed are all reduced.
+
+STATION REPAIR: Full module servicing at stations (cost scales with wear and ship class).
+
+AFMU (Auto Field Maintenance Unit): Field repair using synthesis materials (5 Nickel, 3 Phosphorus, 2 Chromium). Reduces wear by 50% per use. Available anywhere — no station required.
+
+Hull integrity (separate from module wear) also requires station repair or synthesis hull patches.`,
+      },
+      {
+        title: 'Community Events',
+        body: `Weekly rotating objectives with tiered rewards. Event types include trade deliveries, mining supply, exploration surveys, combat sweeps, and construction projects.
+
+Each goal has a progress bar, a simulated leaderboard with NPC commanders, and reward tiers (Participant → Champion) that scale the payout. Contribute resources to fill the bar, then claim your reward.
+
+Goals expire after 7 days. Access from the Commander menu → Community Goals.`,
+      },
+      {
+        title: 'Cosmic Events',
+        body: `Rare, time-limited phenomena that appear randomly when you scan for them:
+
+• Supernova — Scan a dying star for huge exploration data (24h, 5M CR).
+• Cometary Transit — Mine rare materials from a comet tail (12h, 2M CR).
+• Alien Artifact — Investigate anomalous readings (48h, 10M CR).
+• Pilgrim Fleet — Lucrative passenger missions (6h, 3M CR).
+• Derelict Megaship — Salvage technology before it drifts away (18h, 4M CR).
+
+Events appear in the GalNet feed and expire after their duration. Participate before the deadline to claim rewards.`,
+      },
+      {
+        title: 'Background Simulation (BGS)',
+        body: `Each system has multiple factions vying for influence. Faction influence (0–100%) determines system control and generates states:
+
+• BOOM — High influence, better trade prices.
+• BUST — Low influence, poor prices.
+• WAR — Two factions with similar influence; conflict zones present.
+• EXPANSION — Faction growing territory.
+• RETREAT — Faction losing ground.
+
+Support factions (500K CR, +3 influence) or undermine rivals (1M CR, -5 influence) to shift the balance. States change automatically as influence crosses thresholds.`,
       },
     ],
   },

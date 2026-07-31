@@ -6,7 +6,7 @@ import { Skull, Crosshair, Trash2, Coins } from 'lucide-react';
 import CombatScreen from './CombatScreen';
 
 const PIRATE_NAMES = ['Red Corsair', 'Ghost Hunter', 'Iron Claw', 'Nightshade', 'Void Reaver', 'Dread Siren', 'Black Scythe', 'Ash Marauder'];
-const SHIP_NAMES = ['Sidewinder Mk-I', 'Eagle Mk-II', 'Viper Mk-III', 'Cobra Mk-III', 'Vulture', 'Mamba'];
+const SHIP_NAMES = ['Sparrowhawk Mk-I', 'Eagle Mk-II', 'Kestrel Mk-III', 'Falcon Mk-III', 'Vulture', 'Condor'];
 
 export default function BountyBoard() {
   const { state, addBountyMission, completeBountyMission } = useGameState();

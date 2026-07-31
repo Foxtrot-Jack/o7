@@ -56,6 +56,14 @@ import CarrierLogisticsScreen from '@/components/game/CarrierLogisticsScreen';
 import MaintenanceScreen from '@/components/game/MaintenanceScreen';
 import PiracyScreen from '@/components/game/PiracyScreen';
 import DiscoveryDatabase from '@/components/game/DiscoveryDatabase';
+import FSSScannerScreen from '@/components/game/FSSScannerScreen';
+import MissionChainScreen from '@/components/game/MissionChainScreen';
+import PlayerRepScreen from '@/components/game/PlayerRepScreen';
+import LoadoutPresetScreen from '@/components/game/LoadoutPresetScreen';
+import MarketAnalysisScreen from '@/components/game/MarketAnalysisScreen';
+import CarrierCommandScreen from '@/components/game/CarrierCommandScreen';
+import TimeEventScreen from '@/components/game/TimeEventScreen';
+import PlayerTitlesScreen from '@/components/game/PlayerTitlesScreen';
 
 function GameContent() {
   const { state } = useGameState();
@@ -171,6 +179,22 @@ function GameContent() {
         return <PiracyScreen />;
       case 'discoveries':
         return <DiscoveryDatabase />;
+      case 'fss':
+        return <FSSScannerScreen />;
+      case 'chains':
+        return <MissionChainScreen />;
+      case 'rep':
+        return <PlayerRepScreen />;
+      case 'presets':
+        return <LoadoutPresetScreen />;
+      case 'marketai':
+        return <MarketAnalysisScreen />;
+      case 'carriercommand':
+        return <CarrierCommandScreen />;
+      case 'events':
+        return <TimeEventScreen />;
+      case 'titles':
+        return <PlayerTitlesScreen />;
       default:
         return <SystemOrrery />;
     }

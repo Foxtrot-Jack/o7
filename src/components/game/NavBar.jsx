@@ -1,6 +1,6 @@
 // Navigation bar — dropdown-grouped access to all screens
 import React, { useState, useRef, useEffect } from 'react';
-import { Compass, Store, Package, ClipboardList, Pickaxe, Telescope, Home, Map, Rocket, Layers, Anchor, Trophy, Settings, Wrench, MapPin, TrendingUp, User, Hammer, BookOpen, Briefcase, ChevronDown, Lock, Sparkles, Medal, Palette, DoorOpen, ArrowLeftRight, FlaskConical, Users, Crown, Target, Skull, Newspaper, Crosshair, Swords, AlertTriangle, Gem, UserCheck, Building, ScrollText, Plane, Activity, Leaf, Route } from 'lucide-react';
+import { Compass, Store, Package, ClipboardList, Pickaxe, Telescope, Home, Map, Rocket, Layers, Anchor, Trophy, Settings, Wrench, MapPin, TrendingUp, User, Hammer, BookOpen, Briefcase, ChevronDown, Lock, Sparkles, Medal, Palette, DoorOpen, ArrowLeftRight, FlaskConical, Users, Crown, Target, Skull, Newspaper, Crosshair, Swords, AlertTriangle, Gem, UserCheck, Building, ScrollText, Plane, Activity, Leaf, Route, Radio, ListChecks, Award, Save, Brain, LayoutDashboard, Zap } from 'lucide-react';
 import { useGameState } from '@/lib/gameState';
 
 const NAV_GROUPS = [
@@ -16,6 +16,7 @@ const NAV_GROUPS = [
       { id: 'res', label: 'Mining Sites', icon: Gem },
       { id: 'exobiology', label: 'Exobiology', icon: Leaf },
       { id: 'piracy', label: 'Piracy', icon: Skull },
+      { id: 'fss', label: 'FSS Scanner', icon: Radio },
     ],
   },
   {
@@ -40,8 +41,10 @@ const NAV_GROUPS = [
     id: 'commerce', label: 'Commerce', icon: TrendingUp, align: 'left',
     items: [
       { id: 'trade', label: 'Trade Tools', icon: TrendingUp },
+      { id: 'marketai', label: 'Market Analysis', icon: Brain },
       { id: 'company', label: 'Company', icon: Briefcase },
       { id: 'missions', label: 'Missions', icon: ClipboardList },
+      { id: 'chains', label: 'Mission Chains', icon: ListChecks },
     ],
   },
   {
@@ -53,6 +56,8 @@ const NAV_GROUPS = [
       { id: 'fighters', label: 'Fighter Hangar', icon: Plane },
       { id: 'carriers', label: 'Fleet Carriers', icon: Anchor },
       { id: 'carrierlogistics', label: 'Carrier Logistics', icon: Route },
+      { id: 'carriercommand', label: 'Carrier Command', icon: LayoutDashboard },
+      { id: 'presets', label: 'Loadout Presets', icon: Save },
       { id: 'shipcreator', label: 'Ship Yard', icon: Hammer },
       { id: 'carriercreator', label: 'Carrier Yard', icon: Hammer },
       { id: 'carrierinterior', label: 'Carrier Interior', icon: DoorOpen },
@@ -74,7 +79,10 @@ const NAV_GROUPS = [
       { id: 'galnet', label: 'GalNet News', icon: Newspaper },
       { id: 'crime', label: 'Crime Status', icon: AlertTriangle },
       { id: 'bgs', label: 'Faction Status', icon: Activity },
+      { id: 'rep', label: 'Reputation', icon: Award },
       { id: 'powerplay', label: 'Power Play', icon: Crown },
+      { id: 'events', label: 'Cosmic Events', icon: Zap },
+      { id: 'titles', label: 'Titles', icon: Medal },
       { id: 'goals', label: 'Community Goals', icon: Target },
       { id: 'badgemaker', label: 'Badge Maker', icon: Palette },
       { id: 'profile', label: 'Profile', icon: User },

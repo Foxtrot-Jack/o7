@@ -46,7 +46,7 @@ export function getCombatStats(shipIntegrity, shipClass, crewBonuses, engineerin
 }
 
 const PILOT_NAMES = ['Red Corsair', 'Ghost Hunter', 'Iron Claw', 'Nightshade', 'Void Reaver', 'Dread Siren', 'Black Scythe', 'Rogue Echo', 'Ash Marauder', 'Frost Wolf'];
-const SHIP_NAMES = ['Sidewinder Mk-I', 'Eagle Mk-II', 'Viper Mk-III', 'Cobra Mk-III', 'Vulture', 'Mamba', 'Python Mk-II'];
+const SHIP_NAMES = ['Sparrowhawk Mk-I', 'Eagle Mk-II', 'Kestrel Mk-III', 'Falcon Mk-III', 'Vulture', 'Condor', 'Albatross Mk-II'];
 
 export function generateEnemy(threatLevel = 1) {
   const name = PILOT_NAMES[Math.floor(Math.random() * PILOT_NAMES.length)];

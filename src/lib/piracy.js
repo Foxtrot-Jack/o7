@@ -2,7 +2,7 @@
 
 import { COMMODITIES } from './commodities';
 
-const TRADER_SHIPS = ['Type-6 Transporter', 'Hauler', 'Cobra Mk-III', 'Adder', 'Type-7 Transporter', 'Dolphin', 'Python', 'Type-9 Heavy'];
+const TRADER_SHIPS = ['Type-6 Transporter', 'Hauler', 'Falcon Mk-III', 'Osprey', 'Type-7 Transporter', 'Dolphin', 'Albatross', 'Type-9 Heavy'];
 
 export function canPirate(system) {
   return system?.security === 'anarchy' || system?.security === 'low';
