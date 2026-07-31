@@ -21,6 +21,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId }) {
   const { state, getSystemData, scanBody, dockAtStation } = useGameState();
   const [selectedBody, setSelectedBody] = useState(null);
   const [hoveredBody, setHoveredBody] = useState(null);
+  const [bodiesCollapsed, setBodiesCollapsed] = useState(false);
 
   const rotState = useRef({
     azimuth: Math.PI / 4,
@@ -487,9 +488,15 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId }) {
         <div className="text-orange-800 text-[10px] mt-1">DRAG TO ROTATE · PINCH/SCROLL TO ZOOM · TAP BODY TO SELECT</div>
       </div>
 
-      {/* Body list - right side (scrollable) */}
+      {/* Body list - right side (collapsible) */}
+      {bodiesCollapsed ? (
+        <button onClick={() => setBodiesCollapsed(false)} className="absolute top-2 right-2 border border-orange-900 bg-black/80 p-2 text-xs text-orange-600 hover:text-orange-400">◀ BODIES</button>
+      ) : (
       <div className="absolute top-2 right-2 bottom-2 w-40 sm:w-48 overflow-y-auto border border-orange-900/50 bg-black/80 p-2 text-xs space-y-0.5">
-        <div className="text-orange-700 uppercase text-[10px] mb-1 border-b border-orange-900 pb-1">Celestial Bodies</div>
+        <div className="flex items-center justify-between border-b border-orange-900 pb-1 mb-1">
+          <span className="text-orange-700 uppercase text-[10px]">Celestial Bodies</span>
+          <button onClick={() => setBodiesCollapsed(true)} className="text-orange-700 hover:text-orange-400 text-[10px]">▶</button>
+        </div>
         {systemData.bodies.filter(b => b.type !== BODY_TYPES.RING).map((body) => (
           <button
             key={body.id}
@@ -510,6 +517,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId }) {
           </button>
         ))}
       </div>
+      )}
 
       {/* Station docking panel — shown when in supercruise */}
       {state.currentLocation !== 'station' && systemData.stations.length > 0 && !selectedBody && (

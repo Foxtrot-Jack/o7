@@ -1,6 +1,6 @@
 // Navigation bar — provides access to all screens from any screen
 import React from 'react';
-import { Compass, Store, Package, ClipboardList, Pickaxe, Telescope, Home, Map, Rocket } from 'lucide-react';
+import { Compass, Store, Package, ClipboardList, Pickaxe, Telescope, Home, Map, Rocket, Layers, Anchor, Trophy } from 'lucide-react';
 
 const NAV_ITEMS = [
   { id: 'galaxy', label: 'Galaxy Map', icon: Map },
@@ -9,9 +9,12 @@ const NAV_ITEMS = [
   { id: 'station', label: 'Station', icon: Home },
   { id: 'market', label: 'Market', icon: Store },
   { id: 'ship', label: 'Ship', icon: Package },
+  { id: 'fleet', label: 'Fleet', icon: Layers },
+  { id: 'carriers', label: 'Carriers', icon: Anchor },
   { id: 'missions', label: 'Missions', icon: ClipboardList },
   { id: 'mining', label: 'Mining', icon: Pickaxe },
   { id: 'colonization', label: 'Colonies', icon: Rocket },
+  { id: 'achievements', label: 'Awards', icon: Trophy },
 ];
 
 export default function NavBar({ currentScreen, onNavigate, location }) {

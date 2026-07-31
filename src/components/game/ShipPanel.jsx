@@ -55,6 +55,7 @@ export default function ShipPanel({ onNavigate }) {
           <Shipyard
             currentShip={state.ship.type}
             credits={state.credits}
+            isDocked={state.currentLocation === 'station'}
             onBuy={(id) => buyShip(id)}
           />
         )}
@@ -148,7 +149,16 @@ function CargoHold({ cargo, onJettison }) {
   );
 }
 
-function Shipyard({ currentShip, credits, onBuy }) {
+function Shipyard({ currentShip, credits, isDocked, onBuy }) {
+  if (!isDocked) {
+    return (
+      <div className="text-center text-orange-700 py-8">
+        <ShoppingBag className="w-8 h-8 mx-auto mb-2 opacity-50" />
+        <p className="text-xs">Shipyard available when docked at a station.</p>
+        <p className="text-[10px] mt-1">Manage stored ships in the Fleet screen.</p>
+      </div>
+    );
+  }
   return (
     <div className="space-y-2">
       <h3 className="text-orange-500 text-sm font-bold uppercase mb-2">Shipyard — Available Vessels</h3>

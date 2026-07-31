@@ -13,6 +13,9 @@ import MissionsScreen from '@/components/game/MissionsScreen';
 import MiningScreen from '@/components/game/MiningScreen';
 import ExplorationScreen from '@/components/game/ExplorationScreen';
 import ColonizationScreen from '@/components/game/ColonizationScreen';
+import FleetScreen from '@/components/game/FleetScreen';
+import CarrierScreen from '@/components/game/CarrierScreen';
+import AchievementsScreen from '@/components/game/AchievementsScreen';
 
 function GameContent() {
   const { state } = useGameState();
@@ -46,6 +49,12 @@ function GameContent() {
         return <MiningScreen />;
       case 'colonization':
         return <ColonizationScreen />;
+      case 'fleet':
+        return <FleetScreen />;
+      case 'carriers':
+        return <CarrierScreen />;
+      case 'achievements':
+        return <AchievementsScreen />;
       default:
         return <SystemOrrery />;
     }

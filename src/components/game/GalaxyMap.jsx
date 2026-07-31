@@ -21,6 +21,7 @@ export default function GalaxyMap({ onJumpToSystem }) {
   const [stars, setStars] = useState([]);
   const [loading, setLoading] = useState(true);
   const [hoveredStar, setHoveredStar] = useState(null);
+  const [filter, setFilter] = useState('all');
 
   // Rotation/zoom state
   const rotState = useRef({
@@ -146,18 +147,22 @@ export default function GalaxyMap({ onJumpToSystem }) {
     const colors = new Float32Array(stars.length * 3);
     const sizes = new Float32Array(stars.length);
 
+    const visited = state.discoveredSystems || {};
     stars.forEach((star, i) => {
       positions[i * 3] = star.x - center.x;
       positions[i * 3 + 1] = star.y - center.y;
       positions[i * 3 + 2] = star.z - center.z;
 
+      const isVisited = !!visited[star.seed];
       const color = new THREE.Color(getStarColor(star.starClass));
+      if (isVisited) color.lerp(new THREE.Color(0x00ff66), 0.4);
+      if (filter === 'visited' && !isVisited) color.multiplyScalar(0.08);
+      if (filter === 'unvisited' && isVisited) color.multiplyScalar(0.08);
       colors[i * 3] = color.r;
       colors[i * 3 + 1] = color.g;
       colors[i * 3 + 2] = color.b;
 
-      // Bigger for special stars
-      sizes[i] = star.starClass.class === 'BH' ? 8 : star.starClass.class === 'NS' ? 6 : 3;
+      sizes[i] = star.starClass.class === 'BH' ? 8 : star.starClass.class === 'NS' ? 6 : isVisited ? 4 : 3;
     });
 
     const geometry = new THREE.BufferGeometry();
@@ -193,7 +198,7 @@ export default function GalaxyMap({ onJumpToSystem }) {
 
     // Set initial zoom to show a good range
     rotState.current.targetDistance = 120;
-  }, [stars, state.currentSystem]);
+  }, [stars, state.currentSystem, filter, state.discoveredSystems]);
 
   // Mouse + touch interaction — rotate, pinch, two-finger pan, tap to select
   useEffect(() => {
@@ -475,6 +480,13 @@ export default function GalaxyMap({ onJumpToSystem }) {
             <div className="w-2 h-2 rounded-full" style={{ background: item.c, boxShadow: `0 0 4px ${item.c}` }} />
             <span className="text-orange-600">{item.l}</span>
           </div>
+        ))}
+      </div>
+
+      {/* Filter controls */}
+      <div className="absolute top-2 left-1/2 -translate-x-1/2 flex gap-1 text-[10px]">
+        {['all', 'visited', 'unvisited'].map(f => (
+          <button key={f} onClick={() => setFilter(f)} className={`px-2 py-0.5 border ${filter === f ? 'border-orange-500 bg-orange-950/40 text-orange-300' : 'border-orange-900 text-orange-700 hover:text-orange-500'}`}>{f.toUpperCase()}</button>
         ))}
       </div>
 

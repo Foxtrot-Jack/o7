@@ -99,6 +99,17 @@ function createInitialState() {
     materials: {}, // materialId -> qty
     // Navigation
     plottedRoute: null,
+    // Fleet
+    ownedShips: [],
+    fleetCarriers: [],
+    // Achievements
+    achievements: {
+      firstDiscoveries: {},
+      milestones: {},
+      scannedSystemSeeds: [],
+      systemsScanned: 0,
+      totalBodiesScanned: 0,
+    },
     // Settings
     settings: {
       crtEffect: true,
@@ -123,7 +134,15 @@ export function GameStateProvider({ children }) {
         const parsed = JSON.parse(saved);
         // Merge with defaults to handle new fields
         setState(prev => {
-          const merged = { ...prev, ...parsed, settings: { ...prev.settings, ...(parsed.settings || {}) } };
+          const merged = { ...prev, ...parsed,
+          settings: { ...prev.settings, ...(parsed.settings || {}) },
+          achievements: {
+            firstDiscoveries: {}, milestones: {}, scannedSystemSeeds: [], systemsScanned: 0, totalBodiesScanned: 0,
+            ...(parsed.achievements || {}),
+          },
+          ownedShips: parsed.ownedShips || [],
+          fleetCarriers: parsed.fleetCarriers || [],
+        };
           // Regenerate system data for the current system (not persisted since it's large)
           if (merged.currentSystem) {
             merged.currentSystemData = generateSystem(merged.currentSystem.seed, merged.currentSystem.starClass);
@@ -271,40 +290,180 @@ export function GameStateProvider({ children }) {
     });
   }, []);
 
-  // Buy a ship
-  const buyShip = useCallback((shipTypeId) => {
+  // Buy a ship — stores current ship at current station, activates new ship
+  const buyShip = useCallback((shipTypeId, customName) => {
     setState(prev => {
+      if (prev.currentLocation !== 'station') return prev;
       const shipType = SHIP_MAP[shipTypeId];
       if (!shipType || prev.credits < shipType.cost) return prev;
+      const oldShip = {
+        id: `ship_${Date.now()}`,
+        typeId: prev.ship.type,
+        customName: prev.ship.name,
+        storedAt: { systemSeed: prev.currentSystem.seed, stationId: prev.currentStationId },
+        cargo: prev.ship.cargo,
+        fuel: prev.ship.fuel,
+      };
       return {
         ...prev,
         credits: prev.credits - shipType.cost,
         ship: {
           type: shipType.id,
-          name: shipType.name,
+          name: customName || shipType.name,
           cargo: [],
           fuel: shipType.fuelCapacity,
           fuelCapacity: shipType.fuelCapacity,
           cargoCapacity: shipType.cargoCapacity,
         },
+        ownedShips: [...prev.ownedShips, oldShip],
       };
     });
   }, []);
 
-  // Scan a body
+  // Switch to a stored ship (must be at same station or carrier in current system)
+  const switchShip = useCallback((shipId) => {
+    setState(prev => {
+      const stored = prev.ownedShips.find(s => s.id === shipId);
+      if (!stored) return prev;
+      let canAccess = false;
+      if (stored.storedAt?.carrierId) {
+        const c = prev.fleetCarriers.find(c => c.id === stored.storedAt.carrierId);
+        canAccess = c && c.systemSeed === prev.currentSystem.seed;
+      } else if (stored.storedAt) {
+        canAccess = stored.storedAt.systemSeed === prev.currentSystem.seed && stored.storedAt.stationId === prev.currentStationId;
+      }
+      if (!canAccess) return prev;
+      const shipType = SHIP_MAP[stored.typeId];
+      if (!shipType) return prev;
+      const oldShip = {
+        id: `ship_${Date.now()}`,
+        typeId: prev.ship.type,
+        customName: prev.ship.name,
+        storedAt: { systemSeed: prev.currentSystem.seed, stationId: prev.currentStationId },
+        cargo: prev.ship.cargo,
+        fuel: prev.ship.fuel,
+      };
+      return {
+        ...prev,
+        ship: {
+          type: stored.typeId,
+          name: stored.customName,
+          cargo: stored.cargo || [],
+          fuel: stored.fuel || shipType.fuelCapacity,
+          fuelCapacity: shipType.fuelCapacity,
+          cargoCapacity: shipType.cargoCapacity,
+        },
+        ownedShips: [...prev.ownedShips.filter(s => s.id !== shipId), oldShip],
+      };
+    });
+  }, []);
+
+  // Transfer a stored ship to current station (costs credits)
+  const transferShip = useCallback((shipId) => {
+    setState(prev => {
+      const stored = prev.ownedShips.find(s => s.id === shipId);
+      if (!stored) return prev;
+      const shipType = SHIP_MAP[stored.typeId];
+      if (!shipType) return prev;
+      const cost = Math.ceil(shipType.cost * 0.01) + 10000;
+      if (prev.credits < cost) return prev;
+      return {
+        ...prev,
+        credits: prev.credits - cost,
+        ownedShips: prev.ownedShips.map(s => s.id === shipId ? { ...s, storedAt: { systemSeed: prev.currentSystem.seed, stationId: prev.currentStationId } } : s),
+      };
+    });
+  }, []);
+
+  // Rename a ship (current or stored)
+  const renameShip = useCallback((shipId, name) => {
+    setState(prev => {
+      if (shipId === 'current') return { ...prev, ship: { ...prev.ship, name } };
+      return { ...prev, ownedShips: prev.ownedShips.map(s => s.id === shipId ? { ...s, customName: name } : s) };
+    });
+  }, []);
+
+  // Buy a fleet carrier (only at high-population vendor systems)
+  const buyFleetCarrier = useCallback((name) => {
+    const CARRIER_COST = 5000000000;
+    setState(prev => {
+      if (prev.fleetCarriers.length >= 5) return prev;
+      if (prev.credits < CARRIER_COST) return prev;
+      if ((prev.currentSystem?.population || 0) <= 1000000000) return prev;
+      const carrier = {
+        id: `carrier_${Date.now()}`,
+        name: name || 'Unnamed Carrier',
+        systemSeed: prev.currentSystem.seed,
+        systemName: prev.currentSystem.name,
+        system: prev.currentSystem,
+        tritium: 100,
+        tritiumCapacity: 1000,
+        bankBalance: 0,
+        services: { market: false, shipyard: false, outfitting: false, refuel: true, repair: true },
+      };
+      return {
+        ...prev,
+        credits: prev.credits - CARRIER_COST,
+        fleetCarriers: [...prev.fleetCarriers, carrier],
+        achievements: {
+          ...prev.achievements,
+          milestones: { ...prev.achievements.milestones, first_carrier: prev.achievements.milestones?.first_carrier || { date: Date.now() } },
+        },
+      };
+    });
+  }, []);
+
+  // Jump a fleet carrier to a new system (costs tritium)
+  const jumpCarrier = useCallback((carrierId, targetSystem) => {
+    setState(prev => {
+      const c = prev.fleetCarriers.find(c => c.id === carrierId);
+      if (!c || !c.system) return prev;
+      const dist = distance3D({ x: c.system.x, y: c.system.y, z: c.system.z }, { x: targetSystem.x, y: targetSystem.y, z: targetSystem.z });
+      const tritiumCost = Math.ceil(dist / 10);
+      if (c.tritium < tritiumCost) return prev;
+      return {
+        ...prev,
+        fleetCarriers: prev.fleetCarriers.map(fc => fc.id === carrierId
+          ? { ...fc, system: targetSystem, systemSeed: targetSystem.seed, systemName: targetSystem.name, tritium: fc.tritium - tritiumCost }
+          : fc),
+      };
+    });
+  }, []);
+
+  // Rename a fleet carrier
+  const renameCarrier = useCallback((carrierId, name) => {
+    setState(prev => ({ ...prev, fleetCarriers: prev.fleetCarriers.map(c => c.id === carrierId ? { ...c, name } : c) }));
+  }, []);
+
+  // Scan a body — tracks achievements and first discoveries
   const scanBody = useCallback((body) => {
     setState(prev => {
       if (prev.scannedBodies[body.id]) return prev;
+      const ach = { ...(prev.achievements || {}) };
+      ach.firstDiscoveries = { ...(ach.firstDiscoveries || {}) };
+      ach.milestones = { ...(ach.milestones || {}) };
+      ach.scannedSystemSeeds = [...(ach.scannedSystemSeeds || [])];
+      ach.totalBodiesScanned = (ach.totalBodiesScanned || 0) + 1;
+      if (!ach.scannedSystemSeeds.includes(prev.currentSystem.seed)) {
+        ach.scannedSystemSeeds.push(prev.currentSystem.seed);
+      }
+      ach.systemsScanned = ach.scannedSystemSeeds.length;
+      const sysName = prev.currentSystem.name;
+      if (body.type === 'star' && body.starClass) {
+        const cls = body.starClass.class;
+        if (cls === 'NS' && !ach.firstDiscoveries.neutron_star) ach.firstDiscoveries.neutron_star = { system: sysName, date: Date.now() };
+        if (cls === 'BH' && !ach.firstDiscoveries.black_hole) ach.firstDiscoveries.black_hole = { system: sysName, date: Date.now() };
+      }
+      if (body.type === 'planet') {
+        if (body.planetType === 'ammonia' && !ach.firstDiscoveries.ammonia_world) ach.firstDiscoveries.ammonia_world = { system: sysName, date: Date.now() };
+        if (body.planetType === 'earthlike' && !ach.firstDiscoveries.earth_like) ach.firstDiscoveries.earth_like = { system: sysName, date: Date.now() };
+        if (body.planetType === 'water_world' && !ach.firstDiscoveries.water_world) ach.firstDiscoveries.water_world = { system: sysName, date: Date.now() };
+        if (body.habitable && !ach.firstDiscoveries.habitable_world) ach.firstDiscoveries.habitable_world = { system: sysName, date: Date.now() };
+      }
       return {
         ...prev,
-        scannedBodies: {
-          ...prev.scannedBodies,
-          [body.id]: {
-            scanType: 'detailed',
-            value: body.scanValue,
-            date: Date.now(),
-          },
-        },
+        scannedBodies: { ...prev.scannedBodies, [body.id]: { scanType: 'detailed', value: body.scanValue, date: Date.now() } },
+        achievements: ach,
       };
     });
   }, []);
@@ -364,11 +523,15 @@ export function GameStateProvider({ children }) {
     });
   }, []);
 
-  // Add a colony
+  // Add a colony — tracks first colony milestone
   const addColony = useCallback((colony) => {
     setState(prev => ({
       ...prev,
       colonies: [...prev.colonies, colony],
+      achievements: {
+        ...prev.achievements,
+        milestones: { ...prev.achievements.milestones, first_colony: prev.achievements.milestones?.first_colony || { system: colony.systemName, date: Date.now() } },
+      },
     }));
   }, []);
 
@@ -424,6 +587,12 @@ export function GameStateProvider({ children }) {
     addMaterial,
     plotRoute,
     resetGame,
+    switchShip,
+    transferShip,
+    renameShip,
+    buyFleetCarrier,
+    jumpCarrier,
+    renameCarrier,
   };
 
   return (
@@ -463,4 +632,8 @@ export function useGameState() {
   const ctx = useContext(GameStateContext);
   if (!ctx) throw new Error('useGameState must be used within GameStateProvider');
   return ctx;
+}
+
+export function hasCarrierVendor(system) {
+  return system && (system.population || 0) > 1000000000;
 }
