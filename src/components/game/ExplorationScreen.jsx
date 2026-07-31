@@ -1,0 +1,167 @@
+// Exploration Screen — scan data management, sell cartographics data, discovery log
+import React, { useMemo } from 'react';
+import { useGameState } from '@/lib/gameState';
+import { Telescope, DollarSign, Star, Globe, Map, Award, BookOpen } from 'lucide-react';
+
+export default function ExplorationScreen() {
+  const { state, getSystemData, sellExplorationData } = useGameState();
+  const systemData = getSystemData();
+
+  // Calculate unsold scan value
+  const unsoldValue = useMemo(() => {
+    let total = 0;
+    for (const scan of Object.values(state.scannedBodies)) {
+      total += scan.value || 0;
+    }
+    // Add system discovery bonuses
+    for (const sys of Object.values(state.discoveredSystems)) {
+      if (sys.firstDiscovered) {
+        total += 5000 + (sys.bodyCount || 0) * 500;
+      }
+    }
+    return total;
+  }, [state.scannedBodies, state.discoveredSystems]);
+
+  const scannedBodyCount = Object.keys(state.scannedBodies).length;
+  const discoveredSystemCount = Object.keys(state.discoveredSystems).length;
+  const firstDiscoveredCount = Object.values(state.discoveredSystems).filter(s => s.firstDiscovered).length;
+
+  const handleSell = () => {
+    if (unsoldValue === 0) return;
+    sellExplorationData();
+  };
+
+  const explorationRank = state.rank.exploration;
+  const nextRankThreshold = getNextRankThreshold(explorationRank.rank);
+
+  return (
+    <div className="w-full h-full overflow-y-auto p-4 space-y-4">
+      {/* Header */}
+      <div className="border border-orange-700 p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <Telescope className="w-5 h-5 text-orange-500" />
+          <h2 className="text-orange-300 font-bold uppercase">Universal Cartographics</h2>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+          <StatBox label="Explorer Rank" value={explorationRank.name} icon={Award} />
+          <StatBox label="Systems Discovered" value={discoveredSystemCount.toString()} icon={Star} />
+          <StatBox label="First Discoveries" value={firstDiscoveredCount.toString()} icon={Globe} />
+          <StatBox label="Bodies Scanned" value={scannedBodyCount.toString()} icon={Map} />
+        </div>
+        {/* Rank progress */}
+        <div className="mt-3">
+          <div className="flex justify-between text-[10px] text-orange-700 mb-1">
+            <span>RANK PROGRESS</span>
+            <span>{explorationRank.points.toLocaleString()} / {nextRankThreshold.toLocaleString()} XP</span>
+          </div>
+          <div className="w-full h-1.5 bg-black border border-orange-900">
+            <div
+              className="h-full bg-orange-600"
+              style={{ width: `${Math.min(100, (explorationRank.points / nextRankThreshold) * 100)}%` }}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Sell exploration data */}
+      <div className="border border-orange-900 p-4">
+        <div className="flex items-center gap-2 mb-2">
+          <DollarSign className="w-4 h-4 text-orange-500" />
+          <h3 className="text-orange-400 text-sm font-bold uppercase">Sell Exploration Data</h3>
+        </div>
+        {unsoldValue > 0 ? (
+          <>
+            <div className="text-xs text-orange-600 mb-3">
+              You have <span className="text-orange-300">{scannedBodyCount}</span> unsold body scans
+              and <span className="text-orange-300">{firstDiscoveredCount}</span> first discovery bonuses.
+            </div>
+            <div className="text-2xl text-orange-300 font-bold mb-3">
+              {unsoldValue.toLocaleString()} CR
+            </div>
+            <button
+              onClick={handleSell}
+              className="w-full py-2 border border-orange-500 text-orange-300 hover:bg-orange-950/50 text-sm font-bold"
+            >
+              SELL ALL DATA — {unsoldValue.toLocaleString()} CR
+            </button>
+          </>
+        ) : (
+          <div className="text-xs text-orange-700 text-center py-4">
+            No unsold exploration data. Scan celestial bodies in the System Map to earn credits.
+          </div>
+        )}
+      </div>
+
+      {/* Discovery log */}
+      <div className="border border-orange-900 p-4">
+        <div className="flex items-center gap-2 mb-2">
+          <BookOpen className="w-4 h-4 text-orange-500" />
+          <h3 className="text-orange-400 text-sm font-bold uppercase">Discovery Log</h3>
+        </div>
+        {Object.values(state.discoveredSystems).length === 0 ? (
+          <div className="text-xs text-orange-700 text-center py-4">
+            No systems discovered yet. Jump to new systems to begin exploring.
+          </div>
+        ) : (
+          <div className="space-y-1 max-h-64 overflow-y-auto">
+            {Object.values(state.discoveredSystems).slice().reverse().map((sys, i) => (
+              <div key={i} className="flex items-center justify-between border-b border-orange-950/50 py-1 text-xs">
+                <div>
+                  <span className="text-orange-400">{sys.name}</span>
+                  {sys.firstDiscovered && <span className="text-yellow-500 text-[10px] ml-2">★ FIRST DISCOVERY</span>}
+                </div>
+                <div className="text-orange-700 text-[10px]">
+                  {sys.bodyCount || '?'} bodies
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Sold data history */}
+      {state.soldExplorationData.length > 0 && (
+        <div className="border border-orange-900 p-4">
+          <h3 className="text-orange-400 text-sm font-bold uppercase mb-2">Transaction History</h3>
+          <div className="space-y-1 max-h-40 overflow-y-auto">
+            {state.soldExplorationData.slice().reverse().map((entry, i) => (
+              <div key={i} className="flex justify-between text-xs text-orange-600 border-b border-orange-950/50 py-1">
+                <span>{entry.bodies} bodies sold</span>
+                <span className="text-orange-400">+{entry.value.toLocaleString()} CR</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Current system bodies */}
+      {systemData && (
+        <div className="border border-orange-900 p-4">
+          <h3 className="text-orange-400 text-sm font-bold uppercase mb-2">
+            Current System: {state.currentSystem.name} — {systemData.bodyCount} Bodies
+          </h3>
+          <div className="text-xs text-orange-700 mb-2">
+            Scan bodies in the System Map (Orrery) view to earn exploration credits.
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StatBox({ label, value, icon: Icon }) {
+  return (
+    <div className="border border-orange-900 p-2">
+      <div className="flex items-center gap-1 text-orange-700 text-[10px] uppercase mb-0.5">
+        <Icon className="w-3 h-3" />
+        {label}
+      </div>
+      <div className="text-orange-300 font-bold text-sm">{value}</div>
+    </div>
+  );
+}
+
+function getNextRankThreshold(currentRank) {
+  const thresholds = [0, 1000, 5000, 15000, 50000, 150000, 400000, 900000, 2000000, 5000000, 10000000, 25000000, 50000000, 100000000];
+  return thresholds[Math.min(currentRank + 1, thresholds.length - 1)] || 100000000;
+}

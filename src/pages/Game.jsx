@@ -1,0 +1,87 @@
+// Main Game Page — orchestrates all screens with persistent navigation
+import React, { useState } from 'react';
+import { GameStateProvider, useGameState } from '@/lib/gameState';
+import CRTFrame from '@/components/game/CRTFrame';
+import NavBar from '@/components/game/NavBar';
+import StatusHeader from '@/components/game/StatusHeader';
+import GalaxyMap from '@/components/game/GalaxyMap';
+import SystemOrrery from '@/components/game/SystemOrrery';
+import StationScreen from '@/components/game/StationScreen';
+import MarketScreen from '@/components/game/MarketScreen';
+import ShipPanel from '@/components/game/ShipPanel';
+import MissionsScreen from '@/components/game/MissionsScreen';
+import MiningScreen from '@/components/game/MiningScreen';
+import ExplorationScreen from '@/components/game/ExplorationScreen';
+import ColonizationScreen from '@/components/game/ColonizationScreen';
+
+function GameContent() {
+  const { state } = useGameState();
+  const [screen, setScreen] = useState('system');
+
+  const handleNavigate = (target) => {
+    setScreen(target);
+  };
+
+  const handleNavigateDirect = (target) => {
+    setScreen(target);
+  };
+
+  const renderScreen = () => {
+    switch (screen) {
+      case 'galaxy':
+        return <GalaxyMap onJumpToSystem={() => setScreen('system')} />;
+      case 'system':
+        return <SystemOrrery />;
+      case 'exploration':
+        return <ExplorationScreen />;
+      case 'station':
+        return <StationScreen onNavigate={handleNavigate} />;
+      case 'market':
+        return <MarketScreen />;
+      case 'ship':
+        return <ShipPanel onNavigate={handleNavigate} />;
+      case 'missions':
+        return <MissionsScreen />;
+      case 'mining':
+        return <MiningScreen />;
+      case 'colonization':
+        return <ColonizationScreen />;
+      default:
+        return <SystemOrrery />;
+    }
+  };
+
+  const isFullScreen = screen === 'galaxy' || screen === 'system';
+
+  return (
+    <div className="w-full h-screen bg-black flex flex-col overflow-hidden">
+      <CRTFrame enabled={state.settings.crtEffect}>
+        <div className="flex flex-col h-full">
+          <StatusHeader />
+          <NavBar
+            currentScreen={screen}
+            onNavigate={handleNavigateDirect}
+            location={state.currentLocation}
+          />
+          <div className={`flex-1 ${isFullScreen ? 'overflow-hidden' : 'overflow-auto'}`}>
+            {renderScreen()}
+          </div>
+          {/* Footer status bar */}
+          <div className="border-t border-orange-900/50 px-3 py-1 flex items-center justify-between text-[10px] text-orange-800 bg-black">
+            <span>STARFARER COMMAND v1.0 · {state.ship.name}</span>
+            <span className="hidden sm:inline">GALAXY: 4,000,000,000+ SYSTEMS</span>
+            <span>JUMPS: {state.totalJumps}</span>
+          </div>
+        </div>
+      </CRTFrame>
+    </div>
+  );
+}
+
+export default function Game() {
+  return (
+    <GameStateProvider>
+      <GameContent />
+    </GameStateProvider>
+  );
+}

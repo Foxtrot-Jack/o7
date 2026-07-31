@@ -90,3 +90,83 @@
     @apply bg-background text-foreground font-body;
   }
 }
+
+/* Starfarer CRT Theme */
+.crt-container,
+.crt-container * {
+  font-family: 'Courier New', 'Lucida Console', monospace !important;
+  text-shadow: 0 0 2px rgba(255, 136, 0, 0.4), 0 0 6px rgba(255, 136, 0, 0.15);
+}
+
+/* Custom scrollbar — orange on black */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0a0500;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #4a2a00;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #ff8800;
+}
+
+/* Prevent text selection in game UI */
+.crt-container {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.crt-container input,
+.crt-container textarea {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+/* Range input styling */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  background: #2a1500;
+  border-radius: 2px;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  background: #ff8800;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 0 4px rgba(255, 136, 0, 0.5);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  background: #ff8800;
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 0 4px rgba(255, 136, 0, 0.5);
+}
+
+/* Number input — remove spinners */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
