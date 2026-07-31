@@ -1,7 +1,7 @@
 // 3D Galaxy Map — rotatable, pinch-zoomable view of procedurally generated stars
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import * as THREE from 'three';
-import { generateStarsInRange, distance3D, getStarColor, GALACTIC_RADIUS } from '@/lib/galaxy';
+import { generateStarsInRange, distance3D, getStarColor, GALACTIC_RADIUS, generateGalaxyOverview } from '@/lib/galaxy';
 import { useGameState } from '@/lib/gameState';
 
 export default function GalaxyMap({ onJumpToSystem }) {
@@ -16,6 +16,7 @@ export default function GalaxyMap({ onJumpToSystem }) {
   const shipMarkersRef = useRef(null);
   const colonyMarkersRef = useRef(null);
   const trailRef = useRef(null);
+  const overviewRef = useRef(null);
   const raycasterRef = useRef(new THREE.Raycaster());
   const animationIdRef = useRef(null);
 
@@ -268,6 +269,28 @@ export default function GalaxyMap({ onJumpToSystem }) {
       trailRef.current = trail;
     }
 
+    // Galaxy overview — spiral structure background for wide view
+    if (overviewRef.current) { sceneRef.current.remove(overviewRef.current); overviewRef.current.geometry.dispose(); overviewRef.current.material.dispose(); }
+    const ovPts = generateGalaxyOverview();
+    const ovPos = new Float32Array(ovPts.length * 3);
+    const ovCol = new Float32Array(ovPts.length * 3);
+    ovPts.forEach((p, i) => {
+      ovPos[i*3] = p.x - center.x;
+      ovPos[i*3+1] = p.y - center.y;
+      ovPos[i*3+2] = p.z - center.z;
+      const b = Math.min(1, p.density / 3) * 0.5;
+      ovCol[i*3] = b;
+      ovCol[i*3+1] = b * 0.5;
+      ovCol[i*3+2] = b * 0.1;
+    });
+    const ovGeom = new THREE.BufferGeometry();
+    ovGeom.setAttribute('position', new THREE.BufferAttribute(ovPos, 3));
+    ovGeom.setAttribute('color', new THREE.BufferAttribute(ovCol, 3));
+    const ovMat = new THREE.PointsMaterial({ size: 1.5, vertexColors: true, sizeAttenuation: false, transparent: true, opacity: 0.5 });
+    const ovCloud = new THREE.Points(ovGeom, ovMat);
+    sceneRef.current.add(ovCloud);
+    overviewRef.current = ovCloud;
+
     // Set initial zoom to show a good range
     rotState.current.targetDistance = 120;
   }, [stars, state.currentSystem, filters, state.discoveredSystems, state.ownedShips, state.colonies, showTrail, state.flightLog]);
@@ -345,7 +368,7 @@ export default function GalaxyMap({ onJumpToSystem }) {
       e.preventDefault();
       const rs = rotState.current;
       rs.targetDistance += e.deltaY * 0.3;
-      rs.targetDistance = Math.max(20, Math.min(500, rs.targetDistance));
+      rs.targetDistance = Math.max(20, Math.min(50000, rs.targetDistance));
     };
 
     // Touch handlers — one finger rotate, two finger pinch+pan, tap to select
@@ -385,7 +408,7 @@ export default function GalaxyMap({ onJumpToSystem }) {
         pinchDist = newDist;
         const rs = rotState.current;
         rs.targetDistance += delta * 0.8;
-        rs.targetDistance = Math.max(20, Math.min(500, rs.targetDistance));
+        rs.targetDistance = Math.max(20, Math.min(50000, rs.targetDistance));
 
         // Two-finger pan (content follows fingers)
         const cdx = newCentroidX - lastCentroidX;
@@ -534,6 +557,12 @@ export default function GalaxyMap({ onJumpToSystem }) {
         <div>GALACTIC POSITION: {state.currentSystem.x.toFixed(0)}, {state.currentSystem.y.toFixed(0)}, {state.currentSystem.z.toFixed(0)}</div>
         <div>STARS IN RANGE: {stars.length}</div>
         <div className="text-orange-800">DRAG TO ROTATE · 2-FINGER PAN/PINCH · SCROLL TO ZOOM · TAP STAR TO SELECT</div>
+      </div>
+
+      {/* Zoom controls */}
+      <div className="absolute top-16 left-2 flex gap-1 z-20">
+        <button onClick={() => { rotState.current.targetDistance = 30000; }} className="px-2 py-0.5 border border-orange-700 bg-black/80 text-orange-500 hover:bg-orange-950/30 text-[10px]">GALAXY VIEW</button>
+        <button onClick={() => { rotState.current.targetDistance = 120; }} className="px-2 py-0.5 border border-orange-700 bg-black/80 text-orange-500 hover:bg-orange-950/30 text-[10px]">LOCAL VIEW</button>
       </div>
 
       {/* Star legend - top right */}

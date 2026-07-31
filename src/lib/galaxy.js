@@ -175,3 +175,20 @@ export function getStarColor(starClass) {
 
 // Total estimated star count (for flavor text)
 export const TOTAL_STARS_ESTIMATE = '4,000,000,000+';
+
+// Generate overview points sampling the galaxy's spiral structure (for galaxy-wide view)
+export function generateGalaxyOverview() {
+  const points = [];
+  const step = GALACTIC_RADIUS / 80;
+  const rng = makeRng(hashSeed('galaxy_overview'));
+  for (let x = -GALACTIC_RADIUS; x <= GALACTIC_RADIUS; x += step) {
+    for (let y = -GALACTIC_RADIUS; y <= GALACTIC_RADIUS; y += step) {
+      const density = galacticDensity(x, y, 0);
+      if (density > 0.05) {
+        const zJitter = (rng() - 0.5) * GALACTIC_HEIGHT * 0.3;
+        points.push({ x, y, z: zJitter, density });
+      }
+    }
+  }
+  return points;
+}

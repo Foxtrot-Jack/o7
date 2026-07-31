@@ -6,11 +6,10 @@ import { generateStarsInRange, distance3D } from '@/lib/galaxy';
 import { computeShipStats, getDefaultModules } from '@/lib/shipOutfitting';
 import { Route, Search, Zap, Navigation, AlertTriangle } from 'lucide-react';
 
-const MAX_ROUTE_LY = 500;
 const CORRIDOR_WIDTH = 20;
 const SEGMENT_SIZE = 25;
-const MAX_SEGMENTS = 20;
-const MAX_JUMPS = 80;
+const MAX_SEGMENTS = 200;
+const MAX_JUMPS = 500;
 
 export default function RoutePlotter() {
   const { state } = useGameState();
@@ -20,6 +19,8 @@ export default function RoutePlotter() {
   const [searching, setSearching] = useState(false);
   const [useNeutron, setUseNeutron] = useState(true);
   const [error, setError] = useState('');
+  const [progress, setProgress] = useState(0);
+  const [progressLabel, setProgressLabel] = useState('');
 
   const modules = state.ship.modules || getDefaultModules(state.ship.type);
   const stats = computeShipStats(state.ship.type, modules);
@@ -30,25 +31,36 @@ export default function RoutePlotter() {
     setSearching(true);
     setError('');
     setRoute(null);
-    setTimeout(() => {
+    setProgress(5);
+    setProgressLabel('Initializing search...');
+
+    const searchRing = (radius) => {
       const center = state.currentSystem;
-      const stars = generateStarsInRange(center.x, center.y, center.z, 100);
-      const found = stars.find(s => s.name.toLowerCase() === searchName.trim().toLowerCase());
-      if (!found) {
-        setError(`System "${searchName}" not found within 100 LY. Try a closer destination.`);
-        setSearching(false);
-        return;
-      }
-      const dist = distance3D(center, found);
-      if (dist > MAX_ROUTE_LY) {
-        setError(`System is ${dist.toFixed(0)} LY away. Max route distance is ${MAX_ROUTE_LY} LY.`);
-        setSearching(false);
-        return;
-      }
-      setDestination(found);
-      plotRoute(center, found, jumpRange, useNeutron);
-      setSearching(false);
-    }, 50);
+      setProgressLabel(`Searching ${radius} LY radius...`);
+      setProgress(Math.min(50, 5 + Math.round((radius / 500) * 45)));
+      setTimeout(() => {
+        const stars = generateStarsInRange(center.x, center.y, center.z, radius);
+        const found = stars.find(s => s.name.toLowerCase() === searchName.trim().toLowerCase());
+        if (found) {
+          setDestination(found);
+          setProgressLabel('Plotting optimized route...');
+          setProgress(60);
+          setTimeout(() => {
+            plotRoute(center, found, jumpRange, useNeutron);
+            setProgress(100);
+            setSearching(false);
+          }, 50);
+        } else if (radius < 500) {
+          searchRing(radius < 200 ? 200 : radius < 300 ? 300 : 500);
+        } else {
+          setError(`System "${searchName}" not found within 500 LY. Jump closer to your destination.`);
+          setSearching(false);
+          setProgress(0);
+        }
+      }, 50);
+    };
+
+    searchRing(100);
   };
 
   const plotRoute = (start, end, range, neutron) => {
@@ -99,6 +111,14 @@ export default function RoutePlotter() {
             <AlertTriangle className="w-3 h-3" /> {error}
           </div>
         )}
+        {searching && progress > 0 && (
+          <div className="space-y-1">
+            <div className="text-orange-600 text-[10px]">{progressLabel}</div>
+            <div className="w-full h-1.5 bg-black border border-orange-900">
+              <div className="h-full bg-orange-600 transition-all" style={{ width: `${progress}%` }} />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Route results */}
@@ -140,7 +160,7 @@ export default function RoutePlotter() {
         <div className="text-center text-orange-700 py-8 text-xs">
           <Route className="w-6 h-6 mx-auto mb-2 opacity-40" />
           Enter a destination system name above to plot an optimized route.
-          <div className="text-[10px] mt-1 text-orange-800">Max {MAX_ROUTE_LY} LY · Neutron star routing supported</div>
+          <div className="text-[10px] mt-1 text-orange-800">Search radius 500 LY · No route distance limit · Neutron star routing supported</div>
         </div>
       )}
     </div>

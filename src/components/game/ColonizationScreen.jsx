@@ -3,7 +3,8 @@ import React, { useState, useMemo } from 'react';
 import { useGameState } from '@/lib/gameState';
 import { BODY_TYPES } from '@/lib/system';
 import { makeRng, randInt, pick } from '@/lib/prng';
-import { Rocket, Plus, Building, Users, Factory, Wheat, Beaker, Globe, TrendingUp } from 'lucide-react';
+import { COMMODITY_MAP, COMMODITY_CATEGORIES } from '@/lib/commodities';
+import { Rocket, Plus, Building, Users, Factory, Wheat, Beaker, Globe, TrendingUp, Package } from 'lucide-react';
 
 const COLONY_STAGES = [
   { id: 0, name: 'Outpost', popRequired: 0, desc: 'Initial settlement with basic infrastructure.' },
@@ -21,14 +22,29 @@ const COLONY_TYPES = {
   mixed: { name: 'Mixed Colony', icon: Globe, produces: ['basic_food', 'polymers', 'computer_components'] },
 };
 
+const DELIVERY_EFFECTS = {
+  [COMMODITY_CATEGORIES.FOODS]: { happiness: 5, infrastructure: 0, growth: 0.01, label: '+5 Happiness/T' },
+  [COMMODITY_CATEGORIES.MEDICAL]: { happiness: 10, infrastructure: 2, growth: 0.02, label: '+10 Happiness, +2 Infra/T' },
+  [COMMODITY_CATEGORIES.TECHNOLOGY]: { happiness: 3, infrastructure: 5, growth: 0.01, label: '+5 Infra, +3 Happiness/T' },
+  [COMMODITY_CATEGORIES.METALS]: { happiness: 0, infrastructure: 3, growth: 0, label: '+3 Infra/T' },
+  [COMMODITY_CATEGORIES.MINERALS]: { happiness: 0, infrastructure: 2, growth: 0, label: '+2 Infra/T' },
+  [COMMODITY_CATEGORIES.INDUSTRIAL]: { happiness: 0, infrastructure: 4, growth: 0, label: '+4 Infra/T' },
+  [COMMODITY_CATEGORIES.CONSUMER]: { happiness: 4, infrastructure: 0, growth: 0.01, label: '+4 Happiness/T' },
+  [COMMODITY_CATEGORIES.CHEMICALS]: { happiness: 1, infrastructure: 2, growth: 0, label: '+2 Infra, +1 Happiness/T' },
+  [COMMODITY_CATEGORIES.LEGAL_DRUGS]: { happiness: 6, infrastructure: 0, growth: 0, label: '+6 Happiness/T' },
+  [COMMODITY_CATEGORIES.SALVAGE]: { happiness: 0, infrastructure: 1, growth: 0, label: '+1 Infra/T' },
+  [COMMODITY_CATEGORIES.RAW]: { happiness: 0, infrastructure: 1, growth: 0, label: '+1 Infra/T' },
+};
+
 export default function ColonizationScreen() {
-  const { state, getSystemData, addColony, updateColony, addCredits, addCargo } = useGameState();
+  const { state, getSystemData, addColony, updateColony, addCredits, addCargo, removeCargo } = useGameState();
   const systemData = getSystemData();
   const [showEstablish, setShowEstablish] = useState(false);
   const [selectedBody, setSelectedBody] = useState(null);
   const [selectedType, setSelectedType] = useState('agricultural');
   const [targetType, setTargetType] = useState('body');
   const [selectedPort, setSelectedPort] = useState(null);
+  const [deliverColony, setDeliverColony] = useState(null);
 
   // Get colonizable bodies (landable planets, not already colonized)
   const colonizableBodies = useMemo(() => {
@@ -121,6 +137,25 @@ export default function ColonizationScreen() {
     const qty = randInt(rng, 1, 10);
     addCargo(resource, qty);
     alert(`Collected ${qty}T of ${resource} from ${colony.bodyName}`);
+  };
+
+  const handleDeliver = (colony, cargoItem) => {
+    const comm = COMMODITY_MAP[cargoItem.commodity];
+    if (!comm) return;
+    const effect = DELIVERY_EFFECTS[comm.category];
+    if (!effect) return;
+
+    const effectiveQty = Math.min(cargoItem.qty, 10);
+    const happinessBoost = effect.happiness * effectiveQty;
+    const infraBoost = effect.infrastructure * effectiveQty;
+    const growthBoost = effect.growth * effectiveQty;
+
+    removeCargo(cargoItem.commodity, cargoItem.qty);
+    updateColony(colony.id, {
+      happiness: Math.min(100, (colony.happiness || 0) + happinessBoost),
+      infrastructure: Math.min(100, (colony.infrastructure || 0) + infraBoost),
+      growthRate: Math.min(1, (colony.growthRate || 0) + growthBoost),
+    });
   };
 
   return (
@@ -257,6 +292,44 @@ export default function ColonizationScreen() {
         </div>
       )}
 
+      {/* Delivery panel */}
+      {deliverColony && (
+        <div className="border border-cyan-800 p-3 space-y-2">
+          <div className="flex items-center justify-between border-b border-cyan-900 pb-1">
+            <h3 className="text-cyan-400 text-sm font-bold uppercase flex items-center gap-1">
+              <Package className="w-3.5 h-3.5" /> Deliver to {deliverColony.bodyName}
+            </h3>
+            <button onClick={() => setDeliverColony(null)} className="text-orange-700 hover:text-orange-400 text-xs">✕</button>
+          </div>
+          <div className="text-orange-700 text-[10px]">Deliver cargo to boost colony stats. Effects scale with quantity (max 10T per delivery).</div>
+          {state.ship.cargo.length === 0 ? (
+            <div className="text-orange-700 text-xs text-center py-2">No cargo in hold. Purchase goods at a station market.</div>
+          ) : (
+            <div className="space-y-1 max-h-48 overflow-y-auto">
+              {state.ship.cargo.map(item => {
+                const comm = COMMODITY_MAP[item.commodity];
+                const effect = comm ? DELIVERY_EFFECTS[comm.category] : null;
+                return (
+                  <div key={item.commodity} className="flex items-center justify-between border border-orange-900 p-2 text-xs">
+                    <div className="min-w-0 flex-1">
+                      <div className="text-orange-400">{comm?.name || item.commodity}</div>
+                      <div className="text-orange-700 text-[10px]">{comm?.category} · {item.qty}T</div>
+                      {effect && <div className="text-green-600 text-[9px]">{effect.label}</div>}
+                    </div>
+                    <button
+                      onClick={() => handleDeliver(deliverColony, item)}
+                      className="px-2 py-1 border border-cyan-500 text-cyan-300 hover:bg-cyan-950/50 text-[10px] flex-shrink-0 ml-2"
+                    >
+                      DELIVER {item.qty}T
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Existing colonies */}
       <div>
         <h3 className="text-orange-500 text-sm font-bold uppercase mb-2">Active Colonies ({state.colonies.length})</h3>
@@ -330,12 +403,20 @@ export default function ColonizationScreen() {
                     <div className="text-[10px] text-orange-700">
                       PRODUCES: {status.produces.slice(0, 3).join(', ')}
                     </div>
-                    <button
-                      onClick={() => handleCollectResources(colony)}
-                      className="px-2 py-1 border border-orange-700 text-orange-400 hover:bg-orange-950/30 text-[10px]"
-                    >
-                      COLLECT RESOURCES
-                    </button>
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => setDeliverColony(colony)}
+                        className="px-2 py-1 border border-cyan-700 text-cyan-400 hover:bg-cyan-950/30 text-[10px] flex items-center gap-1"
+                      >
+                        <Package className="w-3 h-3" /> DELIVER
+                      </button>
+                      <button
+                        onClick={() => handleCollectResources(colony)}
+                        className="px-2 py-1 border border-orange-700 text-orange-400 hover:bg-orange-950/30 text-[10px]"
+                      >
+                        COLLECT
+                      </button>
+                    </div>
                   </div>
                 </div>
               );

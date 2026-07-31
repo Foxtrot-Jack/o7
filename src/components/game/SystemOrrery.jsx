@@ -593,23 +593,35 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
           <button onClick={() => setBodiesCollapsed(true)} className="text-orange-700 hover:text-orange-400 text-[10px]">▶</button>
         </div>
         {systemData.bodies.filter(b => b.type !== BODY_TYPES.RING).map((body) => (
-          <button
-            key={body.id}
-            onClick={() => handleSelectBody(body)}
-            className={`w-full text-left px-1.5 py-1 border transition-all ${
-              selectedBody?.id === body.id
-                ? 'border-orange-500 bg-orange-950/40 text-orange-300'
-                : 'border-transparent text-orange-600 hover:border-orange-800'
-            }`}
-          >
-            <div className="flex items-center gap-1.5">
-              <div
-                className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                style={{ background: body.color || '#888' }}
-              />
-              <span className="truncate">{body.designation}</span>
-            </div>
-          </button>
+          <div key={body.id}>
+            <button
+              onClick={() => handleSelectBody(body)}
+              className={`w-full text-left px-1.5 py-1 border transition-all ${
+                selectedBody?.id === body.id
+                  ? 'border-orange-500 bg-orange-950/40 text-orange-300'
+                  : 'border-transparent text-orange-600 hover:border-orange-800'
+              }`}
+            >
+              <div className="flex items-center gap-1.5">
+                <div
+                  className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                  style={{ background: body.color || '#888' }}
+                />
+                <span className="truncate">{body.designation}</span>
+              </div>
+            </button>
+            {systemData.stations.filter(s => s.parentId === body.id).map(station => (
+              <button
+                key={station.id}
+                onClick={() => handleSelectBody(body)}
+                className="w-full text-left pl-5 py-0.5 text-[10px] text-green-600 hover:text-green-400 flex items-center gap-1"
+              >
+                <span className="text-green-800">◦</span>
+                <span className="truncate">{station.name}</span>
+                <span className="text-green-900 text-[9px]">{station.isOrbital ? 'orb' : 'srf'}</span>
+              </button>
+            ))}
+          </div>
         ))}
       </div>
       )}
