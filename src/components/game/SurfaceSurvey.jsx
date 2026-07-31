@@ -17,7 +17,7 @@ const SIGNAL_COLORS = {
   mineral: 'text-cyan-400 border-cyan-800',
 };
 
-export default function SurfaceSurvey() {
+export default function SurfaceSurvey({ onNavigate }) {
   const { state, getSystemData, collectSurfaceDiscovery, departSurface } = useGameState();
   const [scanning, setScanning] = useState(null);
   const systemData = getSystemData();
@@ -117,7 +117,7 @@ export default function SurfaceSurvey() {
 
       {/* Depart button */}
       <button
-        onClick={departSurface}
+        onClick={() => { departSurface(); if (onNavigate) onNavigate('system'); }}
         className="w-full py-2.5 border border-orange-500 text-orange-300 hover:bg-orange-950/50 text-xs font-bold"
       >
         ↑ DEPART FROM SURFACE — RETURN TO ORBIT

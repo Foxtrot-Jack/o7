@@ -2,6 +2,7 @@
 import React from 'react';
 import { useGameState, SHIP_MAP } from '@/lib/gameState';
 import { User, Rocket, Ship, Map, Globe, DollarSign, Route, Trophy, Anchor, Clock, Zap, Telescope, Pickaxe } from 'lucide-react';
+import BadgeDisplay from './BadgeDisplay';
 
 export default function CommanderProfile() {
   const { state } = useGameState();
@@ -23,6 +24,7 @@ export default function CommanderProfile() {
     <div className="w-full h-full overflow-y-auto p-4 space-y-4">
       <div className="border border-orange-700 p-4">
         <div className="flex items-center gap-2 mb-2">
+          {state.playerBadge && <BadgeDisplay badge={state.playerBadge} size={36} />}
           <User className="w-5 h-5 text-orange-500" />
           <h2 className="text-orange-300 font-bold uppercase">Commander Profile</h2>
           {state.saveMode === 'sandbox' && <span className="text-cyan-400 text-[9px] border border-cyan-700 px-1">SANDBOX</span>}

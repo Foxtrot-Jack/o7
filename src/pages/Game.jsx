@@ -27,6 +27,7 @@ import Codex from '@/components/game/Codex';
 import CompanyScreen from '@/components/game/CompanyScreen';
 import CheatsScreen from '@/components/game/CheatsScreen';
 import LeaderboardScreen from '@/components/game/LeaderboardScreen';
+import BadgeMaker from '@/components/game/BadgeMaker';
 
 function GameContent() {
   const { state } = useGameState();
@@ -68,12 +69,14 @@ function GameContent() {
         return <AchievementsScreen />;
       case 'leaderboard':
         return <LeaderboardScreen />;
+      case 'badgemaker':
+        return <BadgeMaker />;
       case 'settings':
         return <SettingsScreen />;
       case 'outfitting':
         return <OutfittingScreen />;
       case 'survey':
-        return <SurfaceSurvey />;
+        return <SurfaceSurvey onNavigate={handleNavigate} />;
       case 'trade':
         return <TradeTools />;
       case 'profile':

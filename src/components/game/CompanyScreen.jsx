@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useGameState, SHIP_MAP } from '@/lib/gameState';
 import { COMMODITIES, COMMODITY_MAP } from '@/lib/commodities';
 import { Briefcase, TrendingUp, Plus, Trash2, Coins, Clock, Building2, Ship as ShipIcon, ArrowUp, ArrowDown, AlertCircle } from 'lucide-react';
+import BadgeDisplay from './BadgeDisplay';
 
 const REGISTRATION_COST = 1000000;
 const ORDER_INCOME_PER_HOUR = 500000;
@@ -73,6 +74,7 @@ export default function CompanyScreen() {
       <div className="border border-orange-700 p-4">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
+            {company.logo && <BadgeDisplay badge={company.logo} size={36} />}
             <Briefcase className="w-5 h-5 text-orange-500" />
             <h2 className="text-orange-300 font-bold uppercase text-sm">{company.name}</h2>
           </div>

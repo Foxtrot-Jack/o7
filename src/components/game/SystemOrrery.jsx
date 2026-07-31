@@ -415,30 +415,27 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
     shipModel.scale.setScalar(0.6);
     scene.add(shipModel);
     shipMeshRef.current = shipModel;
-    // Initial position — at current station if docked, else near star
+    // Determine the body the ship should orbit — station's parent if docked, last surface body if returning, else primary star
+    let anchorBody = null;
     if (state.currentLocation === 'station' && state.currentStationId) {
       const dockStation = systemData.stations.find(s => s.id === state.currentStationId);
       if (dockStation) {
-        const parentEntry = bodyMeshesRef.current.find(bm => bm.body.id === dockStation.parentId);
-        if (parentEntry) {
-          shipPosRef.current = { x: parentEntry.group.position.x, y: 0, z: parentEntry.group.position.z };
-        }
+        anchorBody = bodyMeshesRef.current.find(bm => bm.body.id === dockStation.parentId) || null;
       }
+    } else if (state.lastOrbitBodyId) {
+      anchorBody = bodyMeshesRef.current.find(bm => bm.body.id === state.lastOrbitBodyId) || null;
+    }
+    if (!anchorBody) anchorBody = bodyMeshesRef.current[0] || null;
+    orbitAnchorRef.current = anchorBody;
+    // Initial position — at the anchored body
+    if (anchorBody) {
+      shipPosRef.current = { x: anchorBody.group.position.x, y: 0, z: anchorBody.group.position.z };
     } else {
       shipPosRef.current = { x: 0, y: 0, z: 5 };
     }
     shipModel.position.set(shipPosRef.current.x, 0, shipPosRef.current.z);
     travelRef.current = null;
     setTravelInfo(null);
-    // Set initial orbit anchor — station's parent body if docked, else primary star
-    if (state.currentLocation === 'station' && state.currentStationId) {
-      const dockStation = systemData.stations.find(s => s.id === state.currentStationId);
-      if (dockStation) {
-        orbitAnchorRef.current = bodyMeshesRef.current.find(bm => bm.body.id === dockStation.parentId) || null;
-      }
-    } else {
-      orbitAnchorRef.current = bodyMeshesRef.current[0] || null;
-    }
 
     // Auto-fit camera to system
     const maxOrbit = Math.max(...allBodies.map(b => b.orbitRadius || 0), 20);

@@ -5,13 +5,14 @@ import { useGameState } from '@/lib/gameState';
 import { COMMODITY_MAP, COMMODITY_CATEGORIES } from '@/lib/commodities';
 import { SHIP_SLOTS, SHIP_PARTS, SHIP_PART_MAP, getPartsForSlot, createEmptyDesign, computeCustomShipStats, SHIPYARD_LEVELS, getShipyardLevel } from '@/lib/shipParts';
 import ShipBuilder3D from './ShipBuilder3D';
-import { Hammer, Save, Trash2, Box, Package, Wrench, Rocket, Building, TrendingUp } from 'lucide-react';
+import { Hammer, Save, Trash2, Box, Package, Wrench, Rocket, Building, TrendingUp, Share2, Download, Check, Copy } from 'lucide-react';
+import { encodeShareCode, decodeShareCode } from '@/lib/badgeUtils';
 
 const SHIPYARD_COST = 100000000;
 const SHIPYARD_MIN_COLONIES = 3;
 
 export default function ShipCreator() {
-  const { state, isSandbox, saveCustomShip, deleteCustomShip, activateCustomShip, buildShipyard, deliverToShipyard } = useGameState();
+  const { state, isSandbox, saveCustomShip, deleteCustomShip, activateCustomShip, buildShipyard, deliverToShipyard, importShipBlueprint } = useGameState();
   const [tab, setTab] = useState('builder');
   const [design, setDesign] = useState(createEmptyDesign());
   const [selectedSlot, setSelectedSlot] = useState('hull');
@@ -137,6 +138,7 @@ export default function ShipCreator() {
           onLoad={handleLoadDesign}
           onDelete={deleteCustomShip}
           onActivate={activateCustomShip}
+          onImport={importShipBlueprint}
           isDocked={state.currentLocation === 'station'}
           activeShipId={state.ship.customShipId}
         />
@@ -274,44 +276,91 @@ function BuilderTab({ design, selectedSlot, onSelectSlot, onPartSelect, onScaleC
   );
 }
 
-function SavedShipsTab({ ships, onLoad, onDelete, onActivate, isDocked, activeShipId }) {
-  if (ships.length === 0) {
-    return (
-      <div className="flex-1 flex items-center justify-center text-orange-700 text-xs">
-        <div className="text-center">
-          <Box className="w-8 h-8 mx-auto mb-2 opacity-50" />
-          No saved ship designs. Build one in the Builder tab.
-        </div>
-      </div>
-    );
-  }
+function SavedShipsTab({ ships, onLoad, onDelete, onActivate, onImport, isDocked, activeShipId }) {
+  const [shareCode, setShareCode] = useState('');
+  const [importCode, setImportCode] = useState('');
+  const [importError, setImportError] = useState('');
+  const [copied, setCopied] = useState(false);
+
+  const handleShare = (ship) => {
+    const code = encodeShareCode({ _type: 'ship', name: ship.name, parts: ship.parts });
+    setShareCode(code || '');
+  };
+
+  const handleCopy = () => {
+    if (!shareCode) return;
+    navigator.clipboard?.writeText(shareCode);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleImport = () => {
+    setImportError('');
+    const decoded = decodeShareCode(importCode);
+    if (!decoded || decoded._type !== 'ship' || !decoded.parts) {
+      setImportError('Invalid ship blueprint code.');
+      return;
+    }
+    onImport({ name: decoded.name || 'Imported Ship', parts: decoded.parts });
+    setImportCode('');
+  };
+
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-2">
+    <div className="flex-1 overflow-y-auto p-4 space-y-3">
       <h3 className="text-orange-500 text-sm font-bold uppercase">Saved Ship Designs</h3>
-      {ships.map(ship => {
-        const stats = ship.stats || computeCustomShipStats(ship);
-        return (
-          <div key={ship.id} className={`border p-3 text-xs ${activeShipId === ship.id ? 'border-green-700' : 'border-orange-900'}`}>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-orange-300 font-bold">{ship.name}</span>
-              {activeShipId === ship.id && <span className="text-green-500 text-[10px]">✓ ACTIVE</span>}
-            </div>
-            <div className="grid grid-cols-4 gap-1 text-[10px] text-orange-600 mb-2">
-              <div>CARGO: <span className="text-orange-300">{stats.cargoCapacity}T</span></div>
-              <div>FUEL: <span className="text-orange-300">{stats.fuelCapacity}T</span></div>
-              <div>JUMP: <span className="text-orange-300">{stats.jumpRange}LY</span></div>
-              <div>COST: <span className="text-orange-300">{stats.cost.toLocaleString()}</span></div>
-            </div>
-            <div className="flex gap-1">
-              <button onClick={() => onLoad(ship)} className="flex-1 py-1 border border-orange-700 text-orange-400 hover:bg-orange-950/30 text-[10px]">EDIT</button>
-              {isDocked && activeShipId !== ship.id && (
-                <button onClick={() => onActivate(ship.id)} className="flex-1 py-1 border border-green-600 text-green-400 hover:bg-green-950/30 text-[10px]">ACTIVATE</button>
-              )}
-              <button onClick={() => onDelete(ship.id)} className="px-2 py-1 border border-red-900 text-red-600 hover:bg-red-950/30 text-[10px]"><Trash2 className="w-3 h-3" /></button>
-            </div>
-          </div>
-        );
-      })}
+      {ships.length === 0 ? (
+        <div className="text-center text-orange-700 text-xs py-4">
+          <Box className="w-8 h-8 mx-auto mb-2 opacity-50" />
+          No saved ship designs. Build one in the Builder tab or import a blueprint below.
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {ships.map(ship => {
+            const stats = ship.stats || computeCustomShipStats(ship);
+            return (
+              <div key={ship.id} className={`border p-3 text-xs ${activeShipId === ship.id ? 'border-green-700' : 'border-orange-900'}`}>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-orange-300 font-bold">{ship.name}</span>
+                  {activeShipId === ship.id && <span className="text-green-500 text-[10px]">✓ ACTIVE</span>}
+                </div>
+                <div className="grid grid-cols-4 gap-1 text-[10px] text-orange-600 mb-2">
+                  <div>CARGO: <span className="text-orange-300">{stats.cargoCapacity}T</span></div>
+                  <div>FUEL: <span className="text-orange-300">{stats.fuelCapacity}T</span></div>
+                  <div>JUMP: <span className="text-orange-300">{stats.jumpRange}LY</span></div>
+                  <div>COST: <span className="text-orange-300">{stats.cost.toLocaleString()}</span></div>
+                </div>
+                <div className="flex gap-1 flex-wrap">
+                  <button onClick={() => onLoad(ship)} className="flex-1 py-1 border border-orange-700 text-orange-400 hover:bg-orange-950/30 text-[10px]">EDIT</button>
+                  {isDocked && activeShipId !== ship.id && (
+                    <button onClick={() => onActivate(ship.id)} className="flex-1 py-1 border border-green-600 text-green-400 hover:bg-green-950/30 text-[10px]">ACTIVATE</button>
+                  )}
+                  <button onClick={() => handleShare(ship)} className="px-2 py-1 border border-cyan-700 text-cyan-400 hover:bg-cyan-950/30 text-[10px] flex items-center gap-1">
+                    <Share2 className="w-3 h-3" /> SHARE
+                  </button>
+                  <button onClick={() => onDelete(ship.id)} className="px-2 py-1 border border-red-900 text-red-600 hover:bg-red-950/30 text-[10px]"><Trash2 className="w-3 h-3" /></button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {shareCode && (
+        <div className="border border-cyan-900 p-2 space-y-1">
+          <div className="text-cyan-500 text-[10px] uppercase">Blueprint Share Code</div>
+          <textarea readOnly value={shareCode} className="w-full h-12 bg-black border border-cyan-900 text-cyan-400 p-1.5 text-[9px] resize-none outline-none" />
+          <button onClick={handleCopy} className="w-full py-1 border border-cyan-600 text-cyan-400 hover:bg-cyan-950/30 text-[10px] flex items-center justify-center gap-1">
+            {copied ? <><Check className="w-3 h-3" /> COPIED!</> : <><Copy className="w-3 h-3" /> COPY CODE</>}
+          </button>
+        </div>
+      )}
+
+      <div className="border border-green-900 p-2 space-y-1">
+        <div className="text-green-500 text-[10px] uppercase flex items-center gap-1"><Download className="w-3 h-3" /> Import Blueprint</div>
+        <textarea value={importCode} onChange={e => setImportCode(e.target.value)} placeholder="Paste a ship blueprint code here..." className="w-full h-12 bg-black border border-green-900 text-green-400 p-1.5 text-[9px] resize-none outline-none focus:border-green-500" />
+        {importError && <div className="text-red-500 text-[10px]">{importError}</div>}
+        <button onClick={handleImport} disabled={!importCode.trim()} className="w-full py-1.5 border border-green-500 text-green-300 hover:bg-green-950/30 text-[10px] font-bold disabled:opacity-30">IMPORT BLUEPRINT</button>
+      </div>
     </div>
   );
 }

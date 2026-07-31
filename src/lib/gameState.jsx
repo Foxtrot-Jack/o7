@@ -140,6 +140,12 @@ function createInitialState() {
     },
     // Leaderboard records
     records: {},
+    // Player badge (personal icon)
+    playerBadge: null,
+    // Saved badge designs gallery
+    savedBadges: [],
+    // Last body orbited (for returning from surface to correct orbit)
+    lastOrbitBodyId: null,
     // Settings
     settings: {
       crtEffect: true,
@@ -205,6 +211,9 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
           mappedBodies: parsed.mappedBodies || {},
           surfaceDiscoveries: parsed.surfaceDiscoveries || {},
           flightLog: parsed.flightLog || [],
+          playerBadge: parsed.playerBadge || null,
+          savedBadges: parsed.savedBadges || [],
+          lastOrbitBodyId: parsed.lastOrbitBodyId || null,
           saveMode: saveSlot,
           lightYearsTraveled: parsed.lightYearsTraveled || 0,
           lifetimeEarnings: parsed.lifetimeEarnings || 0,
@@ -826,7 +835,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
 
   // Depart from surface
   const departSurface = useCallback(() => {
-    setState(prev => ({ ...prev, currentLocation: 'system', currentSurfaceBody: null }));
+    setState(prev => ({ ...prev, currentLocation: 'system', currentSurfaceBody: null, lastOrbitBodyId: prev.currentSurfaceBody }));
   }, []);
 
   // Reset game
@@ -1143,6 +1152,36 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     setState(prev => ({ ...prev, materials: { ...prev.materials, ...maxMats } }));
   }, []);
 
+  // ===== BADGE & SHARING SYSTEM =====
+  const savePlayerBadge = useCallback((badge) => {
+    setState(prev => ({ ...prev, playerBadge: badge }));
+  }, []);
+
+  const saveBadgeToGallery = useCallback((badge) => {
+    setState(prev => {
+      const saved = { ...badge, id: `badge_${Date.now()}`, createdAt: Date.now() };
+      return { ...prev, savedBadges: [...(prev.savedBadges || []), saved] };
+    });
+  }, []);
+
+  const deleteBadge = useCallback((badgeId) => {
+    setState(prev => ({ ...prev, savedBadges: (prev.savedBadges || []).filter(b => b.id !== badgeId) }));
+  }, []);
+
+  const setCompanyLogo = useCallback((badge) => {
+    setState(prev => {
+      if (!prev.company) return prev;
+      return { ...prev, company: { ...prev.company, logo: badge } };
+    });
+  }, []);
+
+  const importShipBlueprint = useCallback((design) => {
+    setState(prev => {
+      const ship = { ...design, id: `custom_${Date.now()}`, createdAt: Date.now() };
+      return { ...prev, customShips: [...prev.customShips, ship] };
+    });
+  }, []);
+
   const isSandbox = state.saveMode === 'sandbox';
 
   const value = {
@@ -1202,6 +1241,11 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     applyMaxColonies,
     applyRevealSystems,
     applyMaxMaterials,
+    savePlayerBadge,
+    saveBadgeToGallery,
+    deleteBadge,
+    setCompanyLogo,
+    importShipBlueprint,
   };
 
   return (
