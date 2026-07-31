@@ -13,13 +13,15 @@ const CODEX = [
 
 • COMMANDER — Standard play. You start with 100,000 credits and a Sidewinder Mk-I. All ships, parts, and features must be earned or purchased. Lifetime statistics (light years traveled, earnings, ships purchased) are tracked for your profile.
 
-• SANDBOX — Unrestricted mode. You start with 1 billion credits and an Anaconda. All ship parts are unlocked, purchases are free, and carrier jumps cost no tritium. Ideal for experimentation.
+• SANDBOX — Unrestricted mode. You start with 1 billion credits and an Anaconda. All ship parts are unlocked, purchases are free, carrier jumps cost no tritium, and you can teleport to any searched system instantly. Ideal for experimentation.
 
 Switch saves anytime from the Settings screen. Each slot persists independently in your browser's local storage.`,
       },
       {
         title: 'Navigation Bar',
-        body: `The top navigation bar provides access to every screen from anywhere. On mobile, swipe horizontally to scroll through all options. Some screens (Station, Market) are only accessible when docked at a station — they appear greyed out until you dock.
+        body: `The top navigation bar groups every screen into six dropdown menus: EXPLORE, STATION, COMMERCE, FLEET, INDUSTRY, and COMMANDER. On narrow screens, group labels are replaced by icons to prevent overflow — tap an icon to open its dropdown.
+
+Some screens (Station Services, Market, Outfitting) are only accessible when docked at a station — their group appears greyed out with a lock icon until you dock.
 
 The bottom status bar shows your current ship name, total jumps, and galaxy scale.`,
       },
@@ -28,11 +30,16 @@ The bottom status bar shows your current ship name, total jumps, and galaxy scal
         body: `The persistent header displays:
 
 • CREDITS — Your current balance, abbreviated (K/M/B) for large amounts.
-• LOCATION — Current system name and whether you're in open space, docked, or on a surface.
+• SYSTEM — Current system name.
+• LOCATION — Docked, In Supercruise, or On Surface.
 • SECURITY — System security level (High/Medium/Low/Anarchy), color-coded.
 • FUEL — Current fuel as a percentage of capacity. Watch this before long jumps.
 • CARGO — Tons used vs capacity.
 • RANK — Your exploration rank and progress bar toward the next rank.`,
+      },
+      {
+        title: 'No Dead Ends',
+        body: `Every screen in Dogstar Interstellar is reachable from every other screen via the navigation bar. You will never get stuck in a sub-menu with no way back. If a screen requires docking (Station, Market, Outfitting), simply navigate to the System view, dock at a station, and those options unlock.`,
       },
     ],
   },
@@ -90,7 +97,7 @@ Stars that don't match your filter are dimmed but still visible. Use filters to 
         title: 'Bookmarks',
         body: `Tap the ★ button to view your bookmarked systems. You can bookmark any selected star to save it for future reference. Bookmarks persist across sessions.
 
-From the bookmarks panel you can SELECT a bookmark to target it for jumping, or remove it with ✕.`,
+From the bookmarks panel you can SELECT a bookmark to target it for jumping, or remove it with ✕. Bookmarked systems also appear as quick-select buttons in the Route Plotter's Known Locations panel.`,
       },
       {
         title: 'Flight Trail',
@@ -117,6 +124,12 @@ These adjust in real-time without regenerating the 3D scene.`,
 
 Toggle these on/off from the filter panel using the ⚓ SHIPS and ★ COLONIES buttons.`,
       },
+      {
+        title: 'Mission Destination Markers',
+        body: `When you have an active mission with a destination system, a pulsing yellow marker appears on the galaxy map at the target system. This helps you navigate toward mission objectives without searching manually.
+
+The System view also displays a mission-target alert banner when you enter the correct system.`,
+      },
     ],
   },
   {
@@ -131,12 +144,32 @@ CONTROLS:
 • DRAG — Rotate the orbital plane.
 • PINCH / SCROLL — Zoom in and out.
 • TAP a body — Select it to view details and available actions.
+• TAP a station — View station details and request docking.
 
-Orbital bodies move in real-time. Wireframe models represent each body type distinctly.`,
+Orbital bodies move in real-time. Wireframe models represent each body type distinctly. Stations appear as wireframe models orbiting their parent planet or sitting on its surface.`,
+      },
+      {
+        title: 'Player Ship Model',
+        body: `Your current ship is rendered as a 3D wireframe model in the Orrery, scaled to its ship class. The model shape reflects your ship's archetype (small fighter, medium multipurpose, large transport, etc.).
+
+When docked at a station, your ship orbits the station's parent body. When returning from a surface landing, your ship returns to orbit around the body you departed from.`,
+      },
+      {
+        title: 'Ship Travel & Docking',
+        body: `Travel between bodies and stations is animated in real-time:
+
+• Select a station and tap DOCK (or TRAVEL & DOCK) — Your ship flies to the station and docks automatically.
+• Select a body and tap TRAVEL TO BODY — Your ship flies to the body and enters orbit.
+
+A progress bar shows transit percentage. When travel completes, you either dock (stations) or enter orbit (bodies). Travel speed depends on your ship class — smaller ships are faster.
+
+You cannot initiate new travel while a transit is in progress.`,
       },
       {
         title: 'Stations',
         body: `Every generated system contains at least one station, shown as an orbiting wireframe model. Tap a station to see its details, then DOCK to access station services (Market, Shipyard, Outfitting, Refuel, Repair).
+
+Stations are either ORBITAL (floating in space around a planet) or SURFACE (on a planet's surface). Both types function identically once docked.
 
 You must be docked to access the Station and Market screens from the nav bar.`,
       },
@@ -145,16 +178,17 @@ You must be docked to access the Station and Market screens from the nav bar.`,
         body: `Select any planet or star to scan it. Scanning reveals:
 
 • Body type and classification (e.g., Earth-like, Water World, Ammonia World)
-• Physical properties
+• Physical properties (radius, gravity, temperature, atmosphere, orbit)
+• Surface materials (on scanned landable bodies)
 • Scan value in credits (paid when you sell exploration data)
 
 Scanned bodies count toward achievements and first-discovery records. Rare body types (Earth-like, Ammonia, Neutron Stars, Black Holes) unlock special achievements.`,
       },
       {
         title: 'Landing on Surfaces',
-        body: `Landable bodies (rocky/icy planets and moons) can be landed on for surface surveying. Select a landable body and choose LAND to descend to the surface.
+        body: `Landable bodies (rocky/icy planets and moons) can be landed on for surface surveying. Select a landable body (after FSS scanning), launch surface probes to map it, then choose LAND ON SURFACE to descend.
 
-While on the surface you can deploy probes to discover biological, geological, and mineral signals. Use DEPART to return to orbit.`,
+While on the surface you can deploy probes to discover biological, geological, and mineral signals. Use DEPART to return to orbit — your ship returns to orbit around the body you just left.`,
       },
     ],
   },
@@ -164,13 +198,13 @@ While on the surface you can deploy probes to discover biological, geological, a
     entries: [
       {
         title: 'FSS System Scan',
-        body: `The Full Spectrum Scanner (FSS) reveals all bodies in the current system at once. Perform an FSS scan from the Exploration screen to populate the system map with every planet, moon, and signal.
+        body: `The Full Spectrum Scanner (FSS) reveals all bodies in the current system at once. When you enter a new unscanned system, an FSS prompt appears in the center of the Orrery. Run the scan to populate the system map with every planet, moon, and signal.
 
-FSS scanning is tracked as an achievement milestone on first use.`,
+FSS scanning is tracked as an achievement milestone on first use, and counts toward FSS scan count milestones.`,
       },
       {
         title: 'Detailed Body Scans',
-        body: `After FSS reveals bodies, you can perform detailed scans on individual bodies from the Orrery. Detailed scans determine the body's exact value and properties.
+        body: `After FSS reveals bodies, you can perform detailed scans on individual bodies from the Orrery. Select a body and tap SCAN BODY. Detailed scans determine the body's exact value and properties, including surface materials on landable bodies.
 
 Scanned body data accumulates in your cartography cache until sold.`,
       },
@@ -178,7 +212,7 @@ Scanned body data accumulates in your cartography cache until sold.`,
         title: 'Surface Mapping',
         body: `Map a body with surface probes to increase its scan value and reveal surface signals. Mapping is required to discover biological and geological sites.
 
-First mapping unlocks an achievement milestone.`,
+Select a landable body, tap LAUNCH SURFACE PROBES, then LAND ON SURFACE to begin surveying. First mapping unlocks an achievement milestone.`,
       },
       {
         title: 'Selling Exploration Data',
@@ -205,7 +239,7 @@ RANKS: Aimless → Mostly Aimless → Scout → Surveyor → Trailblazer → Pat
     entries: [
       {
         title: 'Docking',
-        body: `To dock at a station, select it in the Orrery and choose DOCK. Once docked, the Station and Market screens become available in the navigation bar.
+        body: `To dock at a station, select it in the Orrery and choose DOCK (or TRAVEL & DOCK). Your ship flies to the station and docks automatically. Once docked, the Station and Market screens become available in the navigation bar.
 
 Docking is required for: buying/selling commodities, purchasing ships, outfitting, refueling, repairing, and selling exploration data.`,
       },
@@ -273,11 +307,21 @@ Results show the best commodity, buy system, sell system, and expected profit.`,
         body: `The Route Plotter calculates multi-jump routes to distant destinations, including neutron star highway support.
 
 • Enter a destination system name.
-• The plotter searches expanding radii to find the target.
+• The plotter searches expanding radii (up to 2,000 LY) to find the target.
 • Routes are calculated using a greedy algorithm within your jump range.
 • Neutron star boosts can supercharge your FSD for 4x jump range.
+• Toggle neutron routing on/off with a checkbox.
 
-Each jump segment shows fuel cost and whether it uses a neutron boost.`,
+Each jump segment shows fuel cost and whether it uses a neutron boost. The route summary shows total jumps, distance, fuel cost, and neutron boost count.`,
+      },
+      {
+        title: 'Known Locations & Sandbox Teleport',
+        body: `The Route Plotter includes a KNOWN LOCATIONS panel for instant destination selection without typing:
+
+• SOL — Appears in sandbox mode as a quick-select button.
+• BOOKMARKS — All your bookmarked systems appear as quick-select buttons.
+
+In SANDBOX mode, a SANDBOX TELEPORT panel appears when you select any destination. Tap TELEPORT to instantly jump to the target system — bypassing fuel, range, and route entirely. This is the fastest way to travel in sandbox mode.`,
       },
     ],
   },
@@ -333,6 +377,12 @@ Income accumulates over time — collect periodically from the Company screen. E
 
 Reputation is permanent — it never decreases. Higher reputation means faster progress toward your goals.`,
       },
+      {
+        title: 'Company Logo',
+        body: `Give your company a custom logo using the Badge Maker. Design a badge, then use SET AS COMPANY LOGO from the Badge Maker screen. The logo appears on your Company screen alongside your company name.
+
+See the Badge Maker section for full badge design instructions.`,
+      },
     ],
   },
   {
@@ -356,9 +406,11 @@ Cargo capacity is determined by your ship type and installed cargo racks. The MK
         body: `The Shipyard tab (available when docked) lists ships available for purchase at the current station. Available ships depend on system population:
 
 • Small population — Sidewinder, Eagle, Hauler, Adder
-• Medium population — Cobra, Viper, Type-6, Diamondback
-• Large population — Asp, Python, Krait, Anaconda
-• Huge population — Federal Corvette, Imperial Cutter, Type-10
+• Medium population — Cobra, Viper, Type-6, Diamondback, Dolphin, Cobra Mk-V
+• Large population — Asp, Python, Krait, Mandalay, Federal Dropship, Vulture, Imperial Courier
+• Huge population — Federal Corvette, Imperial Cutter, Type-10, Anaconda, Beluga
+
+Over 30 ship models are available from manufacturers: Falcon Deacy, Lakon Spaceways, Core Dynamics, Zorgon Peterson, Saud Kruger, and Gutamaya.
 
 When you buy a new ship, your current ship is stored at that station. You can retrieve it later by returning and switching.`,
       },
@@ -370,7 +422,7 @@ When you buy a new ship, your current ship is stored at that station. You can re
 • TRANSFER — Move a stored ship to your current station for a fee (1% of ship value + 10,000 credits).
 • RENAME — Give any ship a custom name.
 
-Ships stored at fleet carriers can be accessed from any system where the carrier is present.`,
+Ships stored at fleet carriers can be accessed from any system where the carrier is present. Use the Carrier Interior's Command Deck to request ship transit to a carrier in your current system.`,
       },
     ],
   },
@@ -386,7 +438,7 @@ Carriers serve as mobile bases — they can store ships, hold a bank balance, an
       },
       {
         title: 'Carrier Jumps',
-        body: `Carriers jump using TRITIUM fuel, consuming approximately 1 ton per 10 light years. Jump your carrier to any system from the Carriers screen.
+        body: `Carriers jump using TRITIUM fuel, consuming approximately 1 ton per 10 light years. Jump your carrier to any system within 500 LY from the Carriers screen.
 
 In Sandbox mode, carrier jumps are free (no tritium consumed).`,
       },
@@ -399,11 +451,35 @@ Decommissioning is permanent — the carrier and its bank balance are removed.`,
       {
         title: 'Carrier Services',
         body: `Each carrier can toggle these services:
-• MARKET — Buy/sell commodities at carrier.
+• MARKET — Buy/sell commodities at carrier (required for buy/sell order income).
 • SHIPYARD — Purchase ships at carrier.
 • OUTFITTING — Install modules at carrier.
 • REFUEL — Always on by default.
 • REPAIR — Always on by default.`,
+      },
+      {
+        title: 'Carrier Interior',
+        body: `Step inside your fleet carrier and explore six interactive rooms (Fleet > Carrier Interior):
+
+• BAR — Purchase themed ales and drinks, hear rumors about nearby systems, and read galaxy facts from the barkeep.
+• QUARTERS — Your personal living space.
+• GARDEN — Plant and grow a virtual garden with customizable plant colors. Saved plants persist on the carrier.
+• TROPHY ROOM — Display your achievement milestones and exploration records.
+• COMMAND DECK — Request ship transit to this carrier (for ships in your fleet), view carrier status.
+• OBSERVATION LOUNGE — View the current system through the carrier's panoramic windows.
+
+The interior is available only when a carrier is present in your current system. Each carrier has its own unique interior state (garden plants, bar tab, etc.).`,
+      },
+      {
+        title: 'Carrier Yard (Custom Carriers)',
+        body: `Design custom fleet carriers with the 3D Carrier Creator (Fleet > Carrier Yard). Uses the same builder interface as the Ship Yard but with carrier-scale parts.
+
+• MOUNT SLOTS — Select structural slots (hull, superstructure, landing pads, towers, etc.).
+• PART SELECTOR — Choose from carrier-scale parts unlocked by shipyard level.
+• CUSTOMIZATION — Resize, move, and rotate each part on all three axes.
+• STRUCTURAL CATEGORY — Visual-only decorative parts with high placement limits.
+
+Save designs, share them via encoded share codes, and apply saved designs to your owned carriers. In Sandbox mode, all parts are unlocked.`,
       },
     ],
   },
@@ -429,6 +505,8 @@ Missions reward credits and advance your Trade rank.`,
         title: 'Completing Missions',
         body: `Active missions appear in the Missions screen. Complete the objective (deliver cargo, reach a system, etc.) then return to claim your reward.
 
+Mission destination systems are marked with pulsing yellow indicators on both the Galaxy Map and within the System view when you arrive.
+
 Mission rewards count toward your lifetime earnings and Trade rank progression.`,
       },
     ],
@@ -441,7 +519,7 @@ Mission rewards count toward your lifetime earnings and Trade rank progression.`
         title: 'Extracting Resources',
         body: `Mine asteroids in rings or minerals on planetary surfaces. The Mining screen lets you extract raw materials which collect in your refinery.
 
-Asteroid belts appear in the Orrery as orbiting clusters of wireframe rocks.`,
+Asteroid belts appear in the Orrery as orbiting clusters of wireframe rocks. Valuable asteroids glow orange; common ones are brown.`,
       },
       {
         title: 'Refinery',
@@ -462,17 +540,17 @@ Materials do not count against your cargo capacity.`,
   },
   {
     category: 'Colonization',
-    icon: '🪐',
+    icon: '🌱',
     entries: [
       {
         title: 'Establishing Colonies',
-        body: `Colonize landable bodies to create settlements. Colonies generate resources over time and can be developed through infrastructure investment.
+        body: `Colonize landable bodies to create settlements. Colonies generate credit-based passive income over time and can be developed through infrastructure investment.
 
-Each colony tracks population, happiness, and infrastructure level. Delivering commodities boosts these metrics.`,
+Each colony tracks population, happiness, infrastructure level, and development stage. Delivering commodities boosts these metrics.`,
       },
       {
         title: 'Colony Growth',
-        body: `Colonies progress through development stages as you deliver resources and invest. Higher-stage colonies produce more valuable outputs and can support more advanced facilities.
+        body: `Colonies progress through development stages as you deliver resources and invest. Higher-stage colonies produce more income and can support more advanced facilities.
 
 Colony types vary based on the host body's environment (rocky, icy, terraformed, etc.).`,
       },
@@ -484,7 +562,7 @@ Colony types vary based on the host body's environment (rocky, icy, terraformed,
 • Industrial goods provide strong infrastructure gains.
 • Metals and chemicals provide moderate boosts.
 
-Deliver from the Colonization screen while carrying compatible cargo.`,
+Deliver from the Colonization screen while carrying compatible cargo. Establishing 3+ colonies is a requirement for building a Space Shipyard.`,
       },
     ],
   },
@@ -535,7 +613,7 @@ Each part contributes to your ship's final statistics (cargo, fuel, jump range, 
 All controls are visible simultaneously in a three-column grid for efficient editing.`,
       },
       {
-        title: 'Saving Blueprints',
+        title: 'Saving & Sharing Blueprints',
         body: `Save your custom ship designs as blueprints from either the Builder tab or the Shipyard tab.
 
 Enter a blueprint name and tap SAVE DESIGN or SAVE BLUEPRINT. Saved designs appear in the Saved tab where you can:
@@ -543,7 +621,7 @@ Enter a blueprint name and tap SAVE DESIGN or SAVE BLUEPRINT. Saved designs appe
 • ACTIVATE — Set the design as your active ship (requires docking).
 • DELETE — Remove the blueprint permanently.
 
-In Sandbox mode, all parts are unlocked regardless of shipyard level.`,
+SHARING: Generate an encoded share code for any design, copy it, and share it with others. Paste a received code into the import field to load someone else's blueprint into your builder. In Sandbox mode, all parts are unlocked regardless of shipyard level.`,
       },
     ],
   },
@@ -607,22 +685,114 @@ Rare signal types contribute to first-discovery achievements and can be quite va
     ],
   },
   {
+    category: 'Sol System & Cheats',
+    icon: '☀️',
+    entries: [
+      {
+        title: 'The Sol System',
+        body: `Hidden somewhere in the galaxy is Sol — humanity's lost cradle. Unlike procedurally generated systems, Sol is a hand-crafted recreation of our real solar system, with all eight planets, their major moons, and Pluto.
+
+Sol is not visible on the galaxy map by default. You must search for it by name using the Route Plotter (Commerce > Trade Tools > Route Plotter). In Commander mode, you must be within search range (2,000 LY). In Sandbox mode, you can teleport directly.
+
+Finding Sol permanently unlocks the Cheats system and grants the "Homecoming" achievement.`,
+      },
+      {
+        title: 'Cheats System',
+        body: `Once you discover Sol, the Cheats screen (Commander > Cheats) becomes available. Each body in the Sol system grants a unique cheat:
+
+• SOL — Solar Forge (Passive): Infinite fuel. Every jump is fully fueled.
+• MERCURY — Fleet-Footed (Passive): Instant jumps. No fuel cost, no range limit.
+• VENUS — Morning Star (Passive): Perfect market prices — buy for nothing, sell for maximum.
+• EARTH — Genesis Protocol (Active): All colonies instantly max out.
+• MARS — War Forge (Passive): All outfitting and engineering is free.
+• JUPITER — Jovian Treasury (Active): Fill your account with 1 billion credits.
+• SATURN — Lord of Rings (Cosmetic): Radiant golden CRT theme.
+• URANUS — Tilted Axis (Cosmetic): Galaxy map viewed upside-down.
+• NEPTUNE — All-Seeing Eye (Active): Reveal all systems within 500 LY.
+• PLUTO — Underworld Riches (Active): Fill ship locker with max materials.
+
+PASSIVE and COSMETIC cheats toggle on/off. ACTIVE cheats trigger a one-time effect. The golden theme (Saturn) overrides your selected color theme when active.`,
+      },
+    ],
+  },
+  {
+    category: 'Leaderboard',
+    icon: '🏅',
+    entries: [
+      {
+        title: 'Personal Exploration Records',
+        body: `The Leaderboard screen (Commander > Leaderboard) tracks your personal exploration records across 13 categories:
+
+• Hottest Planet / Coldest Planet (temperature in Kelvin)
+• Fastest Orbit / Slowest Orbit (orbital period in days)
+• Smallest Star / Largest Star (radius in solar radii)
+• Most Moons (moon count of a single planet)
+• Largest Planet / Smallest Planet (radius in Earth radii)
+• Highest Gravity / Lowest Gravity (in g)
+• Closest to Star / Farthest from Star (orbit radius in AU)
+
+Records are set automatically when you scan bodies via the System view or FSS scanner. Each category shows the record value, the body name, and the system where it was found.
+
+A progress bar shows how many of the 13 categories you've claimed.`,
+      },
+    ],
+  },
+  {
+    category: 'Badge Maker',
+    icon: '🎨',
+    entries: [
+      {
+        title: 'Designing Badges',
+        body: `The Badge Maker (Commander > Badge Maker) is a design tool for creating custom icons, logos, and flags with a live SVG preview.
+
+Customize your badge with:
+• SHAPE — Shield, Circle, Hexagon, Diamond, Square, or Pentagon.
+• PATTERN — Solid, Split, Quartered, or Striped.
+• COLORS — Primary and secondary colors from a palette.
+• SYMBOL — 30+ symbols including star, rocket, planet, skull, anchor, crown, wings, sword, atom, comet, galaxy, plus animals, nature, and tech icons.
+• BORDER — Multiple border styles.
+
+The preview updates in real-time as you make changes.`,
+      },
+      {
+        title: 'Using Badges',
+        body: `Your designed badge can be used in several ways:
+
+• SET AS PLAYER BADGE — Appears on your Commander Profile.
+• SET AS COMPANY LOGO — Appears on your Company screen.
+• SAVE TO GALLERY — Store designs for later use. Load, reuse, or delete them.
+
+Your player badge is displayed prominently on your profile and represents your commander identity.`,
+      },
+      {
+        title: 'Sharing Badges',
+        body: `Share your badge designs with other players via encoded share codes:
+
+• GENERATE SHARE CODE — Creates a compact encoded string representing your badge.
+• COPY — Copy the code to your clipboard.
+• IMPORT — Paste a received code to load someone else's badge into your editor.
+
+Share codes work across different devices and save files. The badge format is verified on import — invalid codes are rejected with an error message.`,
+      },
+    ],
+  },
+  {
     category: 'Achievements',
     icon: '🏆',
     entries: [
       {
         title: 'Achievement System',
-        body: `The Awards screen tracks 130+ achievements across multiple categories:
+        body: `The Awards screen (Commander > Awards) tracks 130+ achievements across multiple categories:
 
-• FIRST DISCOVERIES — First time scanning each body type (Earth-like, Ammonia, Neutron Star, Black Hole, etc.).
-• MILESTONES — Key gameplay firsts (first jump, first scan, first colony, first shipyard, first bookmark, etc.).
-• EXPLORATION STATS — Systems scanned, total bodies scanned, total distance traveled.
+• FIRST DISCOVERIES — First time scanning each body type (18 planet types, 9 star classes, 16 surface signals).
+• MILESTONES — Key gameplay firsts (first jump, first scan, first colony, first shipyard, first bookmark, first carrier, first custom ship, Sol discovery, etc.).
+• COUNT MILESTONES — Progression tracks for jumps (1–10,000), systems visited (10–5,000), bodies scanned (10–5,000), credits (1M–10B), ships purchased (1–25), colonies (1–10), carriers (1–5), light years traveled (1K–1M), mappings (10–500), FSS scans (10–500), bookmarks (5–50), surface discoveries (5–50), custom ships (1–10), and lifetime earnings (1M–10B).
 
 Achievements persist with your save and provide long-term progression goals.`,
       },
       {
         title: 'Commander Profile',
-        body: `The Profile screen displays your commander's lifetime statistics:
+        body: `The Profile screen (Commander > Profile) displays your commander's lifetime statistics:
 
 • Total jumps
 • Light years traveled
@@ -630,6 +800,7 @@ Achievements persist with your save and provide long-term progression goals.`,
 • Ships purchased
 • Current ranks (Exploration, Trade, Mining)
 • Active colonies and fleet carriers
+• Player badge
 
 These stats are tracked in Commander mode. Sandbox mode starts with elevated stats but tracks progress from there.`,
       },
@@ -648,18 +819,22 @@ These stats are tracked in Commander mode. Sandbox mode starts with elevated sta
 • Flicker — Slight periodic brightness variation.
 • Vignette — Darkened screen edges.
 
-All game text uses a monospace font with orange phosphor glow when CRT is active.`,
+All game text uses a monospace font with phosphor glow when CRT is active.`,
       },
       {
         title: 'Color Themes',
-        body: `Choose from multiple CRT color themes:
+        body: `Choose from 8 CRT color themes:
 
-• ELITE — Classic burnt-orange on black.
-• MATRIX — Green on black.
+• ELITE ORANGE — Classic burnt-orange on black.
+• MATRIX GREEN — Green on black.
 • AMBER — Warm amber on black.
-• And other presets.
+• ICE BLUE — Cool cyan on black.
+• CRIMSON — Red on black.
+• VIOLET — Purple on black.
+• MONOCHROME — Grayscale.
+• SOL GOLD — Radiant gold (unlocked by the Saturn cheat).
 
-Themes apply a hue-rotate filter to the entire interface for instant visual changes.`,
+Themes apply a hue-rotate filter to the entire interface for instant visual changes. The Sol Gold theme activates automatically when the "Lord of Rings" cheat is toggled on.`,
       },
       {
         title: 'Text Brightness',
