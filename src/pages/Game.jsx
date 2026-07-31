@@ -23,6 +23,7 @@ import SurfaceSurvey from '@/components/game/SurfaceSurvey';
 import TradeTools from '@/components/game/TradeTools';
 import CommanderProfile from '@/components/game/CommanderProfile';
 import ShipCreator from '@/components/game/ShipCreator';
+import Codex from '@/components/game/Codex';
 
 function GameContent() {
   const { state } = useGameState();
@@ -74,6 +75,8 @@ function GameContent() {
         return <CommanderProfile />;
       case 'shipcreator':
         return <ShipCreator />;
+      case 'codex':
+        return <Codex />;
       default:
         return <SystemOrrery />;
     }
