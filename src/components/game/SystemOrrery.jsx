@@ -23,6 +23,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
   const shipMeshRef = useRef(null);
   const shipPosRef = useRef({ x: 0, y: 0, z: 5 });
   const travelRef = useRef(null);
+  const orbitAnchorRef = useRef(null);
   const lastTimeRef = useRef(0);
 
   const { state, getSystemData, scanBody, dockAtStation, fssScanSystem, mapBody, landOnBody } = useGameState();
@@ -138,6 +139,11 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
         const dist = Math.hypot(dx, dz);
         if (dist < 0.8) {
           const onComplete = travel.onComplete;
+          if (travel.targetType === 'body') {
+            orbitAnchorRef.current = travel.bodyEntry;
+          } else if (travel.targetType === 'station') {
+            orbitAnchorRef.current = bodyMeshesRef.current.find(bm => bm.body.id === travel.station.parentId) || null;
+          }
           travelRef.current = null;
           setTravelInfo(null);
           if (onComplete) onComplete();
@@ -151,6 +157,21 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
           const progress = Math.min(0.99, 1 - dist / travel.initialDist);
           setTravelInfo(prev => prev ? { ...prev, progress } : null);
         }
+      }
+
+      // Ship orbits its anchored body when not traveling
+      if (!travelRef.current && shipMeshRef.current && orbitAnchorRef.current) {
+        const anchor = orbitAnchorRef.current;
+        const ax = anchor.group.position.x;
+        const az = anchor.group.position.z;
+        const orbitR = Math.max(1, (anchor.visualRadius || 1) * 2.5);
+        const angle = now * 0.0006;
+        const ox = ax + Math.cos(angle) * orbitR;
+        const oz = az + Math.sin(angle) * orbitR;
+        shipPosRef.current.x = ox;
+        shipPosRef.current.z = oz;
+        shipMeshRef.current.position.set(ox, 0, oz);
+        shipMeshRef.current.rotation.y = angle + Math.PI / 2;
       }
 
       renderer.render(scene, camera);
@@ -409,6 +430,15 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
     shipModel.position.set(shipPosRef.current.x, 0, shipPosRef.current.z);
     travelRef.current = null;
     setTravelInfo(null);
+    // Set initial orbit anchor — station's parent body if docked, else primary star
+    if (state.currentLocation === 'station' && state.currentStationId) {
+      const dockStation = systemData.stations.find(s => s.id === state.currentStationId);
+      if (dockStation) {
+        orbitAnchorRef.current = bodyMeshesRef.current.find(bm => bm.body.id === dockStation.parentId) || null;
+      }
+    } else {
+      orbitAnchorRef.current = bodyMeshesRef.current[0] || null;
+    }
 
     // Auto-fit camera to system
     const maxOrbit = Math.max(...allBodies.map(b => b.orbitRadius || 0), 20);
