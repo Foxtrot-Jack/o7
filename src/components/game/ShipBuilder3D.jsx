@@ -167,7 +167,8 @@ export default function ShipBuilder3D({ design, selectedSlot, onSelectSlot }) {
       const geom = createGeometry(part.shape, slot.category);
       const mat = (slot.id === selectedSlot ? selMat : baseMat).clone();
       const mesh = new THREE.Mesh(geom, mat);
-      mesh.position.set(slot.pos[0], slot.pos[1], slot.pos[2]);
+      const offset = partRef.position || [0, 0, 0];
+      mesh.position.set(slot.pos[0] + offset[0], slot.pos[1] + offset[1], slot.pos[2] + offset[2]);
       const s = partRef.scale || [1, 1, 1];
       mesh.scale.set(s[0], s[1], s[2]);
 
