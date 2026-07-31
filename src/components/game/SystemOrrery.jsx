@@ -68,9 +68,32 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
 
     const animate = () => {
       animationIdRef.current = requestAnimationFrame(animate);
-      const t = Date.now() * 0.0001;
+      const t = Date.now() * 0.00003;
 
-      // Smooth camera
+      // Update body positions FIRST so camera focus tracks current positions (reduces jitter)
+      for (const bm of bodyMeshesRef.current) {
+        if (bm.body.orbitRadius > 0) {
+          const angle = t / Math.sqrt(bm.body.orbitRadius) + bm.phaseOffset;
+          bm.group.position.x = Math.cos(angle) * bm.body.orbitRadius;
+          bm.group.position.z = Math.sin(angle) * bm.body.orbitRadius;
+          bm.group.position.y = 0;
+        }
+        if (bm.mesh) {
+          bm.mesh.rotation.y += 0.001;
+        }
+      }
+
+      // Update orbital station positions
+      for (const sm of stationMeshesRef.current) {
+        const orbitR = (sm.planetVisualRadius || 1) * 2.5;
+        const angle = t * 0.5 / Math.sqrt(orbitR) + sm.phaseOffset;
+        sm.model.position.x = Math.cos(angle) * orbitR;
+        sm.model.position.z = Math.sin(angle) * orbitR;
+        sm.model.position.y = 0;
+        sm.model.rotation.y += 0.002;
+      }
+
+      // Smooth camera AFTER body positions are current
       const rs = rotState.current;
       rs.azimuth += (rs.targetAzimuth - rs.azimuth) * 0.1;
       rs.polar += (rs.targetPolar - rs.polar) * 0.1;
@@ -82,31 +105,6 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
         rs.targetFocusZ = focusBodyRef.current.group.position.z;
       }
       updateCameraPosition(camera, rs);
-
-      // Update body positions (slow, realistic orbital motion)
-      for (const bm of bodyMeshesRef.current) {
-        if (bm.body.orbitRadius > 0) {
-          const angle = t * (1 / Math.sqrt(bm.body.orbitRadius)) * 3 + bm.phaseOffset;
-          bm.group.position.x = Math.cos(angle) * bm.body.orbitRadius;
-          bm.group.position.z = Math.sin(angle) * bm.body.orbitRadius;
-          bm.group.position.y = 0;
-        }
-        // Rotate body on its axis (slow)
-        if (bm.mesh) {
-          bm.mesh.rotation.y += 0.002;
-        }
-      }
-
-      // Update orbital station positions
-      for (const sm of stationMeshesRef.current) {
-        const st = Date.now() * 0.0001;
-        const orbitR = (sm.planetVisualRadius || 1) * 2.5;
-        const angle = st * 2 / Math.sqrt(orbitR) + sm.phaseOffset;
-        sm.model.position.x = Math.cos(angle) * orbitR;
-        sm.model.position.z = Math.sin(angle) * orbitR;
-        sm.model.position.y = 0;
-        sm.model.rotation.y += 0.003;
-      }
 
       // Pulse selected marker
       if (selectedMarkerRef.current) {

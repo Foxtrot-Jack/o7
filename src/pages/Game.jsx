@@ -19,6 +19,7 @@ import AchievementsScreen from '@/components/game/AchievementsScreen';
 import SettingsScreen from '@/components/game/SettingsScreen';
 import OutfittingScreen from '@/components/game/OutfittingScreen';
 import SurfaceSurvey from '@/components/game/SurfaceSurvey';
+import TradeTools from '@/components/game/TradeTools';
 
 function GameContent() {
   const { state } = useGameState();
@@ -64,6 +65,8 @@ function GameContent() {
         return <OutfittingScreen />;
       case 'survey':
         return <SurfaceSurvey />;
+      case 'trade':
+        return <TradeTools />;
       default:
         return <SystemOrrery />;
     }

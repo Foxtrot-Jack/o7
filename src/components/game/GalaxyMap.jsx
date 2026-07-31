@@ -15,6 +15,7 @@ export default function GalaxyMap({ onJumpToSystem }) {
   const selectedLineRef = useRef(null);
   const shipMarkersRef = useRef(null);
   const colonyMarkersRef = useRef(null);
+  const trailRef = useRef(null);
   const raycasterRef = useRef(new THREE.Raycaster());
   const animationIdRef = useRef(null);
 
@@ -26,6 +27,7 @@ export default function GalaxyMap({ onJumpToSystem }) {
   const [filters, setFilters] = useState({ spectral: 'all', security: 'all', population: 'all', showParkedShips: true, showColonies: true });
   const [showFilterPanel, setShowFilterPanel] = useState(false);
   const [showBookmarks, setShowBookmarks] = useState(false);
+  const [showTrail, setShowTrail] = useState(true);
 
   // Rotation/zoom state
   const rotState = useRef({
@@ -249,9 +251,26 @@ export default function GalaxyMap({ onJumpToSystem }) {
       }
     }
 
+    // Flight log trail — green line connecting last 50 visited systems
+    if (trailRef.current) { sceneRef.current.remove(trailRef.current); trailRef.current.geometry.dispose(); trailRef.current.material.dispose(); trailRef.current = null; }
+    if (showTrail && state.flightLog?.length > 1) {
+      const trailPositions = new Float32Array(state.flightLog.length * 3);
+      state.flightLog.forEach((sys, i) => {
+        trailPositions[i * 3] = sys.x - center.x;
+        trailPositions[i * 3 + 1] = sys.y - center.y;
+        trailPositions[i * 3 + 2] = sys.z - center.z;
+      });
+      const trailGeom = new THREE.BufferGeometry();
+      trailGeom.setAttribute('position', new THREE.BufferAttribute(trailPositions, 3));
+      const trailMat = new THREE.LineBasicMaterial({ color: 0x00aa44, transparent: true, opacity: 0.4 });
+      const trail = new THREE.Line(trailGeom, trailMat);
+      sceneRef.current.add(trail);
+      trailRef.current = trail;
+    }
+
     // Set initial zoom to show a good range
     rotState.current.targetDistance = 120;
-  }, [stars, state.currentSystem, filters, state.discoveredSystems, state.ownedShips, state.colonies]);
+  }, [stars, state.currentSystem, filters, state.discoveredSystems, state.ownedShips, state.colonies, showTrail, state.flightLog]);
 
   // Mouse + touch interaction — rotate, pinch, two-finger pan, tap to select
   useEffect(() => {
@@ -592,7 +611,8 @@ export default function GalaxyMap({ onJumpToSystem }) {
           <div className="flex gap-1 border-t border-orange-900 pt-1">
             <button onClick={() => setFilters({...filters, showParkedShips: !filters.showParkedShips})} className={`flex-1 py-0.5 border ${filters.showParkedShips ? 'border-cyan-600 text-cyan-400' : 'border-orange-900 text-orange-800'}`}>⚓ SHIPS</button>
             <button onClick={() => setFilters({...filters, showColonies: !filters.showColonies})} className={`flex-1 py-0.5 border ${filters.showColonies ? 'border-purple-600 text-purple-400' : 'border-orange-900 text-orange-800'}`}>★ COLONIES</button>
-          </div>
+            </div>
+            <button onClick={() => setShowTrail(!showTrail)} className={`w-full py-0.5 border mt-1 ${showTrail ? 'border-green-600 text-green-400' : 'border-orange-900 text-orange-800'}`}>~ FLIGHT TRAIL ({state.flightLog?.length || 0})</button>
         </div>
       )}
 

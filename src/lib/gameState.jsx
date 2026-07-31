@@ -101,6 +101,8 @@ function createInitialState() {
     materials: {}, // materialId -> qty
     // Navigation
     plottedRoute: null,
+    // Flight log (last 50 visited systems for trail display)
+    flightLog: [],
     // Bookmarks
     bookmarkedSystems: [],
     // FSS & Surface scanning
@@ -157,6 +159,7 @@ export function GameStateProvider({ children }) {
           fssScannedSystems: parsed.fssScannedSystems || {},
           mappedBodies: parsed.mappedBodies || {},
           surfaceDiscoveries: parsed.surfaceDiscoveries || {},
+          flightLog: parsed.flightLog || [],
         };
           // Regenerate system data for the current system (not persisted since it's large)
           if (merged.currentSystem) {
@@ -220,6 +223,7 @@ export function GameStateProvider({ children }) {
       currentLocation: 'system',
       currentStationId: null,
       totalJumps: prev.totalJumps + 1,
+      flightLog: [...(prev.flightLog || []), { seed: system.seed, name: system.name, x: system.x, y: system.y, z: system.z }].slice(-50),
       discoveredSystems: {
         ...prev.discoveredSystems,
         [system.seed]: prev.discoveredSystems[system.seed] || {
