@@ -1,6 +1,6 @@
 // Station Screen — docking services overview
 import React, { useState } from 'react';
-import { useGameState } from '@/lib/gameState';
+import { useGameState, getOutfittingLevel, OUTFITTING_LEVELS } from '@/lib/gameState';
 import { Home, Fuel, Wrench, ShoppingCart, Ship as ShipIcon, Telescope, Map, Pickaxe, Rocket, LogOut, ClipboardList } from 'lucide-react';
 
 export default function StationScreen({ onNavigate }) {
@@ -23,6 +23,8 @@ export default function StationScreen({ onNavigate }) {
   const fuelNeeded = state.ship.fuelCapacity - state.ship.fuel;
   const refuelCost = Math.ceil(refuelAmount * 50);
   const fullRefuelCost = Math.ceil(fuelNeeded * 50);
+  const outfittingLevelIndex = Math.max(0, Math.min(4, getOutfittingLevel(state.currentSystem, systemData) - 1));
+  const outfittingLevel = OUTFITTING_LEVELS[outfittingLevelIndex];
 
   const handleRefuel = () => {
     if (refuelCost > state.credits || refuelAmount <= 0) return;
@@ -72,12 +74,25 @@ export default function StationScreen({ onNavigate }) {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
           <ServiceButton icon={ShoppingCart} label="Commodity Market" available={station.services.market} onClick={() => onNavigate('market')} />
           <ServiceButton icon={ClipboardList} label="Mission Board" available={station.services.missions} onClick={() => onNavigate('missions')} />
-          <ServiceButton icon={ShipIcon} label="Shipyard & Outfitting" available={station.services.shipyard} onClick={() => onNavigate('ship')} />
+          <ServiceButton icon={ShipIcon} label="Shipyard & Outfitting" available={true} onClick={() => onNavigate('ship')} />
           <ServiceButton icon={Telescope} label="Cartographics" available={station.services.cartographics} onClick={() => onNavigate('exploration')} />
           <ServiceButton icon={Map} label="Galaxy Map" available={true} onClick={() => onNavigate('galaxy')} />
           <ServiceButton icon={Pickaxe} label="Refinery & Mining" available={true} onClick={() => onNavigate('mining')} />
           <ServiceButton icon={Rocket} label="Colonization Office" available={true} onClick={() => onNavigate('colonization')} />
           <ServiceButton icon={Home} label="System Map" available={true} onClick={() => onNavigate('system')} />
+        </div>
+      </div>
+
+      {/* Outfitting capability */}
+      <div className="border border-orange-900 p-3 bg-black">
+        <div className="flex items-center gap-2 mb-2">
+          <Wrench className="w-4 h-4 text-orange-500" />
+          <h3 className="text-orange-400 text-sm font-bold uppercase">Outfitting & Engineering</h3>
+        </div>
+        <div className="text-xs space-y-1">
+          <div className="text-orange-600">TECH LEVEL: <span className="text-orange-300">{outfittingLevel.name} ({outfittingLevelIndex + 1}/5)</span></div>
+          <div className="text-orange-700 text-[10px]">{outfittingLevel.desc}</div>
+          <div className="text-orange-600 mt-1">SHIPYARD STOCK: <span className="text-orange-300">{state.currentSystem.population > 1000000000 ? 'Full Catalogue' : state.currentSystem.population > 1000000 ? 'Standard Range' : state.currentSystem.population > 0 ? 'Limited Selection' : 'Basic Vessels Only'}</span></div>
         </div>
       </div>
 

@@ -1,6 +1,6 @@
 // Ship Panel — ship info, cargo management, shipyard, course plotting
 import React, { useState } from 'react';
-import { useGameState, SHIP_TYPES, SHIP_MAP } from '@/lib/gameState';
+import { useGameState, SHIP_TYPES, SHIP_MAP, getAvailableShipsAtStation } from '@/lib/gameState';
 import { COMMODITY_MAP } from '@/lib/commodities';
 import { Package, Fuel, Ship as ShipIcon, Map, Trash2, ShoppingBag } from 'lucide-react';
 
@@ -57,6 +57,7 @@ export default function ShipPanel({ onNavigate }) {
             credits={state.credits}
             isDocked={state.currentLocation === 'station'}
             onBuy={(id) => buyShip(id)}
+            system={state.currentSystem}
           />
         )}
         {tab === 'navigation' && (
@@ -149,7 +150,7 @@ function CargoHold({ cargo, onJettison }) {
   );
 }
 
-function Shipyard({ currentShip, credits, isDocked, onBuy }) {
+function Shipyard({ currentShip, credits, isDocked, onBuy, system }) {
   if (!isDocked) {
     return (
       <div className="text-center text-orange-700 py-8">
@@ -159,10 +160,13 @@ function Shipyard({ currentShip, credits, isDocked, onBuy }) {
       </div>
     );
   }
+  const availableShips = getAvailableShipsAtStation(system);
+  const stockLabel = system?.population > 1000000000 ? 'FULL CATALOGUE' : system?.population > 1000000 ? 'STANDARD RANGE' : system?.population > 0 ? 'LIMITED SELECTION' : 'BASIC VESSELS ONLY';
   return (
     <div className="space-y-2">
       <h3 className="text-orange-500 text-sm font-bold uppercase mb-2">Shipyard — Available Vessels</h3>
-      {[...SHIP_TYPES].sort((a, b) => a.cost - b.cost).map(ship => {
+      <div className="text-orange-700 text-[10px] mb-2">STOCK LEVEL: <span className="text-orange-400">{stockLabel}</span></div>
+      {[...SHIP_TYPES].filter(s => availableShips.has(s.id)).sort((a, b) => a.cost - b.cost).map(ship => {
         const isCurrent = ship.id === currentShip;
         const canAfford = credits >= ship.cost;
         return (

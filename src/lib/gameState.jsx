@@ -479,19 +479,25 @@ export function GameStateProvider({ children }) {
         totalValue += scan.value;
         soldBodies.push(bodyId);
       }
-      // Also add system discovery bonuses
+      // Add system discovery bonuses (only for unsold ones)
       let systemBonus = 0;
-      for (const sys of Object.values(prev.discoveredSystems)) {
-        if (sys.firstDiscovered) {
+      const updatedDiscovered = {};
+      for (const [seed, sys] of Object.entries(prev.discoveredSystems)) {
+        if (sys.firstDiscovered && !sys.bonusSold) {
           systemBonus += 5000 + (sys.bodyCount || 0) * 500;
+          updatedDiscovered[seed] = { ...sys, bonusSold: true };
+        } else {
+          updatedDiscovered[seed] = sys;
         }
       }
       const totalPayout = totalValue + systemBonus;
+      if (totalPayout === 0) return prev;
       return {
         ...prev,
         credits: prev.credits + totalPayout,
         soldExplorationData: [...prev.soldExplorationData, { value: totalPayout, date: Date.now(), bodies: soldBodies.length }],
         scannedBodies: {},
+        discoveredSystems: updatedDiscovered,
         rank: {
           ...prev.rank,
           exploration: updateRank(prev.rank.exploration, totalPayout),
@@ -666,3 +672,37 @@ export function useGameState() {
 export function hasCarrierVendor(system) {
   return system && (system.population || 0) > 1000000000;
 }
+
+// Determine which ships are in stock at a station based on system population
+export function getAvailableShipsAtStation(system) {
+  const pop = system?.population || 0;
+  const available = ['sidewinder', 'eagle', 'hauler', 'adder'];
+  if (pop > 100000) available.push('viper', 'cobra', 'dolphin');
+  if (pop > 1000000) available.push('cobramk4', 'type6', 'diamondback', 'cobramk5');
+  if (pop > 10000000) available.push('asp', 'federal_dropship', 'vulture', 'imperial_courier', 'type7');
+  if (pop > 100000000) available.push('python', 'mandalay', 'alliance_chieftain', 'federal_assault', 'imperial_clipper', 'type8');
+  if (pop > 1000000000) available.push('alliance_crusader', 'alliance_challenger', 'krait_phantom', 'krait_mk2', 'orca', 'mamba', 'type9', 'anaconda');
+  if (pop > 10000000000) available.push('python_mk2', 'beluga', 'type10', 'federal_corvette', 'imperial_cutter');
+  return new Set(available);
+}
+
+// Determine outfitting/engineering level based on system stats
+export function getOutfittingLevel(system, systemData) {
+  const pop = system?.population || 0;
+  const economy = (systemData?.economy?.name || '').toLowerCase();
+  let level = 1;
+  if (pop > 100000) level = 2;
+  if (pop > 1000000) level = 3;
+  if (pop > 100000000) level = 4;
+  if (pop > 1000000000) level = 5;
+  if (economy.includes('high tech') || economy.includes('tech') || economy.includes('industrial')) level = Math.min(5, level + 1);
+  return level;
+}
+
+export const OUTFITTING_LEVELS = [
+  { name: 'Basic', desc: 'Core modules only. No engineering.' },
+  { name: 'Standard', desc: 'Common modules. Basic engineering.' },
+  { name: 'Advanced', desc: 'Improved modules. Standard engineering.' },
+  { name: 'Premium', desc: 'High-grade modules. Advanced engineering.' },
+  { name: 'Elite', desc: 'Full stock. Experimental engineering.' },
+];

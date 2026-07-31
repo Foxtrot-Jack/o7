@@ -13,9 +13,9 @@ export default function ExplorationScreen() {
     for (const scan of Object.values(state.scannedBodies)) {
       total += scan.value || 0;
     }
-    // Add system discovery bonuses
+    // Add system discovery bonuses (only unsold)
     for (const sys of Object.values(state.discoveredSystems)) {
-      if (sys.firstDiscovered) {
+      if (sys.firstDiscovered && !sys.bonusSold) {
         total += 5000 + (sys.bodyCount || 0) * 500;
       }
     }
@@ -25,6 +25,7 @@ export default function ExplorationScreen() {
   const scannedBodyCount = Object.keys(state.scannedBodies).length;
   const discoveredSystemCount = Object.keys(state.discoveredSystems).length;
   const firstDiscoveredCount = Object.values(state.discoveredSystems).filter(s => s.firstDiscovered).length;
+  const unsoldBonusCount = Object.values(state.discoveredSystems).filter(s => s.firstDiscovered && !s.bonusSold).length;
 
   const handleSell = () => {
     if (unsoldValue === 0) return;
@@ -73,7 +74,7 @@ export default function ExplorationScreen() {
           <>
             <div className="text-xs text-orange-600 mb-3">
               You have <span className="text-orange-300">{scannedBodyCount}</span> unsold body scans
-              and <span className="text-orange-300">{firstDiscoveredCount}</span> first discovery bonuses.
+              and <span className="text-orange-300">{unsoldBonusCount}</span> unsold first discovery bonuses.
             </div>
             <div className="text-2xl text-orange-300 font-bold mb-3">
               {unsoldValue.toLocaleString()} CR

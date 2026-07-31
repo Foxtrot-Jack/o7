@@ -358,6 +358,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId }) {
     let lastX = 0, lastY = 0;
     let pinchDist = 0;
     let dragStartX = 0, dragStartY = 0;
+    let lastCentroidX = 0, lastCentroidY = 0;
 
     const onPointerDown = (e) => {
       isDragging = true;
@@ -402,6 +403,8 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId }) {
           e.touches[0].clientX - e.touches[1].clientX,
           e.touches[0].clientY - e.touches[1].clientY
         );
+        lastCentroidX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+        lastCentroidY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
       } else if (e.touches.length === 1) {
         isDragging = true;
         lastX = e.touches[0].clientX;
@@ -423,6 +426,25 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId }) {
         const rs = rotState.current;
         rs.targetDistance += delta * 0.8;
         rs.targetDistance = Math.max(5, Math.min(500, rs.targetDistance));
+        // Two-finger pan
+        const newCentroidX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+        const newCentroidY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+        const cdx = newCentroidX - lastCentroidX;
+        const cdy = newCentroidY - lastCentroidY;
+        lastCentroidX = newCentroidX;
+        lastCentroidY = newCentroidY;
+        const cam = cameraRef.current;
+        if (cam && (Math.abs(cdx) > 0.5 || Math.abs(cdy) > 0.5)) {
+          focusBodyRef.current = null;
+          const forward = new THREE.Vector3();
+          cam.getWorldDirection(forward);
+          forward.y = 0;
+          forward.normalize();
+          const right = new THREE.Vector3().crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
+          const panScale = rs.distance * 0.002;
+          rs.targetFocusX -= (cdx * right.x + cdy * forward.x) * panScale;
+          rs.targetFocusZ -= (cdx * right.z + cdy * forward.z) * panScale;
+        }
       } else if (e.touches.length === 1 && isDragging) {
         const dx = e.touches[0].clientX - lastX;
         const dy = e.touches[0].clientY - lastY;
@@ -542,7 +564,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId }) {
             <div className="text-orange-600">ECONOMY: {systemData.economy.name}</div>
             <div className="text-orange-600">BODIES: {systemData.bodyCount}</div>
             <div className="text-orange-600">STARS: {systemData.stars.length}</div>
-            <div className="text-orange-800 text-[10px] mt-1">DRAG TO ROTATE · PINCH/SCROLL TO ZOOM · TAP BODY TO SELECT</div>
+            <div className="text-orange-800 text-[10px] mt-1">DRAG TO ROTATE · 2-FINGER PAN/PINCH · SCROLL TO ZOOM · TAP BODY</div>
           </>
         )}
       </div>
