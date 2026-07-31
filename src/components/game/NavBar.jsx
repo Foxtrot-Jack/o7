@@ -84,7 +84,7 @@ export default function NavBar({ currentScreen, onNavigate, location }) {
   };
 
   return (
-    <nav ref={navRef} className="relative flex items-center gap-0.5 px-2 py-1.5 border-b border-orange-900/50 bg-black overflow-x-auto">
+    <nav ref={navRef} className="relative z-50 flex items-center gap-1 px-2 py-1.5 border-b border-orange-900/50 bg-black">
       {NAV_GROUPS.map((group) => {
         const Icon = group.icon;
         const hasActive = group.items.some(i => i.id === currentScreen);
@@ -108,7 +108,7 @@ export default function NavBar({ currentScreen, onNavigate, location }) {
               title={groupDisabled ? 'Dock at a station to access' : group.label}
             >
               <Icon className="w-3.5 h-3.5" />
-              <span>{group.label}</span>
+              <span className="hidden sm:inline">{group.label}</span>
               {groupDisabled ? <Lock className="w-2.5 h-2.5 ml-0.5" /> : <ChevronDown className={`w-2.5 h-2.5 ml-0.5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />}
             </button>
 
