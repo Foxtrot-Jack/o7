@@ -906,7 +906,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
   const markDepositMined = useCallback((depositId) => {
     setState(prev => ({
       ...prev,
-      minedDeposits: { ...(prev.minedDeposits || {}), [depositId]: true },
+      minedDeposits: { ...(prev.minedDeposits || {}), [depositId]: Date.now() },
     }));
   }, []);
 

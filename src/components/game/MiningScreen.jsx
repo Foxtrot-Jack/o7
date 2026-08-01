@@ -1,7 +1,10 @@
 // Mining Screen — prospect and mine asteroids for raw materials
 // Prospecting is deterministic per body; depleted deposits persist in game state.
 // Mined materials fill cargo (sellable at stations) and the materials locker.
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
+
+// Deposits regenerate after this cooldown (5 minutes)
+const REGEN_COOLDOWN = 5 * 60 * 1000;
 import { useGameState } from '@/lib/gameState';
 import { BODY_TYPES } from '@/lib/system';
 import { COMMODITY_MAP } from '@/lib/commodities';
@@ -16,6 +19,13 @@ export default function MiningScreen() {
   const [mining, setMining] = useState(false);
   const [miningResult, setMiningResult] = useState(null);
   const [cargoWarning, setCargoWarning] = useState(false);
+  const [now, setNow] = useState(Date.now());
+
+  // Tick every second so countdown timers update live
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const cargoUsed = (state.ship?.cargo || []).reduce((s, c) => s + c.qty, 0);
   const cargoCapacity = state.ship?.cargoCapacity ?? 0;
@@ -32,13 +42,13 @@ export default function MiningScreen() {
   }, [systemData]);
 
   // Prospecting is deterministic — same body always yields the same deposits.
-  // Already-mined deposits are filtered out via state.minedDeposits.
-  const prospects = useMemo(() => {
-    if (!selectedProspect) return [];
+  // Mined deposits go on a cooldown timer and regenerate after REGEN_COOLDOWN.
+  const { available, regenerating } = useMemo(() => {
+    if (!selectedProspect) return { available: [], regenerating: [] };
     const body = selectedProspect;
     const rng = makeRng(body.id + ':prospect');
     const count = randInt(rng, 3, 8);
-    const found = [];
+    const all = [];
 
     for (let i = 0; i < count; i++) {
       const materials = body.materials || [];
@@ -48,7 +58,7 @@ export default function MiningScreen() {
       const yieldQty = randFloat(rng, 0.5, 5) * (material.concentration / 10);
       const isCore = rng() < 0.15;
 
-      found.push({
+      all.push({
         id: `${body.id}_ast_${i}`,
         materialId: material.id,
         materialName: COMMODITY_MAP[material.id]?.name || material.id,
@@ -59,10 +69,24 @@ export default function MiningScreen() {
       });
     }
 
-    found.sort((a, b) => b.value - a.value);
-    // Filter out depleted deposits
-    return found.filter(p => !state.minedDeposits?.[p.id]);
-  }, [selectedProspect, state.minedDeposits]);
+    all.sort((a, b) => b.value - a.value);
+    const avail = [];
+    const regen = [];
+    for (const p of all) {
+      const minedAt = state.minedDeposits?.[p.id];
+      if (!minedAt) {
+        avail.push(p);
+      } else {
+        const elapsed = now - minedAt;
+        if (elapsed >= REGEN_COOLDOWN) {
+          avail.push(p);
+        } else {
+          regen.push({ ...p, regenIn: minedAt + REGEN_COOLDOWN - now });
+        }
+      }
+    }
+    return { available: avail, regenerating: regen };
+  }, [selectedProspect, state.minedDeposits, now]);
 
   // Prospect a body — select it and compute deterministic deposits
   const handleProspect = useCallback((body) => {
@@ -172,13 +196,19 @@ export default function MiningScreen() {
               const rng = makeRng(body.id + ':prospect');
               const count = randInt(rng, 3, 8);
               let total = 0;
-              let mined = 0;
+              let available = 0;
+              let regen = 0;
               for (let i = 0; i < count; i++) {
                 const id = `${body.id}_ast_${i}`;
                 total++;
-                if (state.minedDeposits?.[id]) mined++;
+                const minedAt = state.minedDeposits?.[id];
+                if (!minedAt || now - minedAt >= REGEN_COOLDOWN) {
+                  available++;
+                } else {
+                  regen++;
+                }
               }
-              return { total, remaining: total - mined };
+              return { total, available, regen };
             })();
             return (
               <button
@@ -198,8 +228,11 @@ export default function MiningScreen() {
                   <div className="text-right">
                     <div className="text-orange-600 text-[10px]">{body.materials?.length || 0} materials</div>
                     <div className="text-[9px]">
-                      <span className="text-orange-500">{bodyDeposits.remaining}</span>
-                      <span className="text-orange-800">/{bodyDeposits.total} deposits</span>
+                      <span className="text-orange-500">{bodyDeposits.available}</span>
+                      <span className="text-orange-800">/{bodyDeposits.total} avail</span>
+                      {bodyDeposits.regen > 0 && (
+                        <span className="text-blue-600"> · {bodyDeposits.regen} regen</span>
+                      )}
                     </div>
                     {body.valuable && <div className="text-yellow-500 text-[10px]">★ VALUABLE</div>}
                   </div>
@@ -222,14 +255,14 @@ export default function MiningScreen() {
             </div>
           )}
 
-          {selectedProspect && prospects.length === 0 && !mining && (
+          {selectedProspect && available.length === 0 && regenerating.length === 0 && !mining && (
             <div className="text-orange-700 text-xs text-center py-4 border border-orange-950">
               <Package className="w-6 h-6 mx-auto mb-2 opacity-50" />
-              <p>All deposits depleted. Try another target.</p>
+              <p>No deposits found. Try another target.</p>
             </div>
           )}
 
-          {prospects.map(prospect => (
+          {available.map(prospect => (
             <div key={prospect.id} className="border border-orange-900 p-2 text-xs">
               <div className="flex items-start justify-between">
                 <div>
@@ -255,6 +288,29 @@ export default function MiningScreen() {
               </button>
             </div>
           ))}
+
+          {/* Regenerating deposits with countdown timers */}
+          {regenerating.length > 0 && (
+            <div className="border border-blue-900/50 p-2 space-y-1">
+              <div className="text-blue-500 text-[10px] uppercase font-bold flex items-center gap-1">
+                <Loader className="w-3 h-3" /> Regenerating Deposits
+              </div>
+              {regenerating.map(prospect => {
+                const mins = Math.floor(prospect.regenIn / 60000);
+                const secs = Math.floor((prospect.regenIn % 60000) / 1000);
+                return (
+                  <div key={prospect.id} className="flex items-center justify-between text-[10px] py-0.5">
+                    <span className={`${prospect.isCore ? 'text-yellow-600' : 'text-blue-600'}`}>
+                      {prospect.isCore && '★ '}{prospect.materialName}
+                    </span>
+                    <span className="text-blue-500 font-mono">
+                      {mins}:{String(secs).padStart(2, '0')}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           {miningResult && (
             <div className="border border-green-800 p-2 text-xs bg-green-950/20">
