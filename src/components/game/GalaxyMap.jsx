@@ -586,7 +586,7 @@ export default function GalaxyMap({ onJumpToSystem }) {
     // Check fuel — each LY costs 0.5 fuel (skip if cheats active)
     if (!cheatActive('instant_jumps') && !cheatActive('infinite_fuel')) {
       const fuelCost = Math.ceil(dist * 0.5);
-      if (fuelCost > state.ship.fuel) {
+      if (fuelCost > (state.ship?.fuel ?? 0)) {
         alert('INSUFFICIENT FUEL FOR JUMP');
         return;
       }
@@ -598,7 +598,7 @@ export default function GalaxyMap({ onJumpToSystem }) {
     });
     setSelectedStar(null);
     if (onJumpToSystem) onJumpToSystem();
-  }, [selectedStar, state.currentSystem, state.ship.fuel, setCurrentSystem, onJumpToSystem, state.cheats]);
+  }, [selectedStar, state.currentSystem, state.ship?.fuel, setCurrentSystem, onJumpToSystem, state.cheats]);
 
   const jumpDistance = selectedStar
     ? distance3D(
