@@ -29,6 +29,8 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
   const scoopFrameRef = useRef(0);
   const npcShipsRef = useRef([]);
   const carrierMeshesRef = useRef([]);
+  const tempVecRef = useRef(new THREE.Vector3());
+  const lastTravelPctRef = useRef(-1);
   const orbitAnchorRef = useRef(null);
   const lastTimeRef = useRef(0);
   const gridRef = useRef(null);
@@ -95,34 +97,36 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
       // Update body positions FIRST so camera focus tracks current positions (reduces jitter)
       for (const bm of bodyMeshesRef.current) {
         if (bm.body.orbitRadius > 0) {
-          const angle = t / Math.sqrt(bm.body.orbitRadius) + bm.phaseOffset;
+          const angle = t * bm.invSqrtOrbit + bm.phaseOffset;
           bm.group.position.x = Math.cos(angle) * bm.body.orbitRadius;
           bm.group.position.z = Math.sin(angle) * bm.body.orbitRadius;
           bm.group.position.y = 0;
         }
         if (bm.mesh) {
-          bm.mesh.rotation.y += 0.001;
+          bm.mesh.rotation.y += dt * 0.06;
         }
       }
 
       // Update orbital station positions (surface stations rotate with their parent planet)
       for (const sm of stationMeshesRef.current) {
         if (sm.isSurface) continue;
-        const orbitR = (sm.planetVisualRadius || 1) * 2.5;
-        const angle = t * 0.5 / Math.sqrt(orbitR) + sm.phaseOffset;
+        const angle = t * sm.invSqrtOrbit + sm.phaseOffset;
+        const orbitR = sm.orbitR;
         sm.model.position.x = Math.cos(angle) * orbitR;
         sm.model.position.z = Math.sin(angle) * orbitR;
         sm.model.position.y = 0;
-        sm.model.rotation.y += 0.002;
+        sm.model.rotation.y += dt * 0.12;
       }
 
       // Smooth camera AFTER body positions are current
       const rs = rotState.current;
-      rs.azimuth += (rs.targetAzimuth - rs.azimuth) * 0.1;
-      rs.polar += (rs.targetPolar - rs.polar) * 0.1;
-      rs.distance += (rs.targetDistance - rs.distance) * 0.1;
-      rs.focusX += (rs.targetFocusX - rs.focusX) * 0.08;
-      rs.focusZ += (rs.targetFocusZ - rs.focusZ) * 0.08;
+      const sRot = 1 - Math.exp(-dt * 6);
+      const sFocus = 1 - Math.exp(-dt * 5);
+      rs.azimuth += (rs.targetAzimuth - rs.azimuth) * sRot;
+      rs.polar += (rs.targetPolar - rs.polar) * sRot;
+      rs.distance += (rs.targetDistance - rs.distance) * sRot;
+      rs.focusX += (rs.targetFocusX - rs.focusX) * sFocus;
+      rs.focusZ += (rs.targetFocusZ - rs.focusZ) * sFocus;
       if (focusBodyRef.current) {
         rs.targetFocusX = focusBodyRef.current.group.position.x;
         rs.targetFocusZ = focusBodyRef.current.group.position.z;
@@ -138,7 +142,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
       // Ship travel animation
       if (travelRef.current && shipMeshRef.current) {
         const travel = travelRef.current;
-        const targetPos = new THREE.Vector3();
+        const targetPos = tempVecRef.current;
         if (travel.targetType === 'station') {
           travel.stationModel.getWorldPosition(targetPos);
         } else if (travel.targetType === 'body') {
@@ -158,6 +162,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
             setOrbitingBodyId(travel.station.parentId);
           }
           travelRef.current = null;
+          lastTravelPctRef.current = -1;
           setTravelInfo(null);
           if (onComplete) onComplete();
         } else {
@@ -168,7 +173,11 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
           shipMeshRef.current.position.set(sp.x, 0, sp.z);
           shipMeshRef.current.rotation.y = Math.atan2(dx, dz);
           const progress = Math.min(0.99, 1 - dist / travel.initialDist);
-          setTravelInfo(prev => prev ? { ...prev, progress } : null);
+          const pct = Math.round(progress * 100);
+          if (pct !== lastTravelPctRef.current) {
+            lastTravelPctRef.current = pct;
+            setTravelInfo(prev => prev ? { ...prev, progress } : null);
+          }
         }
       }
 
@@ -224,7 +233,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
         cm.model.position.x = Math.cos(angle) * orbitR;
         cm.model.position.z = Math.sin(angle) * orbitR;
         cm.model.position.y = 0;
-        cm.model.rotation.y += 0.001;
+        cm.model.rotation.y += dt * 0.06;
       }
 
       renderer.render(scene, camera);
@@ -405,6 +414,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
         mesh,
         visualRadius: getVisualRadius(body),
         phaseOffset: Math.random() * Math.PI * 2,
+        invSqrtOrbit: body.orbitRadius > 0 ? 1 / Math.sqrt(body.orbitRadius) : 0,
       });
     }
 
@@ -428,11 +438,14 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
       if (station.isOrbital) {
         // Orbital station — child of planet's group, orbits the planet
         parentEntry.group.add(stationModel);
+        const _orbitR = planetVisualRadius * 2.5;
         stationMeshesRef.current.push({
           station,
           model: stationModel,
           parentBody,
           planetVisualRadius,
+          orbitR: _orbitR,
+          invSqrtOrbit: 0.5 / Math.sqrt(Math.max(0.01, _orbitR)),
           phaseOffset: Math.random() * Math.PI * 2,
         });
       } else {
@@ -780,6 +793,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
       initialDist: dist,
       onComplete: () => dockAtStation(station.id),
     };
+    lastTravelPctRef.current = -1;
     setTravelInfo({ target: station.name, type: 'Docking', progress: 0 });
     setSelectedStation(null);
   }, [dockAtStation, state.ship?.type]);
@@ -798,6 +812,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
       initialDist: dist,
       onComplete: null,
     };
+    lastTravelPctRef.current = -1;
     setTravelInfo({ target: body.name || body.designation, type: 'In Transit', progress: 0 });
   }, [state.ship?.type]);
 
