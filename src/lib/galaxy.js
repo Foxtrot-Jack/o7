@@ -125,10 +125,10 @@ export function generateSectorStars(sx, sy, sz) {
     sz * SECTOR_SIZE + SECTOR_SIZE / 2
   );
 
-  if (density < 0.05) return [];
+  if (density <= 0) return [];
 
   const expectedStars = SECTOR_STAR_DENSITY * density * SECTOR_SIZE * SECTOR_SIZE / 64;
-  const numStars = Math.max(0, Math.round(expectedStars * (0.7 + rng() * 0.6)));
+  const numStars = Math.max(1, Math.round(expectedStars * (0.7 + rng() * 0.6)));
 
   const stars = [];
   for (let i = 0; i < numStars; i++) {
