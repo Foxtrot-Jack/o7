@@ -853,6 +853,20 @@ Themes apply a hue-rotate filter to the entire interface for instant visual chan
 
 Saves are stored locally in your browser. Clearing browser data will erase all progress.`,
       },
+      {
+        title: 'Sound & Music',
+        body: `All sound effects and music are synthesized procedurally at runtime using the Web Audio API — no audio files are loaded.
+
+• MASTER TOGGLE — Enable or disable all audio.
+• SFX VOLUME — Controls UI clicks, scanner sweeps, hyperspace jumps, docking, weapons, mining, and alerts.
+• MUSIC VOLUME — Controls the ambient background music independently from SFX.
+
+Six music presets are available: Standard, Cinematic, Retro (chiptune), Minimal, Intense, and Ethereal. Each preset assigns a different procedural track to every game context (galaxy map, system orrery, station, combat, exploration, mining, hyperspace, menus).
+
+Use the Per-Screen Track Customization panel to override any context's track with a specific procedural composition. Preview any track before assigning it.
+
+Background music automatically switches to match your current screen — docking at a station plays a calm hum, entering combat shifts to tense rhythms, and jumping to hyperspace triggers a sweeping drone.`,
+      },
     ],
   },
   {

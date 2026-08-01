@@ -12,6 +12,7 @@ class SoundEngine {
     this.musicNodes = null;
     this.currentContext = null;
     this.pendingContext = null;
+    this.musicGeneration = 0;
     this.settings = {
       enabled: true,
       sfxVolume: 0.7,
@@ -53,14 +54,26 @@ class SoundEngine {
 
   setSettings(settings) {
     if (!settings) return;
+    const wasEnabled = this.settings.enabled;
+    const oldPreset = this.settings.musicPreset;
+    const oldCustomTracks = JSON.stringify(this.settings.customTracks || {});
     this.settings = { ...this.settings, ...settings };
     this._applyVolumes();
     if (!this.settings.enabled) {
       this.stopMusic();
-    } else if (this.currentContext && !this.musicNodes) {
-      this.startMusic(this.currentContext);
-    } else if (this.musicNodes) {
-      this._restartMusic();
+    } else if (!wasEnabled) {
+      // Sound just re-enabled — restart if we had a context
+      if (this.currentContext) {
+        this.startMusic(this.currentContext);
+      }
+    } else {
+      // Only restart music if the preset or custom tracks actually changed
+      const presetChanged = this.settings.musicPreset !== oldPreset;
+      const tracksChanged = JSON.stringify(this.settings.customTracks || {}) !== oldCustomTracks;
+      if ((presetChanged || tracksChanged) && this.musicNodes) {
+        this._restartMusic();
+      }
+      // Volume-only changes: _applyVolumes already handled it, no restart needed
     }
   }
 
@@ -349,13 +362,15 @@ class SoundEngine {
   }
 
   stopMusic() {
+    this.musicGeneration++;
     if (!this.musicNodes) return;
     const t = this.ctx ? this.ctx.currentTime : 0;
     try {
       if (this.musicNodes.gain) {
         this.musicNodes.gain.gain.cancelScheduledValues(t);
-        this.musicNodes.gain.gain.setValueAtTime(this.musicNodes.gain.gain.value, t);
-        this.musicNodes.gain.gain.exponentialRampToValueAtTime(0.001, t + 1.5);
+        const currentVal = Math.max(0.0001, this.musicNodes.gain.gain.value);
+        this.musicNodes.gain.gain.setValueAtTime(currentVal, t);
+        this.musicNodes.gain.gain.exponentialRampToValueAtTime(0.0001, t + 1.5);
       }
     } catch (e) {}
     const nodes = this.musicNodes;
@@ -366,11 +381,11 @@ class SoundEngine {
       nodes.timeouts?.forEach(to => clearTimeout(to));
     }, 1600);
     this.musicNodes = null;
-    this.currentContext = null;
   }
 
   _createMusicNodes(track, context) {
     const nodes = { oscillators: [], intervals: [], timeouts: [], gain: null };
+    const gen = this.musicGeneration;
     const t = this.ctx.currentTime;
 
     const musicBus = this.ctx.createGain();
@@ -423,7 +438,7 @@ class SoundEngine {
     const oscType = track.oscType || 'sine';
 
     const scheduleNote = () => {
-      if (this.currentContext !== context) return;
+      if (gen !== this.musicGeneration) return;
       if (!this.ctx || this.ctx.state !== 'running') return;
       this._playMusicNote(baseFreq, scale, filter, noteGain, oscType);
     };
@@ -438,7 +453,7 @@ class SoundEngine {
     // Second harmonic layer (high, sparse)
     if (track.harmonicLayer !== false) {
       const harmIntervalId = setInterval(() => {
-        if (this.currentContext !== context) return;
+        if (gen !== this.musicGeneration) return;
         if (!this.ctx || this.ctx.state !== 'running') return;
         if (Math.random() < 0.4) {
           const noteIdx = Math.floor(Math.random() * scale.length);
