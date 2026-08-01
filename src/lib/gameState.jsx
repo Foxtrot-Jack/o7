@@ -20,6 +20,7 @@ import { FIGHTER_TYPES, getFighterHangarCapacity } from './fighters';
 import { ROOM_TYPES, MAX_CARRIER_ROOMS, getRoomCost, getStationRoomCost } from './cabinRooms';
 import { generateFish, generateFlora } from './specimens';
 import { ADDITIONAL_SHIPS } from './shipRoster';
+import { getHolidayFuelMultiplier } from './publicHolidays';
 
 const STORAGE_KEY = 'starfarer_save_v1';
 const STORAGE_KEY_SANDBOX = 'starfarer_sandbox_v1';
@@ -415,7 +416,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
       const newModuleWear = Math.min(100, (prev.ship.moduleWear ?? 0) + wear * 0.5);
       // Fuel consumption — 0.5 T per LY, halved by FSD boost (neutron star)
       const hasFuelCheat = prev.cheats?.unlocked && (prev.cheats?.active?.instant_jumps || prev.cheats?.active?.infinite_fuel);
-      const fuelCost = hasFuelCheat ? 0 : Math.ceil(dist * (prev.fsdBoost ? 0.25 : 0.5));
+      const fuelCost = hasFuelCheat ? 0 : Math.ceil(dist * (prev.fsdBoost ? 0.25 : 0.5) * getHolidayFuelMultiplier());
       const newFuel = Math.max(0, (prev.ship.fuel ?? 0) - fuelCost);
       return {
         ...prev,

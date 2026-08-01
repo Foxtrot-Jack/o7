@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { generateStarsInRange, distance3D, getStarColor, GALACTIC_RADIUS, generateGalaxyOverview, LANDMARK_SYSTEMS } from '@/lib/galaxy';
 import { getRegionName } from '@/lib/regions';
 import { useGameState } from '@/lib/gameState';
+import { getHolidayFuelMultiplier } from '@/lib/publicHolidays';
 
 export default function GalaxyMap({ onJumpToSystem }) {
   const mountRef = useRef(null);
@@ -600,7 +601,7 @@ export default function GalaxyMap({ onJumpToSystem }) {
 
     // Check fuel — each LY costs 0.5 fuel, halved by FSD boost (skip if cheats active)
     if (!cheatActive('instant_jumps') && !cheatActive('infinite_fuel')) {
-      const fuelCost = Math.ceil(dist * (state.fsdBoost ? 0.25 : 0.5));
+      const fuelCost = Math.ceil(dist * (state.fsdBoost ? 0.25 : 0.5) * getHolidayFuelMultiplier());
       if (fuelCost > (state.ship?.fuel ?? 0)) {
         alert('INSUFFICIENT FUEL FOR JUMP');
         return;
@@ -622,7 +623,7 @@ export default function GalaxyMap({ onJumpToSystem }) {
       ).toFixed(1)
     : null;
 
-  const fuelCost = selectedStar ? Math.ceil(parseFloat(jumpDistance) * (state.fsdBoost ? 0.25 : 0.5)) : null;
+  const fuelCost = selectedStar ? Math.ceil(parseFloat(jumpDistance) * (state.fsdBoost ? 0.25 : 0.5) * getHolidayFuelMultiplier()) : null;
   const fuelCheat = state.cheats?.unlocked && (state.cheats?.active?.instant_jumps || state.cheats?.active?.infinite_fuel);
   const galaxyFlip = state.cheats?.unlocked && state.cheats?.active?.galaxy_flip;
 

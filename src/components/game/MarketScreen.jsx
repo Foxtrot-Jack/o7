@@ -44,7 +44,10 @@ export default function MarketScreen() {
       const buyPrice = Math.round(baseBuyPrice * dynMod);
       const trend = getPriceTrend(buyPrice, baseBuyPrice);
       const holidayMult = getHolidayMarketMultiplier(commodity.category);
-      const sellPrice = Math.round(buyPrice * 0.82 * holidayMult); // sell back at 82% of buy, boosted by active holidays
+      // Sell price is 82% of buy, boosted by active holidays.
+      // Cap below buy price to prevent same-station arbitrage during high-multiplier holidays.
+      const rawSellPrice = Math.round(buyPrice * 0.82 * holidayMult);
+      const sellPrice = rawSellPrice >= buyPrice ? Math.max(0, buyPrice - 1) : rawSellPrice;
 
       // Supply and demand levels
       let supply = randInt(rng, 0, 100);
