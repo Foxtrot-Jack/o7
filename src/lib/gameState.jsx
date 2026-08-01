@@ -173,6 +173,8 @@ function createInitialState() {
       customColor: null,
       fontFamily: 'courier',
       fontScale: 100,
+      screenOrientation: 'landscape',
+      orientationLocked: false,
       sound: {
         enabled: true,
         sfxVolume: 0.7,

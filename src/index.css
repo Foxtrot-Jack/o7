@@ -177,3 +177,29 @@ input[type="number"] {
 .mini-screen {
   font-size: 10px;
 }
+
+/* Force landscape — rotates content 90° when device is held in portrait */
+@media screen and (orientation: portrait) {
+  .force-landscape {
+    position: fixed !important;
+    top: 0;
+    left: 100%;
+    width: 100vh !important;
+    height: 100vw !important;
+    transform: rotate(90deg);
+    transform-origin: top left;
+  }
+}
+
+/* Force portrait — rotates content -90° when device is held in landscape */
+@media screen and (orientation: landscape) {
+  .force-portrait {
+    position: fixed !important;
+    top: 100%;
+    left: 0;
+    width: 100vh !important;
+    height: 100vw !important;
+    transform: rotate(-90deg);
+    transform-origin: top left;
+  }
+}

@@ -1,7 +1,7 @@
 // Display Settings — brightness, mini-screen, CRT, reset
 import React from 'react';
 import { useGameState } from '@/lib/gameState';
-import { Settings, Sun, Monitor, Tv, RotateCcw, ArrowLeftRight, Palette, Download, Upload } from 'lucide-react';
+import { Settings, Sun, Monitor, Tv, RotateCcw, ArrowLeftRight, Palette, Download, Upload, Lock, Unlock, Smartphone } from 'lucide-react';
 import { THEME_LIST } from '@/lib/themes';
 import SoundSettings from '@/components/game/SoundSettings';
 import ColorCustomizer from '@/components/game/ColorCustomizer';
@@ -72,6 +72,38 @@ export default function SettingsScreen() {
           ))}
         </div>
         <div className="text-orange-700 text-[10px]">Changes the accent color of the entire interface, including 3D views.</div>
+      </div>
+
+      <div className="border border-orange-900 p-4 space-y-2">
+        <div className="flex items-center gap-2">
+          <Smartphone className="w-4 h-4 text-orange-500" />
+          <h3 className="text-orange-400 text-sm font-bold uppercase">Screen Orientation</h3>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => set('screenOrientation', 'portrait')}
+            className={`flex-1 py-2 border text-xs flex items-center justify-center gap-2 ${s.screenOrientation === 'portrait' ? 'border-orange-500 bg-orange-950/40 text-orange-300' : 'border-orange-900 text-orange-700 hover:text-orange-500'}`}
+          >
+            <Smartphone className="w-3.5 h-3.5" /> PORTRAIT
+          </button>
+          <button
+            onClick={() => set('screenOrientation', 'landscape')}
+            className={`flex-1 py-2 border text-xs flex items-center justify-center gap-2 ${(!s.screenOrientation || s.screenOrientation === 'landscape') ? 'border-orange-500 bg-orange-950/40 text-orange-300' : 'border-orange-900 text-orange-700 hover:text-orange-500'}`}
+          >
+            <Monitor className="w-3.5 h-3.5" /> LANDSCAPE
+          </button>
+          <button
+            onClick={() => set('orientationLocked', !s.orientationLocked)}
+            className={`px-3 py-2 border text-xs flex items-center justify-center gap-1.5 ${s.orientationLocked ? 'border-orange-500 bg-orange-950/40 text-orange-300' : 'border-orange-900 text-orange-700 hover:text-orange-500'}`}
+            title={s.orientationLocked ? 'Orientation locked — tap to unlock' : 'Orientation unlocked — tap to lock'}
+          >
+            {s.orientationLocked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
+            {s.orientationLocked ? 'LOCKED' : 'UNLOCKED'}
+          </button>
+        </div>
+        <div className="text-orange-700 text-[10px]">
+          Choose your preferred orientation, then press the lock to force it regardless of device rotation. When unlocked, the game follows your device's natural orientation.
+        </div>
       </div>
 
       <ColorCustomizer />
