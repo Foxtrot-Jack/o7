@@ -44,6 +44,11 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
   const [orbitingBodyId, setOrbitingBodyId] = useState(null);
   const [fssDismissedSeed, setFssDismissedSeed] = useState(null);
 
+  // Ref mirror of state so the animation loop (useEffect[]) always reads
+  // the latest values instead of a stale first-render closure.
+  const stateRef = useRef(state);
+  stateRef.current = state;
+
   const rotState = useRef({
     azimuth: Math.PI / 4,
     polar: Math.PI / 3,
@@ -74,7 +79,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     mountRef.current.appendChild(renderer.domElement);
 
     sceneRef.current = scene;
@@ -187,7 +192,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
         const ax = anchor.group.position.x;
         const az = anchor.group.position.z;
         const orbitR = Math.max(1, (anchor.visualRadius || 1) * 2.5);
-        const angle = now * 0.0006;
+        const angle = now * 0.0003;
         const ox = ax + Math.cos(angle) * orbitR;
         const oz = az + Math.sin(angle) * orbitR;
         shipPosRef.current.x = ox;
@@ -195,14 +200,15 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
         shipMeshRef.current.position.set(ox, 0, oz);
         shipMeshRef.current.rotation.y = angle + Math.PI / 2;
 
-        // Fuel scoop — auto-scoop when orbiting a star with a fuel scoop installed
+        // Fuel scoop — check every 30 frames using latest state via ref
         if (anchor.body.type === BODY_TYPES.STAR) {
-          const modules = state.ship.modules || {};
-          const scoopMod = Object.values(modules).find(id => typeof id === 'string' && id.startsWith('fsc_'));
-          if (scoopMod && state.ship.fuel < state.ship.fuelCapacity) {
-            scoopFrameRef.current++;
-            if (scoopFrameRef.current >= 30) {
-              scoopFrameRef.current = 0;
+          scoopFrameRef.current++;
+          if (scoopFrameRef.current >= 30) {
+            scoopFrameRef.current = 0;
+            const curState = stateRef.current;
+            const modules = curState.ship?.modules || {};
+            const scoopMod = Object.values(modules).find(id => typeof id === 'string' && id.startsWith('fsc_'));
+            if (scoopMod && curState.ship.fuel < curState.ship.fuelCapacity) {
               const scoopSize = parseInt(scoopMod.split('_')[1].replace('a', '')) || 1;
               refuel(scoopSize * 0.5);
             }

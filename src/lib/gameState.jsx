@@ -531,6 +531,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
   // Refuel
   const refuel = useCallback((amount) => {
     setState(prev => {
+      if (prev.ship.fuel >= prev.ship.fuelCapacity) return prev;
       const newFuel = Math.min(prev.ship.fuel + amount, prev.ship.fuelCapacity);
       return { ...prev, ship: { ...prev.ship, fuel: newFuel } };
     });
