@@ -1,6 +1,7 @@
 // Gesture & Display Settings — per-screen gesture controls and display inversion
 import React, { useState } from 'react';
-import { useGameState, INTERACTIVE_SCREENS } from '@/lib/gameState';
+import { useGameState } from '@/lib/gameState';
+import { INTERACTIVE_SCREENS } from '@/lib/screenSettings';
 import { Hand, Monitor, ZoomIn, Move, RotateCw, ScanLine, FlipHorizontal, FlipVertical, RefreshCw } from 'lucide-react';
 
 const GESTURE_FIELDS = [
