@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { useGameState, getOutfittingLevel, OUTFITTING_LEVELS } from '@/lib/gameState';
 import { Home, Fuel, Wrench, ShoppingCart, Ship as ShipIcon, Telescope, Map, Pickaxe, Rocket, LogOut, ClipboardList, Settings as SettingsIcon, ArrowLeftRight, FlaskConical, Users, Skull, Crosshair, UserCheck, ScrollText } from 'lucide-react';
+import { soundEngine } from '@/lib/soundEngine';
 
 export default function StationScreen({ onNavigate }) {
   const { state, getSystemData, leaveStation, refuel, addCredits, repairShip } = useGameState();
@@ -30,6 +31,7 @@ export default function StationScreen({ onNavigate }) {
   const handleRefuel = () => {
     if (refuelAmount <= 0) return;
     if (!isSandbox && refuelCost > state.credits) return;
+    soundEngine.play('confirm');
     refuel(refuelAmount);
     if (!isSandbox) addCredits(-refuelCost);
     setRefuelAmount(0);
@@ -38,6 +40,7 @@ export default function StationScreen({ onNavigate }) {
   const handleFullRefuel = () => {
     if (fuelNeeded <= 0) return;
     if (!isSandbox && fullRefuelCost > state.credits) return;
+    soundEngine.play('confirm');
     refuel(fuelNeeded);
     if (!isSandbox) addCredits(-fullRefuelCost);
   };
@@ -173,7 +176,7 @@ export default function StationScreen({ onNavigate }) {
               </div>
               {damage > 0 ? (
                 <button
-                  onClick={() => { repairShip(damage); if (!isSandbox) addCredits(-repairCost); }}
+                  onClick={() => { soundEngine.play('confirm'); repairShip(damage); if (!isSandbox) addCredits(-repairCost); }}
                   disabled={!isSandbox && state.credits < repairCost}
                   className="mt-2 w-full py-1.5 border border-orange-500 text-orange-300 hover:bg-orange-950/50 text-xs font-bold disabled:opacity-30"
                 >
@@ -202,7 +205,7 @@ export default function StationScreen({ onNavigate }) {
 function ServiceButton({ icon: Icon, label, available, onClick }) {
   return (
     <button
-      onClick={available ? onClick : undefined}
+      onClick={available ? () => { soundEngine.play('click'); onClick(); } : undefined}
       disabled={!available}
       className={`flex flex-col items-center gap-2 p-3 border transition-all ${
         available

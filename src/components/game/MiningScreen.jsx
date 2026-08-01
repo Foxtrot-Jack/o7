@@ -5,6 +5,7 @@ import { BODY_TYPES } from '@/lib/system';
 import { COMMODITY_MAP } from '@/lib/commodities';
 import { makeRng, randInt, randFloat, pick } from '@/lib/prng';
 import { Pickaxe, Gem, Loader, Package, Zap } from 'lucide-react';
+import { soundEngine } from '@/lib/soundEngine';
 
 export default function MiningScreen() {
   const { state, getSystemData, addCargo, addMaterial } = useGameState();
@@ -26,6 +27,7 @@ export default function MiningScreen() {
 
   // Prospect a body — find specific asteroids to mine
   const handleProspect = useCallback((body) => {
+    soundEngine.play('scan');
     setSelectedProspect(body);
     const rng = makeRng(body.id + ':prospect:' + Date.now());
     const count = randInt(rng, 3, 8);
@@ -59,6 +61,7 @@ export default function MiningScreen() {
 
   // Mine a specific prospect
   const handleMine = useCallback((prospect) => {
+    soundEngine.play('mining');
     setMining(true);
     setTimeout(() => {
       setMining(false);

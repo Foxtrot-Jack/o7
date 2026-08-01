@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Compass, Store, Package, ClipboardList, Pickaxe, Telescope, Home, Map, Rocket, Layers, Anchor, Trophy, Settings, Wrench, MapPin, TrendingUp, User, Hammer, BookOpen, Briefcase, ChevronDown, Lock, Sparkles, Medal, Palette, DoorOpen, ArrowLeftRight, FlaskConical, Users, Crown, Target, Skull, Newspaper, Crosshair, Swords, AlertTriangle, Gem, UserCheck, Building, ScrollText, Plane, Activity, Leaf, Route, Radio, ListChecks, Award, Save, Brain, LayoutDashboard, Zap, Network, Eye, Fish } from 'lucide-react';
 import { useGameState } from '@/lib/gameState';
+import { soundEngine } from '@/lib/soundEngine';
 
 const NAV_GROUPS = [
   {
@@ -126,9 +127,10 @@ export default function NavBar({ currentScreen, onNavigate, location }) {
 
   const handleItemClick = (item) => {
     const isStationOnly = STATION_ONLY_SCREENS.includes(item.id);
-    if (isStationOnly && location !== 'station') return;
+    if (isStationOnly && location !== 'station') { soundEngine.play('error'); return; }
     const isCarrierRequired = CARRIER_REQUIRED_SCREENS.includes(item.id);
-    if (isCarrierRequired && (state.fleetCarriers || []).length === 0) return;
+    if (isCarrierRequired && (state.fleetCarriers || []).length === 0) { soundEngine.play('error'); return; }
+    soundEngine.play('click');
     onNavigate(item.id);
     setOpenGroup(null);
   };
@@ -144,7 +146,7 @@ export default function NavBar({ currentScreen, onNavigate, location }) {
         return (
           <div key={group.id} className="relative flex-shrink-0">
             <button
-              onClick={() => !groupDisabled && setOpenGroup(isOpen ? null : group.id)}
+              onClick={() => { if (!groupDisabled) { soundEngine.play(isOpen ? 'back' : 'select'); setOpenGroup(isOpen ? null : group.id); } }}
               disabled={groupDisabled}
               className={`flex items-center gap-1 px-2.5 py-1.5 text-xs whitespace-nowrap border transition-all ${
                 hasActive

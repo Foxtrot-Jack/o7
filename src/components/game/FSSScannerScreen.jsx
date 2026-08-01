@@ -2,6 +2,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useGameState } from '@/lib/gameState';
 import { generateFSSSignals, getScanProgress, SPECTRUM_RANGES } from '@/lib/fssScanner';
+import { soundEngine } from '@/lib/soundEngine';
 import { Radio, Satellite, ScanLine, CheckCircle, Globe, Star, Layers, Award, Zap, Square } from 'lucide-react';
 
 const SIGNAL_ICONS = {
@@ -64,6 +65,7 @@ export default function FSSScannerScreen() {
     const start = Date.now();
     setTuning(signal);
     setTuneProgress(0);
+    soundEngine.play('fss_tune');
 
     intervalRef.current = setInterval(() => {
       const elapsed = Date.now() - start;
@@ -73,6 +75,7 @@ export default function FSSScannerScreen() {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
         const result = discoverBodyFSS(signal.bodyId);
+        if (!result.alreadyDiscovered) soundEngine.play('body_discovered');
         setTuning(null);
         setTuneProgress(0);
         onComplete?.(result);
@@ -84,6 +87,7 @@ export default function FSSScannerScreen() {
     if (discoveredIds.has(signal.bodyId) || tuning || autoTuning) return;
     tuneSignal(signal, (result) => {
       if (result?.systemComplete) {
+        soundEngine.play('scan_complete');
         setShowCompletion(true);
         setTimeout(() => setShowCompletion(false), 7000);
       }
@@ -118,6 +122,7 @@ export default function FSSScannerScreen() {
     tuneSignal(remaining[index], (result) => {
       if (autoStopRef.current) { setAutoTuning(false); return; }
       if (result?.systemComplete) {
+        soundEngine.play('scan_complete');
         setShowCompletion(true);
         setAutoTuning(false);
         setTimeout(() => setShowCompletion(false), 7000);

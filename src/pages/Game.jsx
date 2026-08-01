@@ -71,10 +71,44 @@ import AquariumScreen from '@/components/game/AquariumScreen';
 import GardenScreen from '@/components/game/GardenScreen';
 import GeneticsLabScreen from '@/components/game/GeneticsLabScreen';
 import StationCreator from '@/components/game/StationCreator';
+import { soundEngine } from '@/lib/soundEngine';
+import { SCREEN_CONTEXTS } from '@/lib/soundPresets';
 
 function GameContent() {
   const { state } = useGameState();
   const [screen, setScreen] = useState('system');
+
+  // Sync sound settings to the audio engine
+  useEffect(() => {
+    soundEngine.setSettings(state.settings?.sound || {});
+  }, [state.settings?.sound]);
+
+  // Switch background music when the active screen changes
+  useEffect(() => {
+    const ctx = SCREEN_CONTEXTS[screen] || 'menu';
+    soundEngine.startMusic(ctx);
+  }, [screen]);
+
+  // Initialize audio context on first user interaction (browser autoplay policy)
+  useEffect(() => {
+    const initAudio = () => {
+      soundEngine.init();
+      soundEngine.resume();
+    };
+    document.addEventListener('click', initAudio, { once: true });
+    document.addEventListener('touchstart', initAudio, { once: true });
+    return () => {
+      document.removeEventListener('click', initAudio);
+      document.removeEventListener('touchstart', initAudio);
+    };
+  }, []);
+
+  // Play alert sound when a random encounter triggers
+  useEffect(() => {
+    if (state.activeEncounter) {
+      soundEngine.play('alert');
+    }
+  }, [state.activeEncounter]);
 
   const handleNavigate = (target) => {
     setScreen(target);

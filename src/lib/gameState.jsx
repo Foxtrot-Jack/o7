@@ -1,6 +1,7 @@
 // Game state management with localStorage persistence
 // Uses React context for app-wide access
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import { soundEngine } from './soundEngine';
 import { STARTING_SYSTEM, distance3D, generateStarsInRange, SOL_SYSTEM } from './galaxy';
 import { GATE_CREDIT_COST, GATE_MATERIAL_COST } from './warpGates';
 import { computeCockpitCost } from './cockpitParts';
@@ -176,6 +177,13 @@ function createInitialState() {
       textBrightness: 100,
       miniScreen: false,
       colorTheme: 'elite',
+      sound: {
+        enabled: true,
+        sfxVolume: 0.7,
+        musicVolume: 0.4,
+        musicPreset: 'standard',
+        customTracks: {},
+      },
     },
     crew: [],
     powerPlay: null,
@@ -250,7 +258,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
         // Merge with defaults to handle new fields
         setState(prev => {
           const merged = { ...prev, ...parsed,
-          settings: { ...prev.settings, ...(parsed.settings || {}) },
+          settings: { ...prev.settings, ...(parsed.settings || {}), sound: { ...(prev.settings?.sound || {}), ...(parsed.settings?.sound || {}) } },
           achievements: {
             firstDiscoveries: {}, milestones: {}, scannedSystemSeeds: [], systemsScanned: 0, totalBodiesScanned: 0,
             ...(parsed.achievements || {}),
@@ -364,6 +372,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
 
   // Set current system and generate its data
   const setCurrentSystem = useCallback((system) => {
+    soundEngine.play('jump');
     const systemData = generateSystem(system.seed, system.starClass);
     setState(prev => {
       const dist = distance3D(prev.currentSystem, system);
@@ -418,6 +427,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
 
   // Dock at a station
   const dockAtStation = useCallback((stationId) => {
+    soundEngine.play('dock');
     setState(prev => ({
       ...prev,
       currentLocation: 'station',
@@ -427,6 +437,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
 
   // Leave station
   const leaveStation = useCallback(() => {
+    soundEngine.play('undock');
     setState(prev => ({
       ...prev,
       currentLocation: 'system',
@@ -1567,6 +1578,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
   }, []);
 
   const warpJump = useCallback((gateId) => {
+    soundEngine.play('warp');
     setState(prev => {
       const currentGate = (prev.warpGates || []).find(g => g.systemSeed === prev.currentSystem.seed);
       if (!currentGate) return prev;

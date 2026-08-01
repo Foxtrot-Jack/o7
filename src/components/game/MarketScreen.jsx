@@ -5,6 +5,7 @@ import { COMMODITIES, COMMODITY_CATEGORIES, COMMODITY_MAP, ECONOMY_TYPES } from 
 import { makeRng, randInt, randFloat } from '@/lib/prng';
 import { ShoppingCart, ArrowUp, ArrowDown, Package } from 'lucide-react';
 import { getMarketCycle, getPriceModifier, getPriceTrend, getTrendDisplay } from '@/lib/dynamicEconomy';
+import { soundEngine } from '@/lib/soundEngine';
 
 export default function MarketScreen() {
   const { state, getSystemData, addCredits, addCargo, removeCargo } = useGameState();
@@ -92,6 +93,7 @@ export default function MarketScreen() {
     addCredits(-cost);
     addCargo(commodityId, amount);
     setTradeAmounts(prev => ({ ...prev, [commodityId]: 1 }));
+    soundEngine.play('buy');
   };
 
   const handleSell = (commodityId) => {
@@ -105,6 +107,7 @@ export default function MarketScreen() {
     addCredits(revenue);
     removeCargo(commodityId, amount);
     setTradeAmounts(prev => ({ ...prev, [commodityId]: 1 }));
+    soundEngine.play('sell');
   };
 
   const setAmount = (commodityId, amount) => {
