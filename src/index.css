@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&family=Major+Mono+Display&family=Press+Start+2P&family=Share+Tech+Mono&family=Source+Code+Pro:wght@400;600&family=VT323&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -94,7 +96,7 @@
 /* Starfarer CRT Theme */
 .crt-container,
 .crt-container * {
-  font-family: 'Courier New', 'Lucida Console', monospace !important;
+  font-family: var(--crt-font, 'Courier New', 'Lucida Console', monospace) !important;
   text-shadow: 0 0 2px rgba(255, 136, 0, 0.4), 0 0 6px rgba(255, 136, 0, 0.15);
 }
 

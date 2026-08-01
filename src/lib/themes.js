@@ -11,3 +11,23 @@ export const THEMES = {
 };
 
 export const THEME_LIST = Object.entries(THEMES).map(([id, t]) => ({ id, ...t }));
+
+// Build a theme object dynamically from a custom hex color,
+// generating all rgba variants the CRTFrame needs.
+function hexToRgb(hex) {
+  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return m ? { r: parseInt(m[1], 16), g: parseInt(m[2], 16), b: parseInt(m[3], 16) } : { r: 255, g: 136, b: 0 };
+}
+
+export function buildCustomTheme(hex) {
+  const { r, g, b } = hexToRgb(hex);
+  return {
+    name: 'Custom',
+    color: hex,
+    glow: `rgba(${r},${g},${b},0.03)`,
+    flicker: `rgba(${r},${g},${b},0.02)`,
+    shadow: `rgba(${r},${g},${b},0.5)`,
+    shadowDim: `rgba(${r},${g},${b},0.2)`,
+    gradient: `rgba(${r},${g},${b},0.02)`,
+  };
+}

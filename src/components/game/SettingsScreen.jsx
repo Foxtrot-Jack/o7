@@ -4,6 +4,8 @@ import { useGameState } from '@/lib/gameState';
 import { Settings, Sun, Monitor, Tv, RotateCcw, ArrowLeftRight, Palette, Download, Upload } from 'lucide-react';
 import { THEME_LIST } from '@/lib/themes';
 import SoundSettings from '@/components/game/SoundSettings';
+import ColorCustomizer from '@/components/game/ColorCustomizer';
+import FontSelector from '@/components/game/FontSelector';
 
 export default function SettingsScreen() {
   const { state, update, resetGame, switchSave } = useGameState();
@@ -71,6 +73,10 @@ export default function SettingsScreen() {
         </div>
         <div className="text-orange-700 text-[10px]">Changes the accent color of the entire interface, including 3D views.</div>
       </div>
+
+      <ColorCustomizer />
+
+      <FontSelector />
 
       <SoundSettings />
 

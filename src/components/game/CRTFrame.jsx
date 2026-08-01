@@ -1,15 +1,20 @@
 // CRT visual effect wrapper — scanlines, glow, curvature, flicker, theme support
 import React from 'react';
-import { THEMES } from '@/lib/themes';
+import { THEMES, buildCustomTheme } from '@/lib/themes';
+import { FONTS } from '@/lib/fonts';
 
-export default function CRTFrame({ children, enabled = true, brightness = 100, theme = 'elite' }) {
-  const t = THEMES[theme] || THEMES.elite;
+export default function CRTFrame({ children, enabled = true, brightness = 100, theme = 'elite', customColor = null, fontFamily = 'courier' }) {
+  const baseTheme = THEMES[theme] || THEMES.elite;
+  const t = customColor ? buildCustomTheme(customColor) : baseTheme;
+  const font = FONTS[fontFamily] || FONTS.courier;
   const filters = [`brightness(${brightness}%)`];
-  if (t.grayscale) filters.push('grayscale(1)');
-  if (t.hueRotate) filters.push(`hue-rotate(${t.hueRotate}deg)`);
-  const filterStyle = { filter: filters.join(' ') };
+  if (!customColor) {
+    if (t.grayscale) filters.push('grayscale(1)');
+    if (t.hueRotate) filters.push(`hue-rotate(${t.hueRotate}deg)`);
+  }
+  const filterStyle = { filter: filters.join(' '), '--crt-font': font.family };
 
-  if (!enabled) return <div className="w-full h-full" style={filterStyle}>{children}</div>;
+  if (!enabled) return <div className="crt-container w-full h-full overflow-hidden bg-black" style={filterStyle}>{children}</div>;
 
   return (
     <div className="crt-container relative w-full h-full overflow-hidden bg-black" style={filterStyle}>

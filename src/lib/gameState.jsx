@@ -170,6 +170,8 @@ function createInitialState() {
       textBrightness: 100,
       miniScreen: false,
       colorTheme: 'elite',
+      customColor: null,
+      fontFamily: 'courier',
       sound: {
         enabled: true,
         sfxVolume: 0.7,
