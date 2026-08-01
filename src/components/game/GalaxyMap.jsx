@@ -1,7 +1,7 @@
 // 3D Galaxy Map — rotatable, pinch-zoomable view of procedurally generated stars
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import * as THREE from 'three';
-import { generateStarsInRange, distance3D, getStarColor, GALACTIC_RADIUS, generateGalaxyOverview } from '@/lib/galaxy';
+import { generateStarsInRange, distance3D, getStarColor, GALACTIC_RADIUS, generateGalaxyOverview, LANDMARK_SYSTEMS } from '@/lib/galaxy';
 import { getRegionName } from '@/lib/regions';
 import { useGameState } from '@/lib/gameState';
 
@@ -20,6 +20,7 @@ export default function GalaxyMap({ onJumpToSystem }) {
   const trailRef = useRef(null);
   const overviewRef = useRef(null);
   const gridRef = useRef(null);
+  const landmarkMarkersRef = useRef(null);
   const raycasterRef = useRef(new THREE.Raycaster());
   const animationIdRef = useRef(null);
 
@@ -304,6 +305,20 @@ export default function GalaxyMap({ onJumpToSystem }) {
         sceneRef.current.add(mps);
         missionMarkersRef.current = mps;
       }
+    }
+
+    // Landmark markers — gold rings around major hubs (Cradle's End, Vagrant's Horizon, Sol)
+    if (landmarkMarkersRef.current) { sceneRef.current.remove(landmarkMarkersRef.current); landmarkMarkersRef.current.geometry.dispose(); landmarkMarkersRef.current.material.dispose(); landmarkMarkersRef.current = null; }
+    const landmarkStars = stars.filter(s => LANDMARK_SYSTEMS.some(l => l.seed === s.seed));
+    if (landmarkStars.length > 0) {
+      const lp = new Float32Array(landmarkStars.length * 3);
+      landmarkStars.forEach((s, i) => { lp[i*3] = s.x-center.x; lp[i*3+1] = s.y-center.y; lp[i*3+2] = s.z-center.z; });
+      const lg = new THREE.BufferGeometry();
+      lg.setAttribute('position', new THREE.BufferAttribute(lp, 3));
+      const lm = new THREE.PointsMaterial({ color: 0xffaa00, size: 14, sizeAttenuation: false, transparent: true, opacity: 0.95 });
+      const lps = new THREE.Points(lg, lm);
+      sceneRef.current.add(lps);
+      landmarkMarkersRef.current = lps;
     }
 
     // Flight log trail — green line connecting last 50 visited systems
@@ -775,6 +790,10 @@ export default function GalaxyMap({ onJumpToSystem }) {
             <span className="text-yellow-400">MISSION TARGETS</span>
           </div>
         )}
+        <div className="flex items-center gap-1.5">
+          <div className="w-2 h-2 bg-orange-400 rounded-full" />
+          <span className="text-orange-400">LANDMARKS</span>
+        </div>
       </div>
 
       {/* Selected star panel */}

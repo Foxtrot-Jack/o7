@@ -2,7 +2,7 @@
 // Plots multi-jump routes with neutron star highway support
 import React, { useState, useMemo } from 'react';
 import { useGameState, SHIP_MAP } from '@/lib/gameState';
-import { generateStarsInRange, distance3D, SOL_SYSTEM } from '@/lib/galaxy';
+import { generateStarsInRange, distance3D, SOL_SYSTEM, COLONIA_SYSTEM, FAR_REACH_SYSTEM } from '@/lib/galaxy';
 import { computeShipStats, getDefaultModules } from '@/lib/shipOutfitting';
 import { Route, Search, Zap, Navigation, AlertTriangle, Star, MapPin } from 'lucide-react';
 
@@ -121,33 +121,43 @@ export default function RoutePlotter() {
         )}
       </div>
 
-      {/* Known locations — instant destination selection, no search needed */}
-      {((state.saveMode === 'sandbox') || (state.bookmarkedSystems?.length || 0) > 0) && (
-        <div className="border border-orange-900 p-3 space-y-2">
-          <div className="text-orange-500 text-[10px] font-bold uppercase flex items-center gap-1">
-            <MapPin className="w-3 h-3" /> Known Locations
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {state.saveMode === 'sandbox' && (
-              <button
-                onClick={() => { setDestination(SOL_SYSTEM); setRoute(null); setError(''); }}
-                className={`flex items-center gap-1 px-2 py-1 border text-[10px] ${destination?.seed === SOL_SYSTEM.seed ? 'border-yellow-500 bg-yellow-950/20 text-yellow-300' : 'border-yellow-900 text-yellow-600 hover:border-yellow-700'}`}
-              >
-                <Star className="w-2.5 h-2.5" /> Sol
-              </button>
-            )}
-            {state.bookmarkedSystems?.map(bm => (
-              <button
-                key={bm.seed}
-                onClick={() => { setDestination(bm); setRoute(null); setError(''); }}
-                className={`flex items-center gap-1 px-2 py-1 border text-[10px] ${destination?.seed === bm.seed ? 'border-yellow-500 bg-yellow-950/20 text-yellow-300' : 'border-orange-900 text-orange-600 hover:border-orange-700'}`}
-              >
-                <Star className="w-2.5 h-2.5" /> {bm.name}
-              </button>
-            ))}
-          </div>
+      {/* Known locations — landmark systems + bookmarks, instant destination selection */}
+      <div className="border border-orange-900 p-3 space-y-2">
+        <div className="text-orange-500 text-[10px] font-bold uppercase flex items-center gap-1">
+          <MapPin className="w-3 h-3" /> Known Locations
         </div>
-      )}
+        <div className="flex flex-wrap gap-1.5">
+          <button
+            onClick={() => { setDestination(COLONIA_SYSTEM); setRoute(null); setError(''); }}
+            className={`flex items-center gap-1 px-2 py-1 border text-[10px] ${destination?.seed === COLONIA_SYSTEM.seed ? 'border-cyan-500 bg-cyan-950/20 text-cyan-300' : 'border-cyan-900 text-cyan-600 hover:border-cyan-700'}`}
+          >
+            <Star className="w-2.5 h-2.5" /> Cradle's End
+          </button>
+          <button
+            onClick={() => { setDestination(FAR_REACH_SYSTEM); setRoute(null); setError(''); }}
+            className={`flex items-center gap-1 px-2 py-1 border text-[10px] ${destination?.seed === FAR_REACH_SYSTEM.seed ? 'border-purple-500 bg-purple-950/20 text-purple-300' : 'border-purple-900 text-purple-600 hover:border-purple-700'}`}
+          >
+            <Star className="w-2.5 h-2.5" /> Vagrant's Horizon
+          </button>
+          {state.saveMode === 'sandbox' && (
+            <button
+              onClick={() => { setDestination(SOL_SYSTEM); setRoute(null); setError(''); }}
+              className={`flex items-center gap-1 px-2 py-1 border text-[10px] ${destination?.seed === SOL_SYSTEM.seed ? 'border-yellow-500 bg-yellow-950/20 text-yellow-300' : 'border-yellow-900 text-yellow-600 hover:border-yellow-700'}`}
+            >
+              <Star className="w-2.5 h-2.5" /> Sol
+            </button>
+          )}
+          {state.bookmarkedSystems?.map(bm => (
+            <button
+              key={bm.seed}
+              onClick={() => { setDestination(bm); setRoute(null); setError(''); }}
+              className={`flex items-center gap-1 px-2 py-1 border text-[10px] ${destination?.seed === bm.seed ? 'border-yellow-500 bg-yellow-950/20 text-yellow-300' : 'border-orange-900 text-orange-600 hover:border-orange-700'}`}
+            >
+              <Star className="w-2.5 h-2.5" /> {bm.name}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* Route results */}
       {/* Sandbox teleport */}

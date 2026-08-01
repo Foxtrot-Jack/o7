@@ -130,6 +130,38 @@ Toggle these on/off from the filter panel using the ⚓ SHIPS and ★ COLONIES b
 
 The System view also displays a mission-target alert banner when you enter the correct system.`,
       },
+      {
+        title: 'The Core Worlds (The Bubble)',
+        body: `The starting area of Dogstar Interstellar is a populated region of space called The Core Worlds, centered on your starting system (Deciat Reach). Within approximately 200 light years of the start, the vast majority of star systems are inhabited with populations ranging from 100,000 to 20 billion.
+
+This is your "bubble" — a safe, civilized region where you'll find stations, markets, missions, and trade opportunities on nearly every jump. It's the ideal place to build your credits, rank, and fleet before venturing into the deeper galaxy.
+
+Population density is highest at the center of the bubble and fades toward the edges. Beyond the bubble's radius, inhabited systems become rare — most stars you encounter will be uninhabited frontier space.`,
+      },
+      {
+        title: "Cradle's End (Coreward Hub)",
+        body: `Approximately 6,300 light years coreward from the starting bubble lies Cradle's End — a populated hub system near the galactic core. It is the centerpiece of a smaller civilized region called The Coreward Reach, a 100-light-year bubble of inhabited systems centered on Cradle's End.
+
+Cradle's End serves as a staging point for deep-core exploration. If you're heading toward the galactic center to scan neutron stars, black holes, and rare stellar phenomena, Cradle's End is your last chance to refuel, repair, and resupply before venturing into the densely packed core.
+
+Cradle's End appears as a gold landmark marker on the Galaxy Map and is always available as a quick-select destination in the Route Plotter's Known Locations panel.`,
+      },
+      {
+        title: "Vagrant's Horizon (The Rim Outpost)",
+        body: `At the extreme opposite end of the galaxy from the starting bubble — over 25,000 light years away — lies Vagrant's Horizon, the furthest inhabited outpost from civilized space. This lonely red-dwarf system has a small population of 750,000 and a single station, making it the most remote trading post in known space.
+
+Reaching Vagrant's Horizon is an endurance challenge requiring careful fuel management, neutron star highway routing, and dozens of jumps. There are no populated systems along most of the route — you'll be crossing vast stretches of uninhabited frontier space.
+
+Vagrant's Horizon appears as a gold landmark marker on the Galaxy Map and is always available as a quick-select destination in the Route Plotter's Known Locations panel. In Commander mode, you'll need to plot a route within your jump range. In Sandbox mode, you can teleport directly.`,
+      },
+      {
+        title: 'Landmark Markers',
+        body: `Major galactic landmarks — Sol, Cradle's End, and Vagrant's Horizon — appear as large gold markers on the Galaxy Map when within view range. These markers help you navigate toward significant destinations.
+
+The bottom-left legend of the Galaxy Map includes a LANDMARKS entry to remind you of the marker color.
+
+Landmarks are always available as quick-select buttons in the Route Plotter (Commerce > Trade Tools > Route Plotter) under Known Locations, regardless of your save mode. Sol additionally requires Sandbox mode or discovery via search.`,
+      },
     ],
   },
   {

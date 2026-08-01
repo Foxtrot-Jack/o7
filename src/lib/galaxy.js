@@ -37,6 +37,27 @@ export const SPECIAL_STARS = [
 
 export const ALL_STAR_CLASSES = [...STAR_CLASSES, ...SPECIAL_STARS];
 
+// Populated bubbles — regions of space with guaranteed inhabited systems
+// Like Elite Dangerous's "Core Systems" (the bubble) and Colonia region
+export const BUBBLE_CENTERS = [
+  {
+    name: 'The Core Worlds',
+    x: 6000, y: 3000, z: 0,
+    radius: 200,
+    minPop: 100000,
+    maxPop: 20000000000,
+    popChance: 0.85,
+  },
+  {
+    name: 'The Coreward Reach',
+    x: 800, y: -600, z: 50,
+    radius: 100,
+    minPop: 50000,
+    maxPop: 5000000000,
+    popChance: 0.75,
+  },
+];
+
 // Distance helper
 export function distance3D(a, b) {
   const dx = a.x - b.x;
@@ -74,6 +95,25 @@ function galacticDensity(x, y, z) {
   return (armIntensity + bulge) * zFalloff * outerFalloff;
 }
 
+// Check if a position falls within a populated bubble and return its population.
+// Returns null if not in any bubble (caller uses normal random population).
+function getBubblePopulation(x, y, z) {
+  for (const bubble of BUBBLE_CENTERS) {
+    const dist = Math.sqrt((x - bubble.x) ** 2 + (y - bubble.y) ** 2 + (z - bubble.z) ** 2);
+    if (dist <= bubble.radius) {
+      const fade = 1 - (dist / bubble.radius) * 0.5; // 1.0 at center, 0.5 at edge
+      // Deterministic population from position hash — doesn't consume star RNG
+      const posHash = hashSeed(`bubpop:${Math.round(x)},${Math.round(y)},${Math.round(z)}`);
+      const rng = makeRng(posHash);
+      if (rng() < bubble.popChance * fade) {
+        return Math.max(bubble.minPop, Math.floor(randInt(rng, bubble.minPop, bubble.maxPop) * fade));
+      }
+      return 0;
+    }
+  }
+  return null;
+}
+
 // Generate stars in a single sector
 export function generateSectorStars(sx, sy, sz) {
   const sectorSeed = hashSeed(`sector:${sx},${sy},${sz}`);
@@ -103,6 +143,12 @@ export function generateSectorStars(sx, sy, sz) {
       ALL_STAR_CLASSES.map(c => ({ value: c, weight: c.weight }))
     );
 
+    // Population — boosted within populated bubbles, otherwise random
+    const bubblePop = getBubblePopulation(x, y, z);
+    const population = bubblePop !== null
+      ? bubblePop
+      : (starRng() < 0.4 ? randInt(starRng, 1000, 2000000000) : 0);
+
     stars.push({
       id: `${sx},${sy},${sz}:${i}`,
       seed: starSeed,
@@ -116,7 +162,7 @@ export function generateSectorStars(sx, sy, sz) {
         { value: 'low', weight: 30 },
         { value: 'anarchy', weight: 15 },
       ]),
-      population: starRng() < 0.4 ? randInt(starRng, 1000, 2000000000) : 0,
+      population,
       visited: false,
     });
   }
@@ -151,13 +197,16 @@ export function generateStarsInRange(centerX, centerY, centerZ, radius) {
     }
   }
 
-  // Inject Sol system if within range
-  const solDist = distance3D(
-    { x: SOL_SYSTEM.x, y: SOL_SYSTEM.y, z: SOL_SYSTEM.z },
-    { x: centerX, y: centerY, z: centerZ }
-  );
-  if (solDist <= radius) {
-    allStars.push({ ...SOL_SYSTEM });
+  // Inject landmark systems + starting system if within range
+  const injectableSystems = [...LANDMARK_SYSTEMS, STARTING_SYSTEM];
+  for (const landmark of injectableSystems) {
+    const dist = distance3D(
+      { x: landmark.x, y: landmark.y, z: landmark.z },
+      { x: centerX, y: centerY, z: centerZ }
+    );
+    if (dist <= radius) {
+      allStars.push({ ...landmark });
+    }
   }
 
   return allStars;
@@ -192,6 +241,43 @@ export const SOL_SYSTEM = {
   visited: false,
   isSol: true,
 };
+
+// Cradle's End — a populated hub near the galactic core (Colonia equivalent)
+// A distant civilized region serving as a staging point for core exploration.
+export const COLONIA_SEED = hashSeed('cradles_end_hub');
+export const COLONIA_SYSTEM = {
+  id: 'cradles_end',
+  seed: COLONIA_SEED,
+  x: 800,
+  y: -600,
+  z: 50,
+  name: "Cradle's End",
+  starClass: STAR_CLASSES[4], // G class
+  security: 'high',
+  population: 8500000000,
+  visited: false,
+  isLandmark: true,
+};
+
+// Vagrant's Horizon — the furthest inhabited outpost from the starting bubble
+// (Bernard's Star equivalent) — a lonely station at the galactic rim.
+export const FAR_REACH_SEED = hashSeed('vagrants_horizon_outpost');
+export const FAR_REACH_SYSTEM = {
+  id: 'vagrants_horizon',
+  seed: FAR_REACH_SEED,
+  x: -17000,
+  y: -8500,
+  z: 0,
+  name: "Vagrant's Horizon",
+  starClass: STAR_CLASSES[6], // M class — red dwarf
+  security: 'low',
+  population: 750000,
+  visited: false,
+  isLandmark: true,
+};
+
+// All landmark systems injected into star queries
+export const LANDMARK_SYSTEMS = [SOL_SYSTEM, COLONIA_SYSTEM, FAR_REACH_SYSTEM];
 
 // Get the color for a star class
 export function getStarColor(starClass) {
