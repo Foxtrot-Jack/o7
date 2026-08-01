@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { useGameState } from '@/lib/gameState';
 import { Leaf, ArrowUp, ArrowDown, Search } from 'lucide-react';
+import { getPartStyle } from '@/lib/specimens';
 
 export default function GardenScreen() {
   const { state, isSandbox, collectFloraSpecimen, moveFloraToDisplay, moveFloraToStorage, getSystemData } = useGameState();
@@ -65,7 +66,11 @@ export default function GardenScreen() {
           return (
             <div key={flora.id} className="absolute bottom-0" style={{ left: `${x}%` }}>
               <div style={{ width: '3px', height: `${h}px`, background: `rgb(${r*0.5},${g*0.5},${b*0.5})`, margin: '0 auto' }} />
-              <div style={{ width: `${flora.size * 20}px`, height: `${flora.size * 20}px`, background: `rgb(${r},${g},${b})`, borderRadius: '50% 40% 50% 40%', marginTop: -h, marginLeft: -flora.size * 8 + 1, opacity: 0.85 }} />
+              <div className="flex items-end justify-center" style={{ marginTop: -h, marginLeft: -10 }}>
+                {(flora.parts || [{ shape: 'leaf', size: 1 }]).map((part, pi) => (
+                  <div key={part.id || pi} style={getPartStyle(part.shape, part.size * flora.size * 0.5, flora.color)} className={pi > 0 ? '-ml-1' : ''} />
+                ))}
+              </div>
             </div>
           );
         })}
@@ -100,7 +105,11 @@ function FloraRow({ flora, selected, onSelect, actionLabel, actionIcon: Icon, on
   return (
     <div className={`flex items-center gap-2 border p-1.5 ${selected ? 'border-green-600 bg-green-950/20' : 'border-orange-950'}`}>
       <button onClick={onSelect} className="flex items-center gap-2 flex-1 text-left">
-        <div className="w-4 h-4 rounded-full flex-shrink-0" style={{ background: `rgb(${r},${g},${b})` }} />
+        <div className="flex items-end flex-shrink-0">
+          {(flora.parts || [{ shape: 'leaf', size: 1 }]).map((part, pi) => (
+            <div key={pi} style={getPartStyle(part.shape, part.size * 0.4, flora.color)} className={pi > 0 ? '-ml-0.5' : ''} />
+          ))}
+        </div>
         <div>
           <div className="text-orange-300 text-[10px]">{flora.species}</div>
           <div className="text-orange-700 text-[8px]">{flora.originBody} · {flora.pattern}</div>

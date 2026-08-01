@@ -24,6 +24,44 @@ function hslToRgb(h, s, l) {
   return [Math.round(f(0) * 255), Math.round(f(8) * 255), Math.round(f(4) * 255)];
 }
 
+export const PART_SHAPES = ['sphere', 'oval', 'cone', 'cylinder', 'box', 'pyramid', 'diamond', 'crescent', 'star', 'spike', 'leaf', 'disc'];
+export const MAX_FISH_PARTS = 6;
+export const MAX_FLORA_PARTS = 5;
+
+function generateParts(seed, minParts, maxParts) {
+  const count = minParts + Math.floor(seededRandom(seed) * (maxParts - minParts + 1));
+  const parts = [];
+  for (let i = 0; i < count; i++) {
+    parts.push({
+      id: `part_${i}_${Date.now()}_${Math.floor(Math.random() * 999)}`,
+      shape: PART_SHAPES[Math.floor(seededRandom(seed + i * 7) * PART_SHAPES.length)],
+      size: 0.5 + seededRandom(seed + i * 13) * 1.0,
+    });
+  }
+  return parts;
+}
+
+export function getPartStyle(shape, size, color) {
+  const [r, g, b] = color;
+  const bg = `rgb(${r},${g},${b})`;
+  const w = size * 20;
+  const h = size * 20;
+  const base = { width: `${w}px`, height: `${h}px`, background: bg };
+  switch (shape) {
+    case 'sphere': case 'oval': return { ...base, borderRadius: '50%' };
+    case 'disc': return { ...base, borderRadius: '50%', width: `${w * 1.5}px`, height: `${h * 0.6}px` };
+    case 'cone': case 'pyramid': return { ...base, clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)' };
+    case 'cylinder': return { ...base, borderRadius: `${h / 4}px` };
+    case 'box': return base;
+    case 'diamond': return { ...base, transform: 'rotate(45deg)' };
+    case 'crescent': return { ...base, borderRadius: '50%', boxShadow: `inset -${w / 3}px 0px 0px 0px #000` };
+    case 'star': return { ...base, clipPath: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)' };
+    case 'spike': return { ...base, clipPath: 'polygon(50% 0%, 60% 50%, 100% 100%, 0% 100%, 40% 50%)' };
+    case 'leaf': return { ...base, borderRadius: '0 50% 0 50%' };
+    default: return { ...base, borderRadius: '50%' };
+  }
+}
+
 export function generateFish(body, systemName) {
   const seed = (body?.id || 'fish').split('').reduce((a, c) => a + c.charCodeAt(0), 0) + Date.now() % 10000;
   const hue = Math.floor(seededRandom(seed) * 360);
@@ -38,6 +76,7 @@ export function generateFish(body, systemName) {
     originSystem: systemName,
     originBody: body?.name || body?.designation || 'Unknown',
     originType: body?.planetType || 'water_world',
+    parts: generateParts(seed + 100, 2, 4),
     collectedAt: Date.now(),
     edited: false,
   };
@@ -56,6 +95,7 @@ export function generateFlora(signal, body, systemName) {
     originSystem: systemName,
     originBody: body?.name || body?.designation || 'Unknown',
     signalType: signal?.type || 'biological',
+    parts: generateParts(seed + 100, 2, 3),
     collectedAt: Date.now(),
     edited: false,
   };

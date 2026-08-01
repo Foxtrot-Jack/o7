@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useGameState } from '@/lib/gameState';
 import { Fish, ArrowUp, ArrowDown, Search } from 'lucide-react';
+import { getPartStyle } from '@/lib/specimens';
 
 export default function AquariumScreen() {
   const { state, isSandbox, collectAquaticLife, moveAquaticToTank, moveAquaticToStorage, getSystemData } = useGameState();
@@ -68,12 +69,12 @@ export default function AquariumScreen() {
         <div className="absolute inset-0 pointer-events-none" style={{ background: 'repeating-linear-gradient(0deg, transparent 0px, transparent 4px, rgba(0,100,200,0.03) 5px, rgba(0,100,200,0.03) 6px)' }} />
         {tankFish.map((fish, i) => {
           const pos = fishPos(fish.id, i);
-          const [r, g, b] = fish.color;
           return (
             <div key={fish.id} className="absolute transition-all duration-100" style={pos}>
-              <div className="flex items-center" style={{ transform: `scaleX(${Math.cos(tick * 0.05 + fish.id.length) > 0 ? 1 : -1})` }}>
-                <div style={{ width: `${fish.size * 12}px`, height: `${fish.size * 8}px`, background: `rgb(${r},${g},${b})`, borderRadius: '50% 20% 20% 50%', opacity: 0.9 }} />
-                <div style={{ width: `${fish.size * 6}px`, height: `${fish.size * 6}px`, background: `rgb(${r},${g},${b})`, opacity: 0.7, clipPath: 'polygon(0 50%, 100% 0, 100% 100%)', marginLeft: -2 }} />
+              <div className="flex items-end" style={{ transform: `scaleX(${Math.cos(tick * 0.05 + fish.id.length) > 0 ? 1 : -1})` }}>
+                {(fish.parts || [{ shape: 'oval', size: 1 }]).map((part, pi) => (
+                  <div key={part.id || pi} style={getPartStyle(part.shape, part.size * fish.size * 0.6, fish.color)} className={pi > 0 ? '-ml-1' : ''} />
+                ))}
               </div>
             </div>
           );
@@ -109,7 +110,11 @@ function FishRow({ fish, selected, onSelect, actionLabel, actionIcon: Icon, onAc
   return (
     <div className={`flex items-center gap-2 border p-1.5 ${selected ? 'border-green-600 bg-green-950/20' : 'border-orange-950'}`}>
       <button onClick={onSelect} className="flex items-center gap-2 flex-1 text-left">
-        <div className="w-4 h-3 rounded-full flex-shrink-0" style={{ background: `rgb(${r},${g},${b})` }} />
+        <div className="flex items-end flex-shrink-0">
+          {(fish.parts || [{ shape: 'oval', size: 1 }]).map((part, pi) => (
+            <div key={pi} style={getPartStyle(part.shape, part.size * 0.4, fish.color)} className={pi > 0 ? '-ml-0.5' : ''} />
+          ))}
+        </div>
         <div>
           <div className="text-orange-300 text-[10px]">{fish.species}</div>
           <div className="text-orange-700 text-[8px]">{fish.originBody} · {fish.pattern}</div>

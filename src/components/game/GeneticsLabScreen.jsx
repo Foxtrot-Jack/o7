@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { useGameState } from '@/lib/gameState';
 import { hasRoomType } from '@/lib/cabinRooms';
-import { SPECIMEN_PATTERNS } from '@/lib/specimens';
+import { SPECIMEN_PATTERNS, PART_SHAPES, MAX_FISH_PARTS, MAX_FLORA_PARTS, getPartStyle } from '@/lib/specimens';
 import { FlaskConical, Fish, Leaf, Save, Lock } from 'lucide-react';
 
 export default function GeneticsLabScreen() {
@@ -117,7 +117,11 @@ export default function GeneticsLabScreen() {
 
               {/* Preview */}
               <div className="flex items-center gap-3 border border-orange-900 p-2">
-                <div className="w-10 h-10 rounded-full flex-shrink-0" style={{ background: `rgb(${activeDraft.color[0]},${activeDraft.color[1]},${activeDraft.color[2]})`, transform: `scale(${activeDraft.size})` }} />
+                <div className="flex items-end flex-shrink-0">
+                  {(activeDraft.parts || [{ shape: 'sphere', size: 1 }]).map((part, i) => (
+                    <div key={i} style={getPartStyle(part.shape, part.size * activeDraft.size * 0.6, activeDraft.color)} className={i > 0 ? '-ml-1' : ''} />
+                  ))}
+                </div>
                 <div>
                   <div className="text-orange-300 text-[10px]">{activeDraft.species}</div>
                   <div className="text-orange-700 text-[8px]">{activeDraft.originBody}</div>
@@ -163,6 +167,26 @@ export default function GeneticsLabScreen() {
                     </button>
                   ))}
                 </div>
+              </div>
+
+              {/* Parts editor */}
+              <div className="border border-orange-950 p-2 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-orange-700 text-[9px] uppercase">Parts ({(activeDraft.parts || []).length}/{specimenType === 'fish' ? MAX_FISH_PARTS : MAX_FLORA_PARTS})</span>
+                  {(activeDraft.parts || []).length < (specimenType === 'fish' ? MAX_FISH_PARTS : MAX_FLORA_PARTS) && (
+                    <button onClick={() => handleChange('parts', [...(activeDraft.parts || []), { id: `part_${Date.now()}`, shape: 'sphere', size: 1.0 }])} className="px-2 py-0.5 border border-green-700 text-green-500 text-[9px]">+ ADD PART</button>
+                  )}
+                </div>
+                {(activeDraft.parts || []).map((part, i) => (
+                  <div key={part.id || i} className="flex items-center gap-1 border border-orange-950 p-1">
+                    <span className="text-[9px] text-orange-600 w-3">{i + 1}</span>
+                    <select value={part.shape} onChange={(e) => { const np = [...(activeDraft.parts || [])]; np[i] = { ...part, shape: e.target.value }; handleChange('parts', np); }} className="bg-black border border-orange-900 text-orange-400 text-[9px] px-1 py-0.5 flex-1">
+                      {PART_SHAPES.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                    <input type="range" min="0.3" max="2" step="0.1" value={part.size} onChange={(e) => { const np = [...(activeDraft.parts || [])]; np[i] = { ...part, size: parseFloat(e.target.value) }; handleChange('parts', np); }} className="w-12" />
+                    <button onClick={() => handleChange('parts', (activeDraft.parts || []).filter((_, idx) => idx !== i))} className="px-1 py-0.5 border border-red-800 text-red-500 text-[9px]">✕</button>
+                  </div>
+                ))}
               </div>
 
               {/* Save */}
