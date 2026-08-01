@@ -202,6 +202,7 @@ function createInitialState() {
     playerTitle: null,
     notebook: '',
     surfaceMaps: {},
+    minedDeposits: {},
     warpGates: [],
     eventCooldownUntil: 0,
     canisStella: { stance: 'neutral', reputation: 0, isCEO: false, ownFactionName: null },
@@ -301,6 +302,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
           playerTitle: parsed.playerTitle || null,
           notebook: parsed.notebook || '',
           surfaceMaps: parsed.surfaceMaps || {},
+          minedDeposits: parsed.minedDeposits || {},
           warpGates: parsed.warpGates || [],
           eventCooldownUntil: parsed.eventCooldownUntil || 0,
           canisStella: parsed.canisStella || prev.canisStella,
@@ -897,6 +899,14 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
         ...prev.materials,
         [materialId]: (prev.materials[materialId] || 0) + qty,
       },
+    }));
+  }, []);
+
+  // Mark a prospected deposit as depleted (persistent mining)
+  const markDepositMined = useCallback((depositId) => {
+    setState(prev => ({
+      ...prev,
+      minedDeposits: { ...(prev.minedDeposits || {}), [depositId]: true },
     }));
   }, []);
 
@@ -2288,6 +2298,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     addColony,
     updateColony,
     addMaterial,
+    markDepositMined,
     plotRoute,
     resetGame,
     switchShip,
