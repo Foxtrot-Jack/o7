@@ -1,22 +1,28 @@
-// Carrier Interior View — 3D first-person exploration of fleet carrier rooms
-// Reuses the cabin look-around + click interaction model for multi-room carrier exploration
+// Carrier Interior View — 3D first-person grid-based carrier exploration
+// 4-directional doors, surface customization, build-new-room interactables
 import React, { useRef, useEffect, useState } from 'react';
 import * as THREE from 'three';
+import { createCabinTexture } from '@/lib/cabinConfig';
 
 const W = 6, H = 3.5, D = 6;
 const DW = 1.5, DH = 2.5;
 const T = 0.1;
 
-const INTERACT_ACTIONS = {
-  observation: 'stargaze',
-  command: 'transit',
-  quarters: 'decorate',
-  bar: 'drinks',
-  garden: 'flora',
-  trophy: 'records',
+const DIRS = {
+  north: { dx: 0, dy: -1, surface: 'wallNorth', isNS: true, pos: -D / 2 },
+  south: { dx: 0, dy: 1, surface: 'wallSouth', isNS: true, pos: D / 2 },
+  west: { dx: -1, dy: 0, surface: 'wallWest', isNS: false, pos: -W / 2 },
+  east: { dx: 1, dy: 0, surface: 'wallEast', isNS: false, pos: W / 2 },
 };
 
-export default function CarrierInteriorView({ roomType, roomIndex, totalRooms, roomName, leftRoomName, rightRoomName, onNavigate, onInteract }) {
+const INTERACT_ACTIONS = {
+  observation: 'stargaze', command: 'transit', quarters: 'decorate',
+  bar: 'drinks', garden: 'flora', trophy: 'records',
+  aquarium: 'nav-aquarium', genetics: 'nav-geneticslab',
+  living: 'decorate', lounge: null, storage: null,
+};
+
+export default function CarrierInteriorView({ room, gridX, gridY, grid, onNavigate, onBuildDoor, onInteract }) {
   const mountRef = useRef(null);
   const sceneRef = useRef(null);
   const rendererRef = useRef(null);
@@ -31,39 +37,39 @@ export default function CarrierInteriorView({ roomType, roomIndex, totalRooms, r
   const animationIdRef = useRef(null);
   const [confirmAction, setConfirmAction] = useState(null);
 
-  const hasLeft = roomIndex > 0;
-  const hasRight = roomIndex < totalRooms - 1;
+  const surfaces = room?.surfaces || {};
+
+  const hasAdjacent = (dir) => {
+    const d = DIRS[dir];
+    return !!grid[`${gridX + d.dx},${gridY + d.dy}`];
+  };
+  const adjacentName = (dir) => {
+    const d = DIRS[dir];
+    return grid[`${gridX + d.dx},${gridY + d.dy}`]?.name || null;
+  };
 
   const executeAction = (action) => {
-    if (action === 'left-door') onNavigate?.('left');
-    else if (action === 'right-door') onNavigate?.('right');
+    if (action.startsWith('door-')) onNavigate?.(action.replace('door-', ''));
+    else if (action.startsWith('build-')) onBuildDoor?.(action.replace('build-', ''));
     else onInteract?.(action);
   };
 
   // Scene init
   useEffect(() => {
     if (!mountRef.current) return;
-    const w = mountRef.current.clientWidth;
-    const h = mountRef.current.clientHeight;
-
+    const w = mountRef.current.clientWidth, h = mountRef.current.clientHeight;
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x000000);
     const camera = new THREE.PerspectiveCamera(75, w / h, 0.01, 100);
     camera.position.set(0, 0, 0);
     camera.rotation.order = 'YXZ';
-
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(w, h);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     mountRef.current.appendChild(renderer.domElement);
-
-    sceneRef.current = scene;
-    rendererRef.current = renderer;
-    cameraRef.current = camera;
-
+    sceneRef.current = scene; rendererRef.current = renderer; cameraRef.current = camera;
     const roomGroup = new THREE.Group();
-    scene.add(roomGroup);
-    roomRef.current = roomGroup;
+    scene.add(roomGroup); roomRef.current = roomGroup;
 
     const animate = () => {
       animationIdRef.current = requestAnimationFrame(animate);
@@ -73,16 +79,12 @@ export default function CarrierInteriorView({ roomType, roomIndex, totalRooms, r
       lk.pitch += (lk.targetPitch - lk.pitch) * 0.08;
       camera.rotation.y = lk.yaw + Math.sin(now * 0.001) * 0.003;
       camera.rotation.x = lk.pitch + Math.cos(now * 0.0013) * 0.002;
-
       for (const ind of indicatorsRef.current) {
         const pulse = 1 + Math.sin(now * 0.005 + ind.phase) * 0.3;
         ind.scale.set(pulse, pulse, pulse);
       }
-      for (const p of plantsRef.current) {
-        p.rotation.z = Math.sin(now * 0.001 + p.phase) * 0.05;
-      }
+      for (const p of plantsRef.current) p.rotation.z = Math.sin(now * 0.001 + p.phase) * 0.05;
       if (starfieldRef.current) starfieldRef.current.rotation.y = now * 0.00005;
-
       renderer.render(scene, camera);
     };
     animate();
@@ -94,7 +96,6 @@ export default function CarrierInteriorView({ roomType, roomIndex, totalRooms, r
       renderer.setSize(mountRef.current.clientWidth, mountRef.current.clientHeight);
     };
     window.addEventListener('resize', handleResize);
-
     return () => {
       window.removeEventListener('resize', handleResize);
       if (animationIdRef.current) cancelAnimationFrame(animationIdRef.current);
@@ -106,64 +107,50 @@ export default function CarrierInteriorView({ roomType, roomIndex, totalRooms, r
   // Build room
   useEffect(() => {
     const rg = roomRef.current;
-    if (!rg) return;
+    if (!rg || !room) return;
     while (rg.children.length > 0) {
       const child = rg.children[0];
       rg.remove(child);
       if (child.geometry) child.geometry.dispose();
       if (child.material) child.material.dispose();
     }
-    clickablesRef.current = [];
-    indicatorsRef.current = [];
-    plantsRef.current = [];
+    clickablesRef.current = []; indicatorsRef.current = []; plantsRef.current = [];
     starfieldRef.current = null;
     lookRef.current = { yaw: 0, pitch: 0, targetYaw: 0, targetPitch: 0 };
 
     const hw = W / 2, hh = H / 2, hd = D / 2;
-    const wallMat = new THREE.MeshBasicMaterial({ color: 0x1a0d00 });
-    const floorMat = new THREE.MeshBasicMaterial({ color: 0x150800 });
-    const ceilMat = new THREE.MeshBasicMaterial({ color: 0x0f0500 });
-    const frameMat = new THREE.LineBasicMaterial({ color: 0x4a2a00 });
     const doorMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.4, side: THREE.DoubleSide });
+    const frameMat = new THREE.LineBasicMaterial({ color: 0x4a2a00 });
     const propMat = new THREE.MeshBasicMaterial({ color: 0x2a1500 });
     const accentMat = new THREE.MeshBasicMaterial({ color: 0x3a2510 });
 
     // Floor & ceiling
-    const floor = new THREE.Mesh(new THREE.BoxGeometry(W, T, D), floorMat); floor.position.set(0, -hh, 0); rg.add(floor);
-    const ceil = new THREE.Mesh(new THREE.BoxGeometry(W, T, D), ceilMat); ceil.position.set(0, hh, 0); rg.add(ceil);
+    const floor = new THREE.Mesh(new THREE.BoxGeometry(W, T, D), getSurfaceMaterial(surfaces, 'floor', [21, 8, 0]));
+    floor.position.set(0, -hh, 0); rg.add(floor);
+    const ceil = new THREE.Mesh(new THREE.BoxGeometry(W, T, D), getSurfaceMaterial(surfaces, 'ceiling', [15, 5, 0]));
+    ceil.position.set(0, hh, 0); rg.add(ceil);
 
-    // Back wall
-    const back = new THREE.Mesh(new THREE.BoxGeometry(W, H, T), wallMat); back.position.set(0, 0, hd); rg.add(back);
+    // 4 walls
+    for (const [dir, d] of Object.entries(DIRS)) {
+      const wallMat = getSurfaceMaterial(surfaces, d.surface, [26, 13, 0]);
+      const hasDoor = hasAdjacent(dir);
+      const isWindowRoom = (room.type === 'observation' || room.type === 'quarters') && dir === 'north';
 
-    // Front wall
-    if (roomType === 'observation') {
-      buildWindowWall(rg, wallMat, frameMat, -hd, W, H, hh, 4, 2.5);
-      buildStarfield(rg, -hd - 4, 0.5, starfieldRef);
-    } else if (roomType === 'quarters') {
-      buildWindowWall(rg, wallMat, frameMat, -hd, W, H, hh, 2.5, 1.5);
-      buildStarfield(rg, -hd - 4, 0, starfieldRef);
-    } else {
-      const front = new THREE.Mesh(new THREE.BoxGeometry(W, H, T), wallMat); front.position.set(0, 0, -hd); rg.add(front);
+      if (hasDoor) {
+        buildWallWithDoor(rg, wallMat, frameMat, doorMat, d, dir, 'door-', clickablesRef, indicatorsRef, 0x00ff44);
+      } else if (isWindowRoom && !hasDoor) {
+        buildWindowWall(rg, wallMat, frameMat, d.pos, W, H, hh);
+        buildStarfield(rg, d.pos - 3 * Math.sign(d.pos || -1), 0.5, starfieldRef);
+      } else {
+        buildSolidWall(rg, wallMat, d);
+        addBuildInteractable(rg, clickablesRef, indicatorsRef, d, 'build-' + dir, 0x00aa44);
+      }
     }
 
-    // Left wall
-    if (hasLeft) {
-      buildDoorWall(rg, wallMat, frameMat, doorMat, -hw, H, D, hh, 'left-door', clickablesRef, indicatorsRef, 0x00ff44);
-    } else {
-      const left = new THREE.Mesh(new THREE.BoxGeometry(T, H, D), wallMat); left.position.set(-hw, 0, 0); rg.add(left);
-    }
-
-    // Right wall
-    if (hasRight) {
-      buildDoorWall(rg, wallMat, frameMat, doorMat, hw, H, D, hh, 'right-door', clickablesRef, indicatorsRef, 0xffaa00);
-    } else {
-      const right = new THREE.Mesh(new THREE.BoxGeometry(T, H, D), wallMat); right.position.set(hw, 0, 0); rg.add(right);
-    }
-
-    // Room-specific props + interactable
-    const action = INTERACT_ACTIONS[roomType];
-    buildRoomProps(rg, roomType, clickablesRef, indicatorsRef, plantsRef, propMat, accentMat, action, hh, hd, hw);
-  }, [roomType, roomIndex, totalRooms]);
+    // Room-specific props
+    const action = INTERACT_ACTIONS[room.type];
+    if (action) buildRoomProps(rg, room.type, clickablesRef, indicatorsRef, plantsRef, propMat, accentMat, action, hh, hd, hw);
+  }, [room, gridX, gridY, grid]);
 
   // Interaction
   useEffect(() => {
@@ -178,70 +165,47 @@ export default function CarrierInteriorView({ roomType, roomIndex, totalRooms, r
       const intersects = raycasterRef.current.intersectObjects(clickablesRef.current, false);
       if (intersects.length > 0) {
         const action = intersects[0].object.userData.action;
-        if (action === 'left-door' || action === 'right-door') setConfirmAction(action);
-        else onInteract?.(action);
+        if (action.startsWith('door-')) setConfirmAction(action);
+        else executeAction(action);
       }
     };
 
-    const onPointerDown = (e) => { isDragging = true; lastX = e.clientX; lastY = e.clientY; dragStartX = e.clientX; dragStartY = e.clientY; };
-    const onPointerMove = (e) => {
-      if (!isDragging) return;
-      const dx = e.clientX - lastX, dy = e.clientY - lastY;
-      lastX = e.clientX; lastY = e.clientY;
-      const lk = lookRef.current;
-      lk.targetYaw = lk.targetYaw - dx * 0.003;
-      lk.targetPitch = Math.max(-1.4, Math.min(1.4, lk.targetPitch - dy * 0.003));
-    };
-    const onPointerUp = (e) => {
-      isDragging = false;
-      if (Math.hypot(e.clientX - dragStartX, e.clientY - dragStartY) < 5) handleClick(e.clientX, e.clientY);
-    };
-    const onTouchStart = (e) => { if (e.touches.length === 1) { isDragging = true; lastX = e.touches[0].clientX; lastY = e.touches[0].clientY; dragStartX = lastX; dragStartY = lastY; } };
-    const onTouchMove = (e) => {
-      if (e.touches.length === 1 && isDragging) {
-        e.preventDefault();
-        const dx = e.touches[0].clientX - lastX, dy = e.touches[0].clientY - lastY;
-        lastX = e.touches[0].clientX; lastY = e.touches[0].clientY;
-        const lk = lookRef.current;
-        lk.targetYaw = lk.targetYaw - dx * 0.003;
-        lk.targetPitch = Math.max(-1.4, Math.min(1.4, lk.targetPitch - dy * 0.003));
-      }
-    };
-    const onTouchEnd = (e) => {
-      if (isDragging && e.changedTouches.length === 1) {
-        const t = e.changedTouches[0];
-        if (Math.hypot(t.clientX - dragStartX, t.clientY - dragStartY) < 10) handleClick(t.clientX, t.clientY);
-      }
-      isDragging = false;
-    };
+    const onPD = (e) => { isDragging = true; lastX = e.clientX; lastY = e.clientY; dragStartX = e.clientX; dragStartY = e.clientY; };
+    const onPM = (e) => { if (!isDragging) return; const dx = e.clientX - lastX, dy = e.clientY - lastY; lastX = e.clientX; lastY = e.clientY; const lk = lookRef.current; lk.targetYaw -= dx * 0.003; lk.targetPitch = Math.max(-1.4, Math.min(1.4, lk.targetPitch - dy * 0.003)); };
+    const onPU = (e) => { isDragging = false; if (Math.hypot(e.clientX - dragStartX, e.clientY - dragStartY) < 5) handleClick(e.clientX, e.clientY); };
+    const onTS = (e) => { if (e.touches.length === 1) { isDragging = true; lastX = e.touches[0].clientX; lastY = e.touches[0].clientY; dragStartX = lastX; dragStartY = lastY; } };
+    const onTM = (e) => { if (e.touches.length === 1 && isDragging) { e.preventDefault(); const dx = e.touches[0].clientX - lastX, dy = e.touches[0].clientY - lastY; lastX = e.touches[0].clientX; lastY = e.touches[0].clientY; const lk = lookRef.current; lk.targetYaw -= dx * 0.003; lk.targetPitch = Math.max(-1.4, Math.min(1.4, lk.targetPitch - dy * 0.003)); } };
+    const onTE = (e) => { if (isDragging && e.changedTouches.length === 1) { const t = e.changedTouches[0]; if (Math.hypot(t.clientX - dragStartX, t.clientY - dragStartY) < 10) handleClick(t.clientX, t.clientY); } isDragging = false; };
 
-    canvas.addEventListener('pointerdown', onPointerDown);
-    canvas.addEventListener('pointermove', onPointerMove);
-    canvas.addEventListener('pointerup', onPointerUp);
-    canvas.addEventListener('touchstart', onTouchStart, { passive: false });
-    canvas.addEventListener('touchmove', onTouchMove, { passive: false });
-    canvas.addEventListener('touchend', onTouchEnd);
+    canvas.addEventListener('pointerdown', onPD);
+    canvas.addEventListener('pointermove', onPM);
+    canvas.addEventListener('pointerup', onPU);
+    canvas.addEventListener('touchstart', onTS, { passive: false });
+    canvas.addEventListener('touchmove', onTM, { passive: false });
+    canvas.addEventListener('touchend', onTE);
     return () => {
-      canvas.removeEventListener('pointerdown', onPointerDown);
-      canvas.removeEventListener('pointermove', onPointerMove);
-      canvas.removeEventListener('pointerup', onPointerUp);
-      canvas.removeEventListener('touchstart', onTouchStart);
-      canvas.removeEventListener('touchmove', onTouchMove);
-      canvas.removeEventListener('touchend', onTouchEnd);
+      canvas.removeEventListener('pointerdown', onPD);
+      canvas.removeEventListener('pointermove', onPM);
+      canvas.removeEventListener('pointerup', onPU);
+      canvas.removeEventListener('touchstart', onTS);
+      canvas.removeEventListener('touchmove', onTM);
+      canvas.removeEventListener('touchend', onTE);
     };
-  }, [roomType, onInteract]);
+  }, [room, gridX, gridY, grid, onNavigate, onBuildDoor, onInteract]);
 
-  const confirmLabel = confirmAction === 'left-door' ? (leftRoomName ? `Enter ${leftRoomName}?` : 'Previous Room?') : confirmAction === 'right-door' ? (rightRoomName ? `Enter ${rightRoomName}?` : 'Next Room?') : '';
+  const confirmLabel = confirmAction?.startsWith('door-') ? `Enter ${adjacentName(confirmAction.replace('door-', ''))}?` : '';
 
   return (
     <div className="relative w-full h-full bg-black">
       <div ref={mountRef} className="w-full h-full" style={{ touchAction: 'none' }} />
-      <div className="absolute top-1 left-1 text-[9px] text-orange-700 pointer-events-none">{roomName}</div>
+      <div className="absolute top-1 left-1 text-[9px] text-orange-700 pointer-events-none">{room?.name}</div>
       <div className="absolute top-1 right-1 text-[9px] space-y-0.5 pointer-events-none text-right">
-        {hasLeft && <div className="text-green-600">● ← {leftRoomName}</div>}
-        {hasRight && <div className="text-orange-500">● {rightRoomName} →</div>}
+        {hasAdjacent('north') && <div className="text-green-600">● N: {adjacentName('north')}</div>}
+        {hasAdjacent('south') && <div className="text-green-600">● S: {adjacentName('south')}</div>}
+        {hasAdjacent('east') && <div className="text-orange-500">● E: {adjacentName('east')}</div>}
+        {hasAdjacent('west') && <div className="text-orange-500">● W: {adjacentName('west')}</div>}
       </div>
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[8px] text-orange-800 pointer-events-none">DRAG TO LOOK · TAP OBJECTS TO INTERACT</div>
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[8px] text-orange-800 pointer-events-none">DRAG TO LOOK · TAP DOORS/OBJECTS · GREEN = BUILD NEW ROOM</div>
       {confirmAction && (
         <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/80">
           <div className="border border-orange-700 bg-black p-4 text-center space-y-3 max-w-xs">
@@ -257,10 +221,67 @@ export default function CarrierInteriorView({ roomType, roomIndex, totalRooms, r
   );
 }
 
-// ===== Helper functions =====
+// ===== Helpers =====
 
-function buildWindowWall(rg, wallMat, frameMat, z, w, h, hh, winW, winH) {
-  const winY = 0;
+function getSurfaceMaterial(surfaces, surfaceName, defaultRgb) {
+  const sc = surfaces?.[surfaceName];
+  const rgb = sc?.rgb || defaultRgb;
+  const tex = sc?.texture || 'solid';
+  if (tex === 'solid') return new THREE.MeshBasicMaterial({ color: new THREE.Color(rgb[0] / 255, rgb[1] / 255, rgb[2] / 255) });
+  return new THREE.MeshBasicMaterial({ map: createCabinTexture(tex, rgb) });
+}
+
+function buildWallWithDoor(rg, wallMat, frameMat, doorMat, d, dir, prefix, clickablesRef, indicatorsRef, indColor) {
+  const hh = H / 2;
+  if (d.isNS) {
+    const topH = H - DH;
+    const top = new THREE.Mesh(new THREE.BoxGeometry(W, topH, T), wallMat); top.position.set(0, -hh + DH + topH / 2, d.pos); rg.add(top);
+    const sideW = W / 2 - DW / 2;
+    if (sideW > 0.01) {
+      const lm = new THREE.Mesh(new THREE.BoxGeometry(sideW, DH, T), wallMat); lm.position.set(-W / 2 + sideW / 2, -hh + DH / 2, d.pos); rg.add(lm);
+      const rm = new THREE.Mesh(new THREE.BoxGeometry(sideW, DH, T), wallMat); rm.position.set(W / 2 - sideW / 2, -hh + DH / 2, d.pos); rg.add(rm);
+    }
+    const pts = [new THREE.Vector3(-DW/2,-hh,d.pos),new THREE.Vector3(-DW/2,-hh+DH,d.pos),new THREE.Vector3(DW/2,-hh,d.pos),new THREE.Vector3(DW/2,-hh+DH,d.pos),new THREE.Vector3(-DW/2,-hh+DH,d.pos),new THREE.Vector3(DW/2,-hh+DH,d.pos)];
+    rg.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts), frameMat));
+    const plane = new THREE.Mesh(new THREE.PlaneGeometry(DW, DH), doorMat); plane.position.set(0, -hh + DH / 2, d.pos); plane.userData.action = prefix + dir; rg.add(plane); clickablesRef.current.push(plane);
+    const ind = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 4), new THREE.MeshBasicMaterial({ color: indColor })); ind.position.set(0, -hh + DH + 0.2, d.pos); ind.phase = Math.random() * Math.PI * 2; rg.add(ind); indicatorsRef.current.push(ind);
+  } else {
+    const topH = H - DH;
+    const top = new THREE.Mesh(new THREE.BoxGeometry(T, topH, D), wallMat); top.position.set(d.pos, -hh + DH + topH / 2, 0); rg.add(top);
+    const sideD = D / 2 - DW / 2;
+    if (sideD > 0.01) {
+      const fm = new THREE.Mesh(new THREE.BoxGeometry(T, DH, sideD), wallMat); fm.position.set(d.pos, -hh + DH / 2, -D / 2 + sideD / 2); rg.add(fm);
+      const bm = new THREE.Mesh(new THREE.BoxGeometry(T, DH, sideD), wallMat); bm.position.set(d.pos, -hh + DH / 2, D / 2 - sideD / 2); rg.add(bm);
+    }
+    const pts = [new THREE.Vector3(d.pos,-hh,-DW/2),new THREE.Vector3(d.pos,-hh+DH,-DW/2),new THREE.Vector3(d.pos,-hh,DW/2),new THREE.Vector3(d.pos,-hh+DH,DW/2),new THREE.Vector3(d.pos,-hh+DH,-DW/2),new THREE.Vector3(d.pos,-hh+DH,DW/2)];
+    rg.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts), frameMat));
+    const plane = new THREE.Mesh(new THREE.PlaneGeometry(DW, DH), doorMat); plane.position.set(d.pos, -hh + DH / 2, 0); plane.rotation.y = d.pos < 0 ? Math.PI / 2 : -Math.PI / 2; plane.userData.action = prefix + dir; rg.add(plane); clickablesRef.current.push(plane);
+    const ind = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 4), new THREE.MeshBasicMaterial({ color: indColor })); ind.position.set(d.pos + (d.pos < 0 ? 0.06 : -0.06), -hh + DH + 0.2, 0); ind.phase = Math.random() * Math.PI * 2; rg.add(ind); indicatorsRef.current.push(ind);
+  }
+}
+
+function buildSolidWall(rg, wallMat, d) {
+  if (d.isNS) {
+    const wall = new THREE.Mesh(new THREE.BoxGeometry(W, H, T), wallMat); wall.position.set(0, 0, d.pos); rg.add(wall);
+  } else {
+    const wall = new THREE.Mesh(new THREE.BoxGeometry(T, H, D), wallMat); wall.position.set(d.pos, 0, 0); rg.add(wall);
+  }
+}
+
+function addBuildInteractable(rg, clickablesRef, indicatorsRef, d, action, color) {
+  const hh = H / 2;
+  const plane = new THREE.Mesh(new THREE.PlaneGeometry(DW, DH), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.12, side: THREE.DoubleSide }));
+  if (d.isNS) { plane.position.set(0, -hh + DH / 2, d.pos); }
+  else { plane.position.set(d.pos, -hh + DH / 2, 0); plane.rotation.y = d.pos < 0 ? Math.PI / 2 : -Math.PI / 2; }
+  plane.userData.action = action; rg.add(plane); clickablesRef.current.push(plane);
+  const ind = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 4), new THREE.MeshBasicMaterial({ color }));
+  if (d.isNS) { ind.position.set(0, -hh + DH + 0.2, d.pos); }
+  else { ind.position.set(d.pos + (d.pos < 0 ? 0.06 : -0.06), -hh + DH + 0.2, 0); }
+  ind.phase = Math.random() * Math.PI * 2; rg.add(ind); indicatorsRef.current.push(ind);
+}
+
+function buildWindowWall(rg, wallMat, frameMat, z, w, h, hh) {
+  const winW = w * 0.7, winH = h * 0.7, winY = 0;
   const topH = hh - (winY + winH / 2);
   if (topH > 0.01) { const m = new THREE.Mesh(new THREE.BoxGeometry(w, topH, T), wallMat); m.position.set(0, winY + winH / 2 + topH / 2, z); rg.add(m); }
   const botH = winY - winH / 2 + hh;
@@ -270,12 +291,7 @@ function buildWindowWall(rg, wallMat, frameMat, z, w, h, hh, winW, winH) {
     const lm = new THREE.Mesh(new THREE.BoxGeometry(sideW, winH, T), wallMat); lm.position.set(-w / 2 + sideW / 2, winY, z); rg.add(lm);
     const rm = new THREE.Mesh(new THREE.BoxGeometry(sideW, winH, T), wallMat); rm.position.set(w / 2 - sideW / 2, winY, z); rg.add(rm);
   }
-  const pts = [
-    new THREE.Vector3(-winW / 2, winY - winH / 2, z), new THREE.Vector3(winW / 2, winY - winH / 2, z),
-    new THREE.Vector3(winW / 2, winY - winH / 2, z), new THREE.Vector3(winW / 2, winY + winH / 2, z),
-    new THREE.Vector3(winW / 2, winY + winH / 2, z), new THREE.Vector3(-winW / 2, winY + winH / 2, z),
-    new THREE.Vector3(-winW / 2, winY + winH / 2, z), new THREE.Vector3(-winW / 2, winY - winH / 2, z),
-  ];
+  const pts = [new THREE.Vector3(-winW/2,winY-winH/2,z),new THREE.Vector3(winW/2,winY-winH/2,z),new THREE.Vector3(winW/2,winY-winH/2,z),new THREE.Vector3(winW/2,winY+winH/2,z),new THREE.Vector3(winW/2,winY+winH/2,z),new THREE.Vector3(-winW/2,winY+winH/2,z),new THREE.Vector3(-winW/2,winY+winH/2,z),new THREE.Vector3(-winW/2,winY-winH/2,z)];
   rg.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: 0x224466 })));
 }
 
@@ -297,170 +313,82 @@ function buildStarfield(rg, z, yOffset, starfieldRef) {
   starfieldRef.current = stars;
 }
 
-function buildDoorWall(rg, wallMat, frameMat, doorMat, x, h, d, hh, action, clickablesRef, indicatorsRef, indColor) {
-  const topH = h - DH;
-  const top = new THREE.Mesh(new THREE.BoxGeometry(T, topH, d), wallMat); top.position.set(x, -hh + DH + topH / 2, 0); rg.add(top);
-  const sideD = d / 2 - DW / 2;
-  const front = new THREE.Mesh(new THREE.BoxGeometry(T, DH, sideD), wallMat); front.position.set(x, -hh + DH / 2, -d / 2 + sideD / 2); rg.add(front);
-  const back = new THREE.Mesh(new THREE.BoxGeometry(T, DH, sideD), wallMat); back.position.set(x, -hh + DH / 2, d / 2 - sideD / 2); rg.add(back);
-  const pts = [
-    new THREE.Vector3(x, -hh, -DW / 2), new THREE.Vector3(x, -hh + DH, -DW / 2),
-    new THREE.Vector3(x, -hh, DW / 2), new THREE.Vector3(x, -hh + DH, DW / 2),
-    new THREE.Vector3(x, -hh + DH, -DW / 2), new THREE.Vector3(x, -hh + DH, DW / 2),
-  ];
-  rg.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts), frameMat));
-  const plane = new THREE.Mesh(new THREE.PlaneGeometry(DW, DH), doorMat);
-  plane.position.set(x, -hh + DH / 2, 0);
-  plane.rotation.y = x < 0 ? Math.PI / 2 : -Math.PI / 2;
-  plane.userData.action = action;
-  rg.add(plane);
-  clickablesRef.current.push(plane);
-  const ind = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 4), new THREE.MeshBasicMaterial({ color: indColor }));
-  ind.position.set(x + (x < 0 ? 0.06 : -0.06), -hh + DH + 0.2, 0);
-  ind.phase = Math.random() * Math.PI * 2;
-  rg.add(ind);
-  indicatorsRef.current.push(ind);
-}
-
 function addInteractable(rg, clickablesRef, indicatorsRef, x, y, z, w, h, action, color) {
   const plane = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: 0x00aaff, transparent: true, opacity: 0.15, side: THREE.DoubleSide }));
-  plane.position.set(x, y, z);
-  plane.userData.action = action;
-  rg.add(plane);
-  clickablesRef.current.push(plane);
+  plane.position.set(x, y, z); plane.userData.action = action; rg.add(plane); clickablesRef.current.push(plane);
   const ind = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 4), new THREE.MeshBasicMaterial({ color: color || 0x00aaff }));
-  ind.position.set(x, y + h / 2 + 0.2, z);
-  ind.phase = Math.random() * Math.PI * 2;
-  rg.add(ind);
-  indicatorsRef.current.push(ind);
+  ind.position.set(x, y + h / 2 + 0.2, z); ind.phase = Math.random() * Math.PI * 2; rg.add(ind); indicatorsRef.current.push(ind);
 }
 
 function buildRoomProps(rg, roomType, clickablesRef, indicatorsRef, plantsRef, propMat, accentMat, action, hh, hd, hw) {
   switch (roomType) {
     case 'bar': {
-      // Counter against back wall
-      const counter = new THREE.Mesh(new THREE.BoxGeometry(3, 0.9, 0.6), propMat);
-      counter.position.set(0, -hh + 0.45, hd - 0.5);
-      rg.add(counter);
-      // Bottles behind counter
+      const counter = new THREE.Mesh(new THREE.BoxGeometry(3, 0.9, 0.6), propMat); counter.position.set(0, -hh + 0.45, hd - 0.5); rg.add(counter);
       for (let i = 0; i < 6; i++) {
-        const bottle = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.25, 6), new THREE.MeshBasicMaterial({ color: [0x8B4513, 0xff8800, 0x22cc44, 0x4444ff, 0xff4444, 0xffaa00][i] }));
-        bottle.position.set(-1 + i * 0.4, -hh + 1.1, hd - 0.55);
-        rg.add(bottle);
+        const bottle = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.25, 6), new THREE.MeshBasicMaterial({ color: [0x8B4513,0xff8800,0x22cc44,0x4444ff,0xff4444,0xffaa00][i] })); bottle.position.set(-1 + i * 0.4, -hh + 1.1, hd - 0.55); rg.add(bottle);
       }
-      // Stools
-      for (let i = 0; i < 3; i++) {
-        const stool = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.5, 8), accentMat);
-        stool.position.set(-0.8 + i * 0.8, -hh + 0.25, hd - 1.5);
-        rg.add(stool);
-      }
-      addInteractable(rg, clickablesRef, indicatorsRef, 0, -hh + 0.9, hd - 0.8, 2, 0.8, action, 0xff8800);
-      break;
+      for (let i = 0; i < 3; i++) { const stool = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.5, 8), accentMat); stool.position.set(-0.8 + i * 0.8, -hh + 0.25, hd - 1.5); rg.add(stool); }
+      addInteractable(rg, clickablesRef, indicatorsRef, 0, -hh + 0.9, hd - 0.8, 2, 0.8, action, 0xff8800); break;
     }
-    case 'quarters': {
-      // Bed
-      const bedFrame = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.2, 1), propMat);
-      bedFrame.position.set(-1.5, -hh + 0.1, hd - 0.6);
-      rg.add(bedFrame);
-      const mattress = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.12, 0.9), accentMat);
-      mattress.position.set(-1.5, -hh + 0.26, hd - 0.6);
-      rg.add(mattress);
-      // Shelf (interactable)
-      const shelf = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.05, 0.3), propMat);
-      shelf.position.set(1.5, 0, hd - 0.2);
-      rg.add(shelf);
-      addInteractable(rg, clickablesRef, indicatorsRef, 1.5, 0.3, hd - 0.2, 1.2, 0.5, action, 0x00aaff);
-      break;
+    case 'quarters': case 'living': {
+      const bed = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.2, 1), propMat); bed.position.set(-1.5, -hh + 0.1, hd - 0.6); rg.add(bed);
+      const mat = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.12, 0.9), accentMat); mat.position.set(-1.5, -hh + 0.26, hd - 0.6); rg.add(mat);
+      const shelf = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.05, 0.3), propMat); shelf.position.set(1.5, 0, hd - 0.2); rg.add(shelf);
+      addInteractable(rg, clickablesRef, indicatorsRef, 1.5, 0.3, hd - 0.2, 1.2, 0.5, action, 0x00aaff); break;
     }
     case 'garden': {
-      // Plant beds
       for (let i = 0; i < 3; i++) {
-        const bed = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.3, 0.8), propMat);
-        bed.position.set(-1.5 + i * 1.5, -hh + 0.15, 0);
-        rg.add(bed);
-        // Plants
+        const bed = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.3, 0.8), propMat); bed.position.set(-1.5 + i * 1.5, -hh + 0.15, 0); rg.add(bed);
         for (let j = 0; j < 3; j++) {
-          const colors = [0x22cc44, 0x44ff66, 0x88ff00, 0x00cc88, 0x66dd44];
-          const plant = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.5, 6), new THREE.MeshBasicMaterial({ color: colors[(i + j) % colors.length] }));
-          plant.position.set(-1.5 + i * 1.5 - 0.3 + j * 0.3, -hh + 0.55, -0.2 + j * 0.2);
-          plant.phase = Math.random() * Math.PI * 2;
-          rg.add(plant);
-          plantsRef.current.push(plant);
+          const colors = [0x22cc44,0x44ff66,0x88ff00,0x00cc88,0x66dd44];
+          const plant = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.5, 6), new THREE.MeshBasicMaterial({ color: colors[(i+j)%colors.length] })); plant.position.set(-1.5+i*1.5-0.3+j*0.3, -hh+0.55, -0.2+j*0.2); plant.phase = Math.random()*Math.PI*2; rg.add(plant); plantsRef.current.push(plant);
         }
       }
-      // Grow lights
-      for (let i = 0; i < 2; i++) {
-        const light = new THREE.Mesh(new THREE.SphereGeometry(0.08, 6, 4), new THREE.MeshBasicMaterial({ color: 0x44ff44 }));
-        light.position.set(-0.75 + i * 1.5, hh - 0.2, 0);
-        rg.add(light);
-      }
-      addInteractable(rg, clickablesRef, indicatorsRef, 0, -hh + 0.3, 0, 2, 0.4, action, 0x44ff44);
-      break;
+      addInteractable(rg, clickablesRef, indicatorsRef, 0, -hh + 0.3, 0, 2, 0.4, action, 0x44ff44); break;
     }
     case 'trophy': {
-      // Display cases
       for (let i = 0; i < 3; i++) {
         const x = -1.5 + i * 1.5;
-        const caseBox = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.2, 0.4), new THREE.MeshBasicMaterial({ color: 0x332200, transparent: true, opacity: 0.3 }));
-        caseBox.position.set(x, -hh + 0.6, hd - 0.3);
-        rg.add(caseBox);
-        // Trophy inside
-        const trophy = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.35, 6), new THREE.MeshBasicMaterial({ color: 0xffaa00 }));
-        trophy.position.set(x, -hh + 0.5, hd - 0.3);
-        rg.add(trophy);
-        // Base
-        const base = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.1, 0.3), propMat);
-        base.position.set(x, -hh + 0.15, hd - 0.3);
-        rg.add(base);
+        const caseBox = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.2, 0.4), new THREE.MeshBasicMaterial({ color: 0x332200, transparent: true, opacity: 0.3 })); caseBox.position.set(x, -hh + 0.6, hd - 0.3); rg.add(caseBox);
+        const trophy = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.35, 6), new THREE.MeshBasicMaterial({ color: 0xffaa00 })); trophy.position.set(x, -hh + 0.5, hd - 0.3); rg.add(trophy);
+        const base = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.1, 0.3), propMat); base.position.set(x, -hh + 0.15, hd - 0.3); rg.add(base);
       }
-      addInteractable(rg, clickablesRef, indicatorsRef, 0, 0, hd - 0.3, 2, 1, action, 0xffaa00);
-      break;
+      addInteractable(rg, clickablesRef, indicatorsRef, 0, 0, hd - 0.3, 2, 1, action, 0xffaa00); break;
     }
     case 'command': {
-      // Console
-      const console = new THREE.Mesh(new THREE.BoxGeometry(2, 0.8, 0.6), propMat);
-      console.position.set(0, -hh + 0.4, hd - 1.5);
-      rg.add(console);
-      // Console top (slanted screen)
-      const screen = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.5), new THREE.MeshBasicMaterial({ color: 0x004466, side: THREE.DoubleSide }));
-      screen.position.set(0, -hh + 0.9, hd - 1.7);
-      screen.rotation.x = -0.3;
-      rg.add(screen);
-      // Holographic displays on side walls
-      for (const x of [-hw + 0.06, hw - 0.06]) {
-        const holo = new THREE.Mesh(new THREE.PlaneGeometry(1, 0.6), new THREE.MeshBasicMaterial({ color: 0x00aaff, transparent: true, opacity: 0.2, side: THREE.DoubleSide }));
-        holo.position.set(x, 0.3, 0);
-        holo.rotation.y = x < 0 ? Math.PI / 2 : -Math.PI / 2;
-        rg.add(holo);
-      }
-      // Chair
-      const chair = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.25, 0.5, 8), accentMat);
-      chair.position.set(0, -hh + 0.25, hd - 2.3);
-      rg.add(chair);
-      addInteractable(rg, clickablesRef, indicatorsRef, 0, -hh + 0.8, hd - 1.2, 1.5, 0.7, action, 0x00aaff);
-      break;
+      const con = new THREE.Mesh(new THREE.BoxGeometry(2, 0.8, 0.6), propMat); con.position.set(0, -hh + 0.4, hd - 1.5); rg.add(con);
+      const scr = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.5), new THREE.MeshBasicMaterial({ color: 0x004466, side: THREE.DoubleSide })); scr.position.set(0, -hh + 0.9, hd - 1.7); scr.rotation.x = -0.3; rg.add(scr);
+      for (const x of [-hw + 0.06, hw - 0.06]) { const holo = new THREE.Mesh(new THREE.PlaneGeometry(1, 0.6), new THREE.MeshBasicMaterial({ color: 0x00aaff, transparent: true, opacity: 0.2, side: THREE.DoubleSide })); holo.position.set(x, 0.3, 0); holo.rotation.y = x < 0 ? Math.PI/2 : -Math.PI/2; rg.add(holo); }
+      const chair = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.25, 0.5, 8), accentMat); chair.position.set(0, -hh + 0.25, hd - 2.3); rg.add(chair);
+      addInteractable(rg, clickablesRef, indicatorsRef, 0, -hh + 0.8, hd - 1.2, 1.5, 0.7, action, 0x00aaff); break;
     }
     case 'observation': {
-      // Telescope
-      const scope = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 0.8, 8), propMat);
-      scope.position.set(0.5, -hh + 0.6, -1);
-      scope.rotation.z = 0.3;
-      rg.add(scope);
-      const lens = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 6), new THREE.MeshBasicMaterial({ color: 0x4444ff }));
-      lens.position.set(0.5, -hh + 0.8, -0.7);
-      rg.add(lens);
-      // Tripod
-      for (let i = 0; i < 3; i++) {
-        const angle = (i / 3) * Math.PI * 2;
-        const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.6, 4), accentMat);
-        leg.position.set(0.5 + Math.cos(angle) * 0.1, -hh + 0.3, -1 + Math.sin(angle) * 0.1);
-        rg.add(leg);
-      }
-      // Bench
-      const bench = new THREE.Mesh(new THREE.BoxGeometry(2, 0.1, 0.4), propMat);
-      bench.position.set(-1, -hh + 0.3, hd - 0.5);
-      rg.add(bench);
-      addInteractable(rg, clickablesRef, indicatorsRef, 0.5, -hh + 0.8, -0.7, 0.6, 0.6, action, 0x4444ff);
+      const scope = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 0.8, 8), propMat); scope.position.set(0.5, -hh + 0.6, -1); scope.rotation.z = 0.3; rg.add(scope);
+      const lens = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 6), new THREE.MeshBasicMaterial({ color: 0x4444ff })); lens.position.set(0.5, -hh + 0.8, -0.7); rg.add(lens);
+      for (let i = 0; i < 3; i++) { const a = (i/3)*Math.PI*2; const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.02,0.02,0.6,4), accentMat); leg.position.set(0.5+Math.cos(a)*0.1, -hh+0.3, -1+Math.sin(a)*0.1); rg.add(leg); }
+      const bench = new THREE.Mesh(new THREE.BoxGeometry(2, 0.1, 0.4), propMat); bench.position.set(-1, -hh + 0.3, hd - 0.5); rg.add(bench);
+      addInteractable(rg, clickablesRef, indicatorsRef, 0.5, -hh + 0.8, -0.7, 0.6, 0.6, action, 0x4444ff); break;
+    }
+    case 'aquarium': {
+      const tank = new THREE.Mesh(new THREE.BoxGeometry(2, 1.2, 0.8), new THREE.MeshBasicMaterial({ color: 0x004488, transparent: true, opacity: 0.3, side: THREE.DoubleSide })); tank.position.set(0, -hh + 0.8, hd - 0.8); rg.add(tank);
+      const stand = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.4, 1), propMat); stand.position.set(0, -hh + 0.2, hd - 0.8); rg.add(stand);
+      for (let i = 0; i < 4; i++) { const fish = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 4), new THREE.MeshBasicMaterial({ color: [0xff8800,0x22cc44,0x4444ff,0xff4444][i] })); fish.position.set(-0.5+i*0.3, -hh+0.8, hd-0.8); rg.add(fish); }
+      addInteractable(rg, clickablesRef, indicatorsRef, 0, -hh + 0.8, hd - 0.4, 1.5, 1, action, 0x00aaff); break;
+    }
+    case 'genetics': {
+      const table = new THREE.Mesh(new THREE.BoxGeometry(2, 0.8, 0.6), propMat); table.position.set(0, -hh + 0.4, hd - 1.5); rg.add(table);
+      for (let i = 0; i < 4; i++) { const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.3, 8), new THREE.MeshBasicMaterial({ color: [0x22cc44,0x4444ff,0xff8800,0xff44ff][i], transparent: true, opacity: 0.5 })); tube.position.set(-0.5+i*0.3, -hh+0.95, hd-1.5); rg.add(tube); }
+      const screen = new THREE.Mesh(new THREE.PlaneGeometry(1, 0.5), new THREE.MeshBasicMaterial({ color: 0x004466, side: THREE.DoubleSide })); screen.position.set(0, -hh+1.2, hd-1.7); screen.rotation.x = -0.2; rg.add(screen);
+      addInteractable(rg, clickablesRef, indicatorsRef, 0, -hh + 0.8, hd - 1.2, 1.5, 0.7, action, 0x22cc44); break;
+    }
+    case 'lounge': {
+      const sofa = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.4, 0.8), propMat); sofa.position.set(0, -hh + 0.2, hd - 0.6); rg.add(sofa);
+      const back = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.6, 0.2), accentMat); back.position.set(0, -hh + 0.6, hd - 0.9); rg.add(back);
+      const table = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.05, 0.5), propMat); table.position.set(0, -hh + 0.15, 0.5); rg.add(table);
+      break;
+    }
+    case 'storage': {
+      for (let i = 0; i < 4; i++) { const crate = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.7, 0.7), propMat); crate.position.set(-1 + (i%2)*1.2, -hh + 0.35 + Math.floor(i/2)*0.75, hd - 0.6); rg.add(crate); }
       break;
     }
   }

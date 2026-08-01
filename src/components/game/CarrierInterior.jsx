@@ -4,6 +4,8 @@ import { useGameState, SHIP_MAP } from '@/lib/gameState';
 import BadgeDisplay from './BadgeDisplay';
 import { Beer, BedDouble, Leaf, Trophy, Compass, Telescope, Plus, Trash2, Ship as ShipIcon, Sparkles, DoorOpen, Wine, Anchor } from 'lucide-react';
 import CarrierInteriorView from './CarrierInteriorView';
+import { ROOM_TYPES } from '@/lib/cabinRooms';
+import { CABIN_TEXTURES, CABIN_THEMES, getThemeSurfaces, DEFAULT_SURFACE_COLORS } from '@/lib/cabinConfig';
 
 const ROOMS = [
   { id: 'bar', name: 'Bar', icon: Beer },
@@ -61,20 +63,14 @@ function generateRumor(systemName) {
   return t.replace('{system}', systemName).replace('{commodity}', RUMOR_COMMODITIES[Math.floor(Math.random() * RUMOR_COMMODITIES.length)]);
 }
 
-const CARRIER_ROOMS = [
-  { id: 'observation', name: 'Observation Lounge' },
-  { id: 'command', name: 'Command Deck' },
-  { id: 'quarters', name: 'Living Quarters' },
-  { id: 'bar', name: 'The Driftwood Tavern' },
-  { id: 'garden', name: 'Botanical Wing' },
-  { id: 'trophy', name: 'Hall of Records' },
-];
+const DIR_DELTAS = { north: [0, -1], south: [0, 1], east: [1, 0], west: [-1, 0] };
+const DIR_LABELS = { north: 'North', south: 'South', east: 'East', west: 'West' };
 
 export default function CarrierInterior({ onNavigate }) {
-  const { state, updateCarrierInterior, buyAle, requestShipTransit } = useGameState();
+  const { state, isSandbox, updateCarrierInterior, buyAle, requestShipTransit, initCarrierRoomGrid, addCarrierRoomAt, customizeCarrierRoomSurface, setCarrierCurrentRoom } = useGameState();
   const [selectedCarrierId, setSelectedCarrierId] = useState(null);
-  const [roomIndex, setRoomIndex] = useState(2);
   const [activePanel, setActivePanel] = useState(null);
+  const [buildDir, setBuildDir] = useState(null);
 
   const carriersHere = state.fleetCarriers.filter(c => c.systemSeed === state.currentSystem.seed);
 
@@ -82,6 +78,10 @@ export default function CarrierInterior({ onNavigate }) {
     if (!selectedCarrierId && carriersHere.length > 0) setSelectedCarrierId(carriersHere[0].id);
     if (selectedCarrierId && !carriersHere.find(c => c.id === selectedCarrierId)) setSelectedCarrierId(carriersHere[0]?.id || null);
   }, [carriersHere, selectedCarrierId]);
+
+  useEffect(() => {
+    if (selectedCarrierId) initCarrierRoomGrid(selectedCarrierId);
+  }, [selectedCarrierId, initCarrierRoomGrid]);
 
   if (carriersHere.length === 0) {
     return (
@@ -98,20 +98,34 @@ export default function CarrierInterior({ onNavigate }) {
 
   const carrier = state.fleetCarriers.find(c => c.id === selectedCarrierId) || carriersHere[0];
   const interior = carrier.interior || { roomItems: [], savedPlants: [], barTab: 0 };
-  const room = CARRIER_ROOMS[roomIndex];
+  const grid = state.carrierRoomGrid?.[selectedCarrierId] || {};
+  const gridKey = state.carrierCurrentRoom?.[selectedCarrierId] || '2,0';
+  const [gridX, gridY] = gridKey.split(',').map(Number);
+  const room = grid[gridKey] || { type: 'quarters', name: 'Living Quarters', surfaces: {} };
 
   const handleNavigateDir = (dir) => {
-    if (dir === 'left' && roomIndex > 0) setRoomIndex(roomIndex - 1);
-    if (dir === 'right' && roomIndex < CARRIER_ROOMS.length - 1) setRoomIndex(roomIndex + 1);
+    const [dx, dy] = DIR_DELTAS[dir];
+    const newKey = `${gridX + dx},${gridY + dy}`;
+    if (grid[newKey]) setCarrierCurrentRoom(selectedCarrierId, newKey);
   };
+
+  const handleBuildDoor = (dir) => { setBuildDir(dir); setActivePanel('build'); };
 
   const handleInteract = (action) => {
     if (action === 'decorate') { onNavigate?.('cabin'); return; }
+    if (action === 'nav-aquarium') { onNavigate?.('aquarium'); return; }
+    if (action === 'nav-geneticslab') { onNavigate?.('geneticslab'); return; }
+    if (action === 'flora' && room.custom) { onNavigate?.('garden'); return; }
     setActivePanel(action);
   };
 
-  const leftRoomName = roomIndex > 0 ? CARRIER_ROOMS[roomIndex - 1].name : null;
-  const rightRoomName = roomIndex < CARRIER_ROOMS.length - 1 ? CARRIER_ROOMS[roomIndex + 1].name : null;
+  const handleBuild = (roomType, roomName) => {
+    const [dx, dy] = DIR_DELTAS[buildDir];
+    const ok = addCarrierRoomAt(selectedCarrierId, gridX + dx, gridY + dy, roomType, roomName);
+    if (ok) { setActivePanel(null); setBuildDir(null); handleNavigateDir(buildDir); }
+  };
+
+  const roomKeys = Object.keys(grid);
 
   return (
     <div className="w-full h-full relative overflow-hidden">
@@ -124,27 +138,35 @@ export default function CarrierInterior({ onNavigate }) {
       )}
 
       <CarrierInteriorView
-        roomType={room.id}
-        roomIndex={roomIndex}
-        totalRooms={CARRIER_ROOMS.length}
-        roomName={room.name}
-        leftRoomName={leftRoomName}
-        rightRoomName={rightRoomName}
+        room={room}
+        gridX={gridX}
+        gridY={gridY}
+        grid={grid}
         onNavigate={handleNavigateDir}
+        onBuildDoor={handleBuildDoor}
         onInteract={handleInteract}
       />
 
-      {/* Minimap */}
-      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-0.5 z-20">
-        {CARRIER_ROOMS.map((r, i) => (
-          <button key={r.id} onClick={() => setRoomIndex(i)} className={`px-1.5 py-0.5 text-[8px] border whitespace-nowrap ${i === roomIndex ? 'border-orange-500 bg-orange-950/40 text-orange-300' : 'border-orange-900 text-orange-700 hover:text-orange-500'}`} title={r.name}>
-            {r.name.split(' ')[0]}
-          </button>
-        ))}
+      {/* Top-right buttons */}
+      <div className="absolute top-1 right-1 z-20 flex gap-1">
+        <button onClick={() => setActivePanel('surfaces')} className="px-2 py-1 border border-orange-700 bg-black/80 text-orange-400 hover:bg-orange-950/30 text-[9px]">SURFACES</button>
       </div>
 
-      {/* Overlay panel for room interactions */}
-      {activePanel && (
+      {/* Minimap */}
+      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-20 flex gap-0.5 max-w-[90%] overflow-x-auto">
+        {roomKeys.map(key => {
+          const [rx, ry] = key.split(',').map(Number);
+          const isCurrent = key === gridKey;
+          return (
+            <button key={key} onClick={() => setCarrierCurrentRoom(selectedCarrierId, key)} className={`px-1.5 py-0.5 text-[8px] border whitespace-nowrap ${isCurrent ? 'border-orange-500 bg-orange-950/40 text-orange-300' : 'border-orange-900 text-orange-700 hover:text-orange-500'}`} title={grid[key].name}>
+              {grid[key].name.split(' ')[0]}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Overlay panels */}
+      {activePanel && activePanel !== 'build' && activePanel !== 'surfaces' && (
         <div className="absolute inset-0 z-30 bg-black/80 flex items-center justify-center p-4 overflow-y-auto">
           <div className="w-full max-w-lg max-h-[80vh] overflow-y-auto border border-orange-700 bg-black p-4">
             <div className="flex items-center justify-between mb-3">
@@ -154,14 +176,123 @@ export default function CarrierInterior({ onNavigate }) {
             {activePanel === 'drinks' && <BarRoom carrier={carrier} interior={interior} buyAle={buyAle} systemName={state.currentSystem.name} />}
             {activePanel === 'flora' && <GardenRoom carrier={carrier} interior={interior} updateInterior={updateCarrierInterior} surfaceDiscoveries={state.surfaceDiscoveries || {}} systemName={state.currentSystem.name} getSystemData={state.currentSystemData} />}
             {activePanel === 'records' && <TrophyRoom state={state} />}
-            {activePanel === 'transit' && <CommandDeck carrier={carrier} state={state} requestShipTransit={requestShipTransit} isSandbox={state.saveMode === 'sandbox'} />}
+            {activePanel === 'transit' && <CommandDeck carrier={carrier} state={state} requestShipTransit={requestShipTransit} isSandbox={isSandbox} />}
             {activePanel === 'stargaze' && <ObservationRoom state={state} />}
-            {activePanel === 'decorate' && (
-              <QuartersRoom carrier={carrier} interior={interior} updateInterior={updateCarrierInterior} savedBadges={state.savedBadges || []} onNavigate={onNavigate} />
-            )}
           </div>
         </div>
       )}
+
+      {/* Surface customization */}
+      {activePanel === 'surfaces' && (
+        <CarrierSurfacePanel carrierId={selectedCarrierId} gridKey={gridKey} room={room} onSurfaceChange={customizeCarrierRoomSurface} onClose={() => setActivePanel(null)} />
+      )}
+
+      {/* Build room dialog */}
+      {activePanel === 'build' && buildDir && (
+        <BuildRoomDialog dir={buildDir} isSandbox={isSandbox} onBuild={handleBuild} onClose={() => { setActivePanel(null); setBuildDir(null); }} />
+      )}
+    </div>
+  );
+}
+
+// ===== SURFACE PANEL =====
+function CarrierSurfacePanel({ carrierId, gridKey, room, onSurfaceChange, onClose }) {
+  const [selectedSurface, setSelectedSurface] = useState('floor');
+  const surfaces = ['floor', 'ceiling', 'wallNorth', 'wallSouth', 'wallEast', 'wallWest'];
+  const surfaceLabels = { floor: 'Floor', ceiling: 'Ceiling', wallNorth: 'North Wall', wallSouth: 'South Wall', wallEast: 'East Wall', wallWest: 'West Wall' };
+  const currentSurfaces = room.surfaces || {};
+  const current = currentSurfaces[selectedSurface] || { texture: 'solid', rgb: DEFAULT_SURFACE_COLORS[selectedSurface] || [26, 13, 0] };
+
+  const handleSurfaceChange = (field, value) => onSurfaceChange(carrierId, gridKey, selectedSurface, field, value);
+  const handleTheme = (theme) => {
+    const themeSurfaces = getThemeSurfaces(theme);
+    for (const [surface, config] of Object.entries(themeSurfaces)) {
+      onSurfaceChange(carrierId, gridKey, surface, 'texture', config.texture);
+      onSurfaceChange(carrierId, gridKey, surface, 'rgb', config.rgb);
+    }
+  };
+
+  return (
+    <div className="absolute inset-0 z-30 bg-black/80 flex items-center justify-center p-4 overflow-y-auto">
+      <div className="w-full max-w-lg max-h-[80vh] overflow-y-auto border border-orange-700 bg-black p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="text-orange-300 text-sm font-bold uppercase">Surface Customization</h3>
+          <button onClick={onClose} className="text-orange-600 hover:text-orange-400 text-xs">✕ CLOSE</button>
+        </div>
+        <div>
+          <div className="text-orange-700 text-[9px] uppercase mb-1">Theme</div>
+          <div className="flex flex-wrap gap-1">
+            {Object.entries(CABIN_THEMES).map(([id, theme]) => (
+              <button key={id} onClick={() => handleTheme(id)} className="px-2 py-1 text-[10px] border border-orange-900 text-orange-600 hover:text-orange-400 hover:border-orange-500">{theme.name}</button>
+            ))}
+          </div>
+        </div>
+        <div>
+          <div className="text-orange-700 text-[9px] uppercase mb-1">Surface</div>
+          <div className="flex flex-wrap gap-1">
+            {surfaces.map(s => (
+              <button key={s} onClick={() => setSelectedSurface(s)} className={`px-2 py-1 text-[10px] border ${selectedSurface === s ? 'border-orange-500 text-orange-300 bg-orange-950/30' : 'border-orange-900 text-orange-600'}`}>{surfaceLabels[s]}</button>
+            ))}
+          </div>
+        </div>
+        <div>
+          <div className="text-orange-700 text-[9px] uppercase mb-1">Texture — {surfaceLabels[selectedSurface]}</div>
+          <div className="flex flex-wrap gap-1">
+            {CABIN_TEXTURES.map(t => (
+              <button key={t.id} onClick={() => handleSurfaceChange('texture', t.id)} className={`px-2 py-1 text-[10px] border ${current.texture === t.id ? 'border-orange-500 text-orange-300 bg-orange-950/30' : 'border-orange-900 text-orange-600'}`}>{t.name}</button>
+            ))}
+          </div>
+        </div>
+        <div className="space-y-2 border border-orange-950 p-2">
+          <div className="text-orange-700 text-[9px] uppercase">Color (RGB)</div>
+          <div>
+            <label className="text-[9px] text-red-500">R: {current.rgb[0]}</label>
+            <input type="range" min="0" max="255" value={current.rgb[0]} onChange={e => handleSurfaceChange('rgb', [parseInt(e.target.value), current.rgb[1], current.rgb[2]])} className="w-full" />
+          </div>
+          <div>
+            <label className="text-[9px] text-green-500">G: {current.rgb[1]}</label>
+            <input type="range" min="0" max="255" value={current.rgb[1]} onChange={e => handleSurfaceChange('rgb', [current.rgb[0], parseInt(e.target.value), current.rgb[2]])} className="w-full" />
+          </div>
+          <div>
+            <label className="text-[9px] text-blue-500">B: {current.rgb[2]}</label>
+            <input type="range" min="0" max="255" value={current.rgb[2]} onChange={e => handleSurfaceChange('rgb', [current.rgb[0], current.rgb[1], parseInt(e.target.value)])} className="w-full" />
+          </div>
+          <div className="w-full h-6 border border-orange-900" style={{ background: `rgb(${current.rgb[0]}, ${current.rgb[1]}, ${current.rgb[2]})` }} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ===== BUILD ROOM DIALOG =====
+function BuildRoomDialog({ dir, isSandbox, onBuild, onClose }) {
+  const [roomType, setRoomType] = useState('living');
+  const [roomName, setRoomName] = useState('');
+  const cost = isSandbox ? 0 : 500000;
+
+  return (
+    <div className="absolute inset-0 z-30 bg-black/80 flex items-center justify-center p-4">
+      <div className="w-full max-w-sm border border-green-700 bg-black p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="text-green-400 text-sm font-bold uppercase">Build Room — {DIR_LABELS[dir]}</h3>
+          <button onClick={onClose} className="text-orange-600 hover:text-orange-400 text-xs">✕</button>
+        </div>
+        <div className="text-orange-600 text-[10px]">Construct a new room connected to this wall. The room will be accessible via a door.</div>
+        <div>
+          <div className="text-orange-700 text-[9px] uppercase mb-1">Room Type</div>
+          <div className="flex flex-wrap gap-1">
+            {Object.entries(ROOM_TYPES).map(([id, rt]) => (
+              <button key={id} onClick={() => setRoomType(id)} className={`px-2 py-1 text-[10px] border ${roomType === id ? 'border-green-500 text-green-300 bg-green-950/20' : 'border-orange-900 text-orange-600'}`}>{rt.name}</button>
+            ))}
+          </div>
+          <div className="text-orange-700 text-[9px] mt-1">{ROOM_TYPES[roomType]?.desc}</div>
+        </div>
+        <input type="text" placeholder="Room name (optional)" value={roomName} onChange={e => setRoomName(e.target.value)} className="w-full bg-black border border-orange-900 text-orange-400 text-[10px] px-2 py-1" />
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] text-orange-400">Cost: {isSandbox ? 'FREE' : `${cost.toLocaleString()} CR`}</span>
+          <button onClick={() => onBuild(roomType, roomName)} className="px-4 py-1.5 border border-green-600 text-green-400 hover:bg-green-950/30 text-[10px] font-bold">BUILD</button>
+        </div>
+      </div>
     </div>
   );
 }
