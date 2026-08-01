@@ -6,7 +6,8 @@ import { useGameState } from '@/lib/gameState';
 import { BODY_TYPES } from '@/lib/system';
 import { buildStationModel } from '@/lib/stationModelBuilder';
 import { buildShipModel } from '@/lib/shipModelBuilder';
-import { SHIP_MAP, getProbesRequired } from '@/lib/gameState';
+import { buildCustomShipModel, buildCarrierModel, buildGenericCarrierModel } from '@/lib/modelBuilder';
+import { SHIP_MAP, SHIP_TYPES, getProbesRequired } from '@/lib/gameState';
 import CelestialBodyList from './CelestialBodyList';
 import { generateBodyDescription } from '@/lib/bodyDescriptions';
 
@@ -27,6 +28,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
   const travelRef = useRef(null);
   const scoopFrameRef = useRef(0);
   const npcShipsRef = useRef([]);
+  const carrierMeshesRef = useRef([]);
   const orbitAnchorRef = useRef(null);
   const lastTimeRef = useRef(0);
   const gridRef = useRef(null);
@@ -215,6 +217,16 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
         }
       }
 
+      // Fleet carriers — slow orbit near system center
+      for (const cm of carrierMeshesRef.current) {
+        const orbitR = 15;
+        const angle = t * 0.15 + cm.phaseOffset;
+        cm.model.position.x = Math.cos(angle) * orbitR;
+        cm.model.position.z = Math.sin(angle) * orbitR;
+        cm.model.position.y = 0;
+        cm.model.rotation.y += 0.001;
+      }
+
       renderer.render(scene, camera);
     };
     animate();
@@ -273,6 +285,13 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
       });
     }
     stationMeshesRef.current = [];
+
+    // Clear old carrier meshes
+    for (const cm of carrierMeshesRef.current) {
+      scene.remove(cm.model);
+      cm.model.traverse(child => { if (child.geometry) child.geometry.dispose(); if (child.material) child.material.dispose(); });
+    }
+    carrierMeshesRef.current = [];
 
     // Create bodies
     const allBodies = systemData.bodies;
@@ -440,10 +459,16 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
       scene.remove(shipMeshRef.current);
       shipMeshRef.current.traverse(child => { if (child.geometry) child.geometry.dispose(); if (child.material) child.material.dispose(); });
     }
-    const shipType = SHIP_MAP[state.ship.type];
-    const shipClass = shipType?.class || (state.ship.type === 'custom' ? 2 : 1);
-    const shipModel = buildShipModel(shipClass);
-    shipModel.scale.setScalar(0.6);
+    let shipModel;
+    if (state.ship.type === 'custom' && state.ship.customShipId) {
+      const customDesign = (state.customShips || []).find(s => s.id === state.ship.customShipId);
+      shipModel = customDesign ? buildCustomShipModel(customDesign, 0x00ff88) : buildShipModel(2);
+    } else {
+      const shipType = SHIP_MAP[state.ship.type];
+      const shipClass = shipType?.class || 1;
+      shipModel = buildShipModel(shipClass);
+    }
+    shipModel.scale.setScalar(0.25);
     scene.add(shipModel);
     shipMeshRef.current = shipModel;
     // Determine the body the ship should orbit — station's parent if docked, last surface body if returning, else primary star
@@ -477,10 +502,11 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
     npcShipsRef.current = [];
     const popBoost = (state.currentSystem.population || 0) > 0 ? 2 : 0;
     const numNpc = Math.min(8, Math.max(0, Math.floor((systemData.stations.length || 1) * 1.5) + popBoost));
+    const npcShipTypes = SHIP_TYPES.filter(s => s.cost > 0);
     for (let i = 0; i < numNpc; i++) {
-      const npcClass = 1 + Math.floor(Math.random() * 3);
-      const npcModel = buildShipModel(npcClass);
-      npcModel.scale.setScalar(0.4);
+      const npcType = npcShipTypes[Math.floor(Math.random() * npcShipTypes.length)] || SHIP_TYPES[0];
+      const npcModel = buildShipModel(npcType.class);
+      npcModel.scale.setScalar(0.2);
       scene.add(npcModel);
       npcShipsRef.current.push({
         model: npcModel,
@@ -489,6 +515,26 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
         targetX: (Math.random() - 0.5) * 40,
         targetZ: (Math.random() - 0.5) * 40,
         speed: 2 + Math.random() * 3,
+      });
+    }
+
+    // Build fleet carrier models for carriers parked in this system
+    for (const cm of carrierMeshesRef.current) {
+      scene.remove(cm.model);
+      cm.model.traverse(child => { if (child.geometry) child.geometry.dispose(); if (child.material) child.material.dispose(); });
+    }
+    carrierMeshesRef.current = [];
+    const carriersHere = (state.fleetCarriers || []).filter(c => c.systemSeed === state.currentSystem.seed);
+    for (const carrier of carriersHere) {
+      const carrierModel = carrier.design
+        ? buildCarrierModel(carrier.design, 0xff8800)
+        : buildGenericCarrierModel(0xff8800);
+      carrierModel.scale.setScalar(0.5);
+      scene.add(carrierModel);
+      carrierMeshesRef.current.push({
+        model: carrierModel,
+        carrier,
+        phaseOffset: Math.random() * Math.PI * 2,
       });
     }
 
@@ -507,7 +553,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
 
     // Auto-fit camera to system
     rotState.current.targetDistance = maxOrbit * 2.5;
-  }, [systemData]);
+  }, [systemData, state.ship?.type, state.ship?.customShipId, state.fleetCarriers?.filter(c => c.systemSeed === state.currentSystem?.seed).length]);
 
   // Pointer interaction
   useEffect(() => {
@@ -553,7 +599,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
       e.preventDefault();
       const rs = rotState.current;
       rs.targetDistance += e.deltaY * 0.2;
-      rs.targetDistance = Math.max(5, Math.min(500, rs.targetDistance));
+      rs.targetDistance = Math.max(0.3, Math.min(500, rs.targetDistance));
     };
 
     const onTouchStart = (e) => {
@@ -585,7 +631,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
         pinchDist = newDist;
         const rs = rotState.current;
         rs.targetDistance += delta * 0.8;
-        rs.targetDistance = Math.max(5, Math.min(500, rs.targetDistance));
+        rs.targetDistance = Math.max(0.3, Math.min(500, rs.targetDistance));
         // Two-finger pan
         const newCentroidX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
         const newCentroidY = (e.touches[0].clientY + e.touches[1].clientY) / 2;

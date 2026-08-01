@@ -2,6 +2,7 @@
 import React, { useRef, useEffect } from 'react';
 import * as THREE from 'three';
 import { SHIP_SLOTS, SHIP_PART_MAP } from '@/lib/shipParts';
+import { createGeometry } from '@/lib/modelBuilder';
 
 export default function ShipBuilder3D({ design, selectedSlot, onSelectSlot, slots = SHIP_SLOTS, partMap = SHIP_PART_MAP, initialDistance = 6 }) {
   const mountRef = useRef(null);
@@ -195,16 +196,4 @@ export default function ShipBuilder3D({ design, selectedSlot, onSelectSlot, slot
       <div className="absolute top-1 left-1 text-[9px] text-orange-700 pointer-events-none">DRAG TO ROTATE · SCROLL/PINCH TO ZOOM · TAP PART TO SELECT</div>
     </div>
   );
-}
-
-function createGeometry(shape, category) {
-  switch (shape) {
-    case 'cone': return new THREE.ConeGeometry(0.5, 2, 6);
-    case 'box': return new THREE.BoxGeometry(category === 'wing' ? 0.6 : 1.5, category === 'wing' ? 0.15 : 0.8, category === 'wing' ? 1.5 : 2);
-    case 'cylinder': return new THREE.CylinderGeometry(0.4, 0.4, 1.5, 8);
-    case 'sphere': return new THREE.SphereGeometry(0.6, 8, 6);
-    case 'wedge': return new THREE.CylinderGeometry(0.05, 0.8, 2, 4);
-    case 'octagon': return new THREE.CylinderGeometry(0.8, 0.8, 2, 8);
-    default: return new THREE.BoxGeometry(1, 1, 1);
-  }
 }

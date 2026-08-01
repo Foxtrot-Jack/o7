@@ -1,8 +1,9 @@
 // Missions Screen — mission board with procedurally generated missions
 import React, { useState, useMemo, useCallback } from 'react';
-import { useGameState, MISSION_TYPES } from '@/lib/gameState';
+import { useGameState, MISSION_TYPES, SHIP_MAP } from '@/lib/gameState';
 import { makeRng, randInt, randFloat, pick, pickWeighted } from '@/lib/prng';
 import { COMMODITIES } from '@/lib/commodities';
+import { computeCustomShipStats } from '@/lib/shipParts';
 import { generateStarsInRange, distance3D } from '@/lib/galaxy';
 import { ClipboardList, CheckCircle, Clock, MapPin, Package, Pickaxe, Telescope, Users, Wrench, Map } from 'lucide-react';
 
@@ -64,6 +65,14 @@ export default function MissionsScreen() {
   const systemData = getSystemData();
   const station = systemData?.stations.find(s => s.id === state.currentStationId);
 
+  const playerJumpRange = useMemo(() => {
+    if (state.ship?.type === 'custom' && state.ship?.customShipId) {
+      const design = (state.customShips || []).find(s => s.id === state.ship.customShipId);
+      if (design) return computeCustomShipStats(design).jumpRange;
+    }
+    return SHIP_MAP[state.ship?.type]?.jumpRange || 8;
+  }, [state.ship, state.customShips]);
+
   // Generate available missions
   const availableMissions = useMemo(() => {
     if (!station || !systemData) return [];
@@ -124,6 +133,7 @@ export default function MissionsScreen() {
         reputation: randInt(rng, 1, 5),
         destinationSystem: destStar ? { seed: destStar.seed, name: destStar.name, x: destStar.x, y: destStar.y, z: destStar.z } : null,
         destinationSystemName: destination,
+        distanceLy: isLocal ? 0 : (destStar ? Math.round(destStar.dist * 10) / 10 : 0),
       });
     }
 
@@ -189,6 +199,7 @@ export default function MissionsScreen() {
         <div className="flex items-center gap-2">
           <ClipboardList className="w-4 h-4 text-orange-500" />
           <span className="text-orange-300 font-bold uppercase text-sm">Mission Board — {station.name}</span>
+          <span className="text-orange-700 text-[10px] ml-2">JUMP RANGE: <span className="text-orange-400">{playerJumpRange} LY</span></span>
         </div>
         <div className="flex gap-1">
           <button
@@ -215,6 +226,17 @@ export default function MissionsScreen() {
                   <div>
                     <div className="text-orange-300 font-bold">{mission.name}</div>
                     <div className="text-orange-600 mt-0.5">{mission.description}</div>
+                    {mission.distanceLy > 0 ? (
+                      <div className="text-orange-700 text-[10px] mt-1 flex items-center gap-1">
+                        <MapPin className="w-2.5 h-2.5" />
+                        DISTANCE: {mission.distanceLy.toFixed(1)} LY
+                        {mission.distanceLy > playerJumpRange && (
+                          <span className="text-yellow-600">⚠ MULTI-JUMP</span>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-cyan-700 text-[10px] mt-1">◉ LOCAL SYSTEM</div>
+                    )}
                   </div>
                 </div>
                 <div className="text-right">
@@ -266,6 +288,12 @@ export default function MissionsScreen() {
                   <div>
                     <div className="text-green-300 font-bold">{mission.name}</div>
                     <div className="text-orange-600 mt-0.5">{mission.description}</div>
+                    {mission.distanceLy > 0 && (
+                      <div className="text-orange-700 text-[10px] mt-0.5 flex items-center gap-1">
+                        <MapPin className="w-2.5 h-2.5" />
+                        {mission.distanceLy.toFixed(1)} LY
+                      </div>
+                    )}
                     {mission.commodity && mission.type !== MISSION_TYPES.PASSENGER && mission.type !== MISSION_TYPES.EXPLORATION && (
                       <div className="text-orange-700 text-[10px] mt-1">
                         PROGRESS: {cargoItem?.qty || 0}/{mission.qty}T
