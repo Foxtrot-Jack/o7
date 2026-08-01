@@ -219,6 +219,7 @@ function createInitialState() {
     lastGoalRefresh: Date.now(),
     fsdBoost: false,
     heatSinkCharges: 0,
+    shieldCellCharges: 0,
     activeEncounter: null,
     crime: { notoriety: 0, bounty: 0, crimes: [], lastCrime: 0 },
     bountyMissions: [],
@@ -316,6 +317,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
           lastGoalRefresh: parsed.lastGoalRefresh || Date.now(),
           fsdBoost: parsed.fsdBoost || false,
           heatSinkCharges: parsed.heatSinkCharges || 0,
+          shieldCellCharges: parsed.shieldCellCharges || 0,
           activeEncounter: parsed.activeEncounter || null,
           crime: parsed.crime || { notoriety: 0, bounty: 0, crimes: [], lastCrime: 0 },
           bountyMissions: parsed.bountyMissions || [],
@@ -1965,13 +1967,15 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
         const scanCount = Object.keys(prev.scannedBodies || {}).length;
         const mapCount = Object.keys(prev.mappedBodies || {}).length;
         const available = goal.desc.includes('Map') ? mapCount : scanCount;
-        if (available === 0) return prev;
+        const alreadyCounted = goal.lastContributedCount || 0;
+        const newScans = Math.max(0, available - alreadyCounted);
+        if (newScans === 0) return prev;
         const need = goal.target - goal.progress;
-        const give = Math.min(available, need);
+        const give = Math.min(newScans, need);
         result.contributed = give;
         return {
           ...prev,
-          communityGoals: prev.communityGoals.map(g => g.id === goalId ? { ...g, progress: Math.min(g.target, g.progress + give), completed: g.progress + give >= g.target } : g),
+          communityGoals: prev.communityGoals.map(g => g.id === goalId ? { ...g, progress: Math.min(g.target, g.progress + give), completed: g.progress + give >= g.target, lastContributedCount: alreadyCounted + give } : g),
         };
       }
       return prev;
@@ -1979,6 +1983,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     return result;
   }, []);
 
+  const contributeCombatKill = useCallback(() => { setState(prev => ({ ...prev, communityGoals: (prev.communityGoals || []).map(g => g.type === 'combat' && !g.completed && !g.claimed ? { ...g, progress: Math.min(g.target, g.progress + 1), completed: g.progress + 1 >= g.target } : g) })); }, []);
   const claimGoalReward = useCallback((goalId) => {
     setState(prev => {
       const goal = (prev.communityGoals || []).find(g => g.id === goalId);
@@ -2010,6 +2015,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
       if (recipe.effect === 'hull_repair') updates.ship = { ...prev.ship, integrity: Math.min(100, (prev.ship.integrity ?? 100) + 20) };
       if (recipe.effect === 'afm_refill') updates.ship = { ...prev.ship, integrity: Math.min(100, (prev.ship.integrity ?? 100) + 10) };
       if (recipe.effect === 'heat_sink') updates.heatSinkCharges = (prev.heatSinkCharges || 0) + 3;
+      if (recipe.effect === 'shield_boost') updates.shieldCellCharges = (prev.shieldCellCharges || 0) + 3;
       if (recipe.effect === 'limpets') {
         const cargo = [...prev.ship.cargo];
         const existing = cargo.find(c => c.commodity === 'limpets');
@@ -2357,6 +2363,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     applyStationDesign,
     refreshCommunityGoals,
     contributeToGoal,
+    contributeCombatKill,
     claimGoalReward,
     synthesize,
     repairShip,

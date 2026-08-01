@@ -16,7 +16,7 @@ const TACTIC_ICONS = {
 };
 
 export default function CombatScreen({ enemy, context, missionId, bonds, onEnd }) {
-  const { state, addCredits, completeBountyMission, update } = useGameState();
+  const { state, addCredits, completeBountyMission, update, contributeCombatKill } = useGameState();
   const [playerStats, setPlayerStats] = useState(null);
   const [enemyStats, setEnemyStats] = useState({ ...enemy });
   const [log, setLog] = useState([`» Combat initiated — ${enemy.name} (${enemy.ship})`]);
@@ -33,6 +33,12 @@ export default function CombatScreen({ enemy, context, missionId, bonds, onEnd }
     const crewBonuses = getCrewBonuses(state.crew);
     const engineering = state.ship.modules?.__engineering;
     const stats = getCombatStats(state.ship.integrity, shipClass, crewBonuses, engineering);
+    // Consume shield cell charges — each charge boosts starting shields by 30%
+    if (state.shieldCellCharges > 0) {
+      const boost = stats.maxShield * 0.3 * state.shieldCellCharges;
+      stats.shield = Math.min(stats.maxShield * 2, stats.shield + boost);
+      update(prev => ({ ...prev, shieldCellCharges: 0 }));
+    }
     setPlayerStats(stats);
   }, []);
 
@@ -115,6 +121,7 @@ export default function CombatScreen({ enemy, context, missionId, bonds, onEnd }
       addCredits(enemy.bounty);
       if (context === 'bounty' && missionId) completeBountyMission(missionId);
       if (context === 'conflict' && bonds) addCredits(bonds);
+      contributeCombatKill();
     }
     setResult(outcome);
     setTimeout(() => onEnd({ [outcome]: true, bounty: outcome === 'victory' ? enemy.bounty : 0, bonds }), 2000);

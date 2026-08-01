@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useGameState } from '@/lib/gameState';
 import { getTimeRemaining } from '@/lib/communityGoals';
 import { COMMODITY_MAP } from '@/lib/commodities';
-import { Target, Clock, Gift, TrendingUp } from 'lucide-react';
+import { Target, Clock, Gift, TrendingUp, Skull } from 'lucide-react';
 
 export default function CommunityGoalsScreen() {
   const { state, update, addCredits, refreshCommunityGoals, contributeToGoal, claimGoalReward } = useGameState();
@@ -59,7 +59,8 @@ export default function CommunityGoalsScreen() {
         {goals.map(goal => {
           const expired = getTimeRemaining(goal.deadline) === 'EXPIRED';
           const pct = Math.min(100, (goal.progress / goal.target) * 100);
-          const canContribute = !goal.completed && !goal.claimed && !expired;
+          const canContribute = !goal.completed && !goal.claimed && !expired && goal.type !== 'combat';
+          const isCombatGoal = goal.type === 'combat';
 
           return (
             <div key={goal.id} className={`border p-3 space-y-2 ${goal.claimed ? 'border-green-900 opacity-50' : goal.completed ? 'border-green-700' : expired ? 'border-red-900 opacity-50' : 'border-orange-900'}`}>
@@ -136,6 +137,11 @@ export default function CommunityGoalsScreen() {
                   >
                     <TrendingUp className="w-3 h-3" /> CONTRIBUTE
                   </button>
+                )}
+                {isCombatGoal && !goal.completed && !goal.claimed && !expired && (
+                  <span className="text-orange-600 text-[10px] py-1 flex items-center gap-1">
+                    <Skull className="w-3 h-3" /> Progress via bounty hunting & combat
+                  </span>
                 )}
                 {goal.completed && !goal.claimed && (
                   <button
