@@ -3,17 +3,24 @@ import React from 'react';
 import { THEMES, buildCustomTheme } from '@/lib/themes';
 import { FONTS } from '@/lib/fonts';
 
-export default function CRTFrame({ children, enabled = true, brightness = 100, theme = 'elite', customColor = null, fontFamily = 'courier', fontScale = 100 }) {
+export default function CRTFrame({ children, enabled = true, brightness = 100, theme = 'elite', customColor = null, fontFamily = 'courier', fontScale = 100, display = {} }) {
   const baseTheme = THEMES[theme] || THEMES.elite;
   const t = customColor ? buildCustomTheme(customColor) : baseTheme;
   const font = FONTS[fontFamily] || FONTS.courier;
   const rootFontSize = Math.round(16 * (fontScale / 100));
   const filters = [`brightness(${brightness}%)`];
+  if (display.invertColors) filters.push('invert(1)');
+  if (display.hueRotate) filters.push(`hue-rotate(${display.hueRotate}deg)`);
+  if (display.saturation != null && display.saturation !== 100) filters.push(`saturate(${display.saturation}%)`);
+  if (display.contrast != null && display.contrast !== 100) filters.push(`contrast(${display.contrast}%)`);
   if (!customColor) {
     if (t.grayscale) filters.push('grayscale(1)');
     if (t.hueRotate) filters.push(`hue-rotate(${t.hueRotate}deg)`);
   }
-  const filterStyle = { filter: filters.join(' '), '--crt-font': font.family };
+  const transforms = [];
+  if (display.flipHorizontal) transforms.push('scaleX(-1)');
+  if (display.flipVertical) transforms.push('scaleY(-1)');
+  const filterStyle = { filter: filters.join(' '), '--crt-font': font.family, ...(transforms.length ? { transform: transforms.join(' ') } : {}) };
   const rootStyle = `:root { font-size: ${rootFontSize}px; }`;
 
   if (!enabled) return (

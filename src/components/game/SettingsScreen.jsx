@@ -4,6 +4,7 @@ import { useGameState } from '@/lib/gameState';
 import { Settings, Sun, Monitor, Tv, RotateCcw, ArrowLeftRight, Palette, Download, Upload, Lock, Unlock, Smartphone } from 'lucide-react';
 import { THEME_LIST } from '@/lib/themes';
 import SoundSettings from '@/components/game/SoundSettings';
+import GestureDisplaySettings from '@/components/game/GestureDisplaySettings';
 import ColorCustomizer from '@/components/game/ColorCustomizer';
 import FontSelector from '@/components/game/FontSelector';
 
@@ -111,6 +112,8 @@ export default function SettingsScreen() {
       <FontSelector />
 
       <SoundSettings />
+
+      <GestureDisplaySettings />
 
       <div className="border border-cyan-900 p-4 space-y-2">
         <div className="flex items-center gap-2">

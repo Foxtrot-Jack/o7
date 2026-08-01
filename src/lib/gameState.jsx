@@ -22,6 +22,7 @@ import { generateFish, generateFlora } from './specimens';
 import { SHIP_TYPES } from './shipRoster';
 import { getHolidayFuelMultiplier } from './publicHolidays';
 import { useCanisStellaFunctions } from './canisStellaFunctions';
+import { DEFAULT_GESTURE_SETTINGS, DEFAULT_DISPLAY_SETTINGS } from './screenSettings';
 import { CANIS_STELLA_RANKS, CEO_TITLE, MISSION_REP_REWARD } from './canisStella';
 
 const STORAGE_KEY = 'starfarer_save_v1';
@@ -182,6 +183,8 @@ function createInitialState() {
         musicPreset: 'standard',
         customTracks: {},
       },
+      gestures: DEFAULT_GESTURE_SETTINGS,
+      display: DEFAULT_DISPLAY_SETTINGS,
     },
     crew: [],
     powerPlay: null,
@@ -259,7 +262,19 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
         // Merge with defaults to handle new fields
         setState(prev => {
           const merged = { ...prev, ...parsed,
-          settings: { ...prev.settings, ...(parsed.settings || {}), sound: { ...(prev.settings?.sound || {}), ...(parsed.settings?.sound || {}) } },
+          settings: {
+            ...prev.settings,
+            ...(parsed.settings || {}),
+            sound: { ...(prev.settings?.sound || {}), ...(parsed.settings?.sound || {}) },
+            gestures: {
+              global: { ...(prev.settings?.gestures?.global || {}), ...(parsed.settings?.gestures?.global || {}) },
+              screens: { ...(prev.settings?.gestures?.screens || {}), ...(parsed.settings?.gestures?.screens || {}) },
+            },
+            display: {
+              global: { ...(prev.settings?.display?.global || {}), ...(parsed.settings?.display?.global || {}) },
+              screens: { ...(prev.settings?.display?.screens || {}), ...(parsed.settings?.display?.screens || {}) },
+            },
+          },
           achievements: {
             firstDiscoveries: {}, milestones: {}, scannedSystemSeeds: [], systemsScanned: 0, totalBodiesScanned: 0,
             ...(parsed.achievements || {}),
