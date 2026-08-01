@@ -12,7 +12,7 @@ export const CHAIN_TEMPLATES = [
     ],
     stepReward: 100000,
     finalReward: 500000,
-    title: 'The Finder',
+    earnedTitle: 'The Finder',
   },
   {
     id: 'trade_war',
@@ -25,7 +25,7 @@ export const CHAIN_TEMPLATES = [
     ],
     stepReward: 150000,
     finalReward: 750000,
-    title: 'The Broker',
+    earnedTitle: 'The Broker',
   },
   {
     id: 'pirate_king',
@@ -39,7 +39,7 @@ export const CHAIN_TEMPLATES = [
     ],
     stepReward: 200000,
     finalReward: 1500000,
-    title: 'Pirate Slayer',
+    earnedTitle: 'Pirate Slayer',
   },
   {
     id: 'alien_artifact',
@@ -53,7 +53,7 @@ export const CHAIN_TEMPLATES = [
     ],
     stepReward: 250000,
     finalReward: 2000000,
-    title: 'Xenoarchaeologist',
+    earnedTitle: 'Xenoarchaeologist',
   },
 ];
 
@@ -67,8 +67,7 @@ export function generateMissionChain() {
     currentStep: 0,
     stepReward: template.stepReward,
     finalReward: template.finalReward,
-    title: template.title,
-    earnedTitle: template.title,
+    earnedTitle: template.earnedTitle || template.title,
     startedAt: Date.now(),
   };
 }

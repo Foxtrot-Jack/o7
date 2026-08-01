@@ -590,7 +590,12 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
         const c = prev.fleetCarriers.find(c => c.id === stored.storedAt.carrierId);
         canAccess = c && c.systemSeed === prev.currentSystem.seed;
       } else if (stored.storedAt) {
-        canAccess = stored.storedAt.systemSeed === prev.currentSystem.seed && stored.storedAt.stationId === prev.currentStationId;
+        // If stationId is null (ship relocated from decommissioned carrier), allow access from any station in the system
+        if (stored.storedAt.stationId === null) {
+          canAccess = stored.storedAt.systemSeed === prev.currentSystem.seed && prev.currentLocation === 'station';
+        } else {
+          canAccess = stored.storedAt.systemSeed === prev.currentSystem.seed && stored.storedAt.stationId === prev.currentStationId;
+        }
       }
       if (!canAccess) return prev;
       const shipType = SHIP_MAP[stored.typeId];
@@ -964,9 +969,19 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
       if (!carrier) return prev;
       const isSb = prev.saveMode === 'sandbox';
       const refund = isSb ? 0 : Math.floor(5000000000 * 0.75);
+      // Relocate ships stored on the carrier to a station in the carrier's system.
+      // If no station exists (uninhabited system), stationId stays null — switchShip
+      // handles this by allowing access from any station in the same system.
+      let relocStationId = null;
+      if (carrier.system) {
+        try {
+          const sysData = generateSystem(carrier.system.seed, carrier.system.starClass, carrier.system.population);
+          relocStationId = sysData?.stations?.[0]?.id || null;
+        } catch (e) { /* leave null — switchShip handles it */ }
+      }
       const updatedShips = prev.ownedShips.map(s =>
         s.storedAt?.carrierId === carrierId
-          ? { ...s, storedAt: { systemSeed: carrier.systemSeed, stationId: null } }
+          ? { ...s, storedAt: { systemSeed: carrier.systemSeed, stationId: relocStationId } }
           : s
       );
       return {
@@ -1913,7 +1928,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     setState(prev => {
       const goal = (prev.communityGoals || []).find(g => g.id === goalId);
       if (!goal || goal.completed || goal.claimed) return prev;
-      if (goal.type === 'trade') {
+      if (goal.type === 'trade' || goal.type === 'construction') {
         const cargo = prev.ship.cargo.map(c => ({ ...c }));
         let contributed = 0;
         for (const item of cargo) {
