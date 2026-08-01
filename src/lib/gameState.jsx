@@ -366,6 +366,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
             firstDiscovered: true,
             bodyCount: systemData.bodyCount,
             scanValue: 0,
+            originCoords: { x: system.x, y: system.y, z: system.z },
           },
         },
         fsdBoost: false,
@@ -700,7 +701,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
       }
       return {
         ...prev,
-        scannedBodies: { ...prev.scannedBodies, [body.id]: { scanType: 'detailed', value: body.scanValue, date: Date.now() } },
+        scannedBodies: { ...prev.scannedBodies, [body.id]: { scanType: 'detailed', value: body.scanValue, date: Date.now(), originCoords: { x: prev.currentSystem.x, y: prev.currentSystem.y, z: prev.currentSystem.z } } },
         achievements: ach,
         records,
       };
@@ -710,33 +711,51 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
   // Sell exploration data
   const sellExplorationData = useCallback(() => {
     setState(prev => {
+      const cur = { x: prev.currentSystem.x, y: prev.currentSystem.y, z: prev.currentSystem.z };
+      const MIN_DIST = 20;
       let totalValue = 0;
       const soldBodies = [];
+      const remainingBodies = {};
       for (const [bodyId, scan] of Object.entries(prev.scannedBodies)) {
-        totalValue += scan.value;
-        soldBodies.push(bodyId);
+        if (scan.originCoords && distance3D(cur, scan.originCoords) < MIN_DIST) {
+          remainingBodies[bodyId] = scan;
+        } else {
+          totalValue += scan.value;
+          soldBodies.push(bodyId);
+        }
       }
-      // Add system discovery bonuses (only for unsold ones)
+      // Add system discovery bonuses (only for unsold ones, 20+ LY from origin)
       let systemBonus = 0;
       const updatedDiscovered = {};
       for (const [seed, sys] of Object.entries(prev.discoveredSystems)) {
         if (sys.firstDiscovered && !sys.bonusSold) {
-          systemBonus += 5000 + (sys.bodyCount || 0) * 500;
-          updatedDiscovered[seed] = { ...sys, bonusSold: true };
+          if (sys.originCoords && distance3D(cur, sys.originCoords) < MIN_DIST) {
+            updatedDiscovered[seed] = sys;
+          } else {
+            systemBonus += 5000 + (sys.bodyCount || 0) * 500;
+            updatedDiscovered[seed] = { ...sys, bonusSold: true };
+          }
         } else {
           updatedDiscovered[seed] = sys;
         }
       }
       let surfaceValue = 0;
+      const remainingSurfaceDisc = {};
       for (const [key, disc] of Object.entries(prev.surfaceDiscoveries || {})) {
-        surfaceValue += disc.value || 0;
+        if (disc.originCoords && distance3D(cur, disc.originCoords) < MIN_DIST) {
+          remainingSurfaceDisc[key] = disc;
+        } else {
+          surfaceValue += disc.value || 0;
+        }
       }
-      // Sell surface maps (non-mission-locked only)
+      // Sell surface maps (non-mission-locked, 20+ LY from origin)
       let surfaceMapValue = 0;
       let mapsSold = 0;
       const remainingMaps = {};
       for (const [mapId, map] of Object.entries(prev.surfaceMaps || {})) {
         if (map.missionLocked) {
+          remainingMaps[mapId] = map;
+        } else if (map.originCoords && distance3D(cur, map.originCoords) < MIN_DIST) {
           remainingMaps[mapId] = map;
         } else {
           surfaceMapValue += map.value || 0;
@@ -752,9 +771,9 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
         credits: prev.credits + totalPayout,
         lifetimeEarnings: (prev.lifetimeEarnings || 0) + totalPayout,
         soldExplorationData: [...prev.soldExplorationData, { value: totalPayout, date: Date.now(), bodies: soldBodies.length + mapsSold }],
-        scannedBodies: {},
+        scannedBodies: remainingBodies,
         discoveredSystems: updatedDiscovered,
-        surfaceDiscoveries: {},
+        surfaceDiscoveries: remainingSurfaceDisc,
         surfaceMaps: remainingMaps,
         rank: {
           ...prev.rank,
@@ -996,6 +1015,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
               systemSeed: prev.currentSystem.seed,
               value: Math.round((body.scanValue || 1000) * 3),
               missionLocked: activeScanMission ? activeScanMission.id : null,
+              originCoords: { x: prev.currentSystem.x, y: prev.currentSystem.y, z: prev.currentSystem.z },
               obtainedAt: Date.now(),
             },
           };
@@ -1018,7 +1038,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
       }
       return {
         ...prev,
-        surfaceDiscoveries: { ...prev.surfaceDiscoveries, [key]: { ...signal, bodyId, date: Date.now() } },
+        surfaceDiscoveries: { ...prev.surfaceDiscoveries, [key]: { ...signal, bodyId, date: Date.now(), originCoords: { x: prev.currentSystem.x, y: prev.currentSystem.y, z: prev.currentSystem.z } } },
         achievements: newAch,
       };
     });
