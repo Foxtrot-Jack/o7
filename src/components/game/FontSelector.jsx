@@ -1,4 +1,4 @@
-// Font family selector — choose the typeface for the entire CRT interface
+// Font family selector — choose the typeface and size for the entire CRT interface
 import React from 'react';
 import { useGameState } from '@/lib/gameState';
 import { Type, RotateCcw } from 'lucide-react';
@@ -8,8 +8,11 @@ export default function FontSelector() {
   const { state, update } = useGameState();
   const s = state.settings || {};
   const current = s.fontFamily || DEFAULT_FONT;
+  const fontScale = s.fontScale ?? 100;
 
   const setFont = (id) => update({ settings: { ...s, fontFamily: id } });
+  const setScale = (val) => update({ settings: { ...s, fontScale: val } });
+  const resetAll = () => update({ settings: { ...s, fontFamily: DEFAULT_FONT, fontScale: 100 } });
 
   return (
     <div className="border border-orange-900 p-4 space-y-3">
@@ -28,16 +31,31 @@ export default function FontSelector() {
             className={`border p-2 text-left transition-all ${current === f.id ? 'border-orange-500 bg-orange-950/30' : 'border-orange-900 hover:border-orange-700'}`}
           >
             <div className="flex items-center justify-between mb-1">
-              <span className="text-orange-400 text-xs">{f.name}</span>
+              <span style={{ fontFamily: f.family }} className="text-orange-400 text-sm font-bold">{f.name}</span>
               <span className="text-orange-700 text-[9px] uppercase">{f.type}</span>
             </div>
-            <div style={{ fontFamily: f.family }} className="text-orange-300 text-sm truncate">
+            <div style={{ fontFamily: f.family }} className="text-orange-300 text-xs truncate">
               The quick brown fox 0123
             </div>
           </button>
         ))}
       </div>
-      <button onClick={() => setFont(DEFAULT_FONT)} className="w-full py-1.5 border border-orange-700 text-orange-500 hover:bg-orange-950/30 text-[10px] flex items-center justify-center gap-1.5">
+
+      {/* Font size slider */}
+      <div className="border-t border-orange-900/50 pt-3 space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-orange-500 text-xs font-bold uppercase">Font Size</span>
+          <span className="text-orange-300 text-xs w-12 text-right">{fontScale}%</span>
+        </div>
+        <input type="range" min="75" max="150" value={fontScale} onChange={e => setScale(parseInt(e.target.value))} className="w-full" />
+        <div className="flex justify-between text-orange-800 text-[9px]">
+          <span>75%</span>
+          <span>100% (default)</span>
+          <span>150%</span>
+        </div>
+      </div>
+
+      <button onClick={resetAll} className="w-full py-1.5 border border-orange-700 text-orange-500 hover:bg-orange-950/30 text-[10px] flex items-center justify-center gap-1.5">
         <RotateCcw className="w-3 h-3" /> RESET TO DEFAULT
       </button>
     </div>

@@ -172,6 +172,7 @@ function createInitialState() {
       colorTheme: 'elite',
       customColor: null,
       fontFamily: 'courier',
+      fontScale: 100,
       sound: {
         enabled: true,
         sfxVolume: 0.7,
