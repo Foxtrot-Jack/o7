@@ -6,6 +6,14 @@ export const ROOM_TYPES = {
   genetics: { name: 'Genetics Lab', cost: 10000000, desc: 'Edit and customize fish and flora' },
   lounge: { name: 'Crew Lounge', cost: 2000000, desc: 'Recreation area for crew and guests' },
   storage: { name: 'Storage Room', cost: 1000000, desc: 'Additional cargo and material storage' },
+  cartography: { name: 'Cartography Room', cost: 3000000, desc: 'Holographic orrery table and warp gate displays' },
+};
+
+export const CONTAINER_TYPES = {
+  display_shelf: { name: 'Display Shelf', desc: 'Tall shelf for trinkets and collectibles' },
+  display_case: { name: 'Display Case', desc: 'Glass case for valuables' },
+  storage_crate: { name: 'Storage Crate', desc: 'Cargo storage container' },
+  side_table: { name: 'Side Table', desc: 'Small decorative table' },
 };
 
 export const SERVICE_ROOMS = {

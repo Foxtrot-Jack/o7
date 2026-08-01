@@ -1781,6 +1781,42 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     setState(prev => ({ ...prev, carrierCurrentRoom: { ...prev.carrierCurrentRoom, [carrierId]: gridKey } }));
   }, []);
 
+  const placeRoomContainer = useCallback((carrierId, gridKey, slotIndex, containerType) => {
+    setState(prev => {
+      const cg = prev.carrierRoomGrid?.[carrierId] || {};
+      const room = cg[gridKey];
+      if (!room) return prev;
+      const containers = room.containers || [];
+      if (containers.find(c => c.slotIndex === slotIndex)) return prev;
+      const newRoom = { ...room, containers: [...containers, { id: `cnt_${Date.now()}`, type: containerType, slotIndex }] };
+      const newCg = { ...cg, [gridKey]: newRoom };
+      return { ...prev, carrierRoomGrid: { ...prev.carrierRoomGrid, [carrierId]: newCg } };
+    });
+  }, []);
+
+  const removeRoomContainer = useCallback((carrierId, gridKey, containerId) => {
+    setState(prev => {
+      const cg = prev.carrierRoomGrid?.[carrierId] || {};
+      const room = cg[gridKey];
+      if (!room) return prev;
+      const newContainers = (room.containers || []).filter(c => c.id !== containerId);
+      const newRoom = { ...room, containers: newContainers };
+      const newCg = { ...cg, [gridKey]: newRoom };
+      return { ...prev, carrierRoomGrid: { ...prev.carrierRoomGrid, [carrierId]: newCg } };
+    });
+  }, []);
+
+  const setRoomHologram = useCallback((carrierId, gridKey, systemData) => {
+    setState(prev => {
+      const cg = prev.carrierRoomGrid?.[carrierId] || {};
+      const room = cg[gridKey];
+      if (!room) return prev;
+      const newRoom = { ...room, hologramSystem: systemData };
+      const newCg = { ...cg, [gridKey]: newRoom };
+      return { ...prev, carrierRoomGrid: { ...prev.carrierRoomGrid, [carrierId]: newCg } };
+    });
+  }, []);
+
   const isSandbox = state.saveMode === 'sandbox';
 
   // ===== COMMUNITY GOALS =====
@@ -2265,6 +2301,9 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     addCarrierRoomAt,
     customizeCarrierRoomSurface,
     setCarrierCurrentRoom,
+    placeRoomContainer,
+    removeRoomContainer,
+    setRoomHologram,
   };
 
   return (

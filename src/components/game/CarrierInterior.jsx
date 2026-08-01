@@ -4,7 +4,7 @@ import { useGameState, SHIP_MAP } from '@/lib/gameState';
 import BadgeDisplay from './BadgeDisplay';
 import { Beer, BedDouble, Leaf, Trophy, Compass, Telescope, Plus, Trash2, Ship as ShipIcon, Sparkles, DoorOpen, Wine, Anchor } from 'lucide-react';
 import CarrierInteriorView from './CarrierInteriorView';
-import { ROOM_TYPES } from '@/lib/cabinRooms';
+import { ROOM_TYPES, CONTAINER_TYPES } from '@/lib/cabinRooms';
 import { CABIN_TEXTURES, CABIN_THEMES, getThemeSurfaces, DEFAULT_SURFACE_COLORS } from '@/lib/cabinConfig';
 
 const ROOMS = [
@@ -67,7 +67,7 @@ const DIR_DELTAS = { north: [0, -1], south: [0, 1], east: [1, 0], west: [-1, 0] 
 const DIR_LABELS = { north: 'North', south: 'South', east: 'East', west: 'West' };
 
 export default function CarrierInterior({ onNavigate }) {
-  const { state, isSandbox, updateCarrierInterior, buyAle, requestShipTransit, initCarrierRoomGrid, addCarrierRoomAt, customizeCarrierRoomSurface, setCarrierCurrentRoom } = useGameState();
+  const { state, isSandbox, updateCarrierInterior, buyAle, requestShipTransit, initCarrierRoomGrid, addCarrierRoomAt, customizeCarrierRoomSurface, setCarrierCurrentRoom, placeRoomContainer, removeRoomContainer, setRoomHologram } = useGameState();
   const [selectedCarrierId, setSelectedCarrierId] = useState(null);
   const [activePanel, setActivePanel] = useState(null);
   const [buildDir, setBuildDir] = useState(null);
@@ -150,6 +150,7 @@ export default function CarrierInterior({ onNavigate }) {
       {/* Top-right buttons */}
       <div className="absolute top-1 right-1 z-20 flex gap-1">
         <button onClick={() => setActivePanel('surfaces')} className="px-2 py-1 border border-orange-700 bg-black/80 text-orange-400 hover:bg-orange-950/30 text-[9px]">SURFACES</button>
+        <button onClick={() => setActivePanel('containers')} className="px-2 py-1 border border-orange-700 bg-black/80 text-orange-400 hover:bg-orange-950/30 text-[9px]">CONTAINERS</button>
       </div>
 
       {/* Minimap */}
@@ -166,7 +167,7 @@ export default function CarrierInterior({ onNavigate }) {
       </div>
 
       {/* Overlay panels */}
-      {activePanel && activePanel !== 'build' && activePanel !== 'surfaces' && (
+      {activePanel && !['build', 'surfaces', 'containers', 'cartography'].includes(activePanel) && (
         <div className="absolute inset-0 z-30 bg-black/80 flex items-center justify-center p-4 overflow-y-auto">
           <div className="w-full max-w-lg max-h-[80vh] overflow-y-auto border border-orange-700 bg-black p-4">
             <div className="flex items-center justify-between mb-3">
@@ -185,6 +186,16 @@ export default function CarrierInterior({ onNavigate }) {
       {/* Surface customization */}
       {activePanel === 'surfaces' && (
         <CarrierSurfacePanel carrierId={selectedCarrierId} gridKey={gridKey} room={room} onSurfaceChange={customizeCarrierRoomSurface} onClose={() => setActivePanel(null)} />
+      )}
+
+      {/* Container placement */}
+      {activePanel === 'containers' && (
+        <ContainerPanel carrierId={selectedCarrierId} gridKey={gridKey} room={room} onPlace={placeRoomContainer} onRemove={removeRoomContainer} onClose={() => setActivePanel(null)} />
+      )}
+
+      {/* Cartography */}
+      {activePanel === 'cartography' && (
+        <CartographyPanel carrierId={selectedCarrierId} gridKey={gridKey} room={room} discoveredSystems={state.discoveredSystems || {}} warpGates={state.warpGates || []} onSetHologram={setRoomHologram} onClose={() => setActivePanel(null)} onNavigate={onNavigate} />
       )}
 
       {/* Build room dialog */}
@@ -292,6 +303,115 @@ function BuildRoomDialog({ dir, isSandbox, onBuild, onClose }) {
           <span className="text-[10px] text-orange-400">Cost: {isSandbox ? 'FREE' : `${cost.toLocaleString()} CR`}</span>
           <button onClick={() => onBuild(roomType, roomName)} className="px-4 py-1.5 border border-green-600 text-green-400 hover:bg-green-950/30 text-[10px] font-bold">BUILD</button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ===== CONTAINER PANEL =====
+function ContainerPanel({ carrierId, gridKey, room, onPlace, onRemove, onClose }) {
+  const containers = room.containers || [];
+  const [selectedSlot, setSelectedSlot] = useState(null);
+  const slots = [
+    { id: 0, label: 'Front-Left' }, { id: 1, label: 'Front-Center' }, { id: 2, label: 'Front-Right' },
+    { id: 3, label: 'Back-Left' }, { id: 4, label: 'Back-Right' },
+  ];
+
+  return (
+    <div className="absolute inset-0 z-30 bg-black/80 flex items-center justify-center p-4 overflow-y-auto">
+      <div className="w-full max-w-lg max-h-[80vh] overflow-y-auto border border-orange-700 bg-black p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="text-orange-300 text-sm font-bold uppercase">Room Containers</h3>
+          <button onClick={onClose} className="text-orange-600 hover:text-orange-400 text-xs">✕ CLOSE</button>
+        </div>
+        <div className="text-orange-600 text-[10px]">Select a slot, then choose a container type to place. {containers.length}/5 slots used.</div>
+        <div>
+          <div className="text-orange-700 text-[9px] uppercase mb-1">Placement Slots</div>
+          <div className="space-y-1">
+            {slots.map(slot => {
+              const container = containers.find(c => c.slotIndex === slot.id);
+              return (
+                <div key={slot.id} className={`flex items-center justify-between border p-2 ${selectedSlot === slot.id ? 'border-green-600 bg-green-950/10' : 'border-orange-950'}`}>
+                  <button onClick={() => setSelectedSlot(slot.id)} className="text-left flex-1">
+                    <span className="text-orange-300 text-[10px]">{slot.label}</span>
+                    {container && <span className="text-green-500 text-[9px] ml-2">✓ {CONTAINER_TYPES[container.type]?.name}</span>}
+                  </button>
+                  {container && <button onClick={() => onRemove(carrierId, gridKey, container.id)} className="text-red-600 hover:text-red-400 text-[9px]">REMOVE</button>}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+        {selectedSlot !== null && !containers.find(c => c.slotIndex === selectedSlot) && (
+          <div>
+            <div className="text-orange-700 text-[9px] uppercase mb-1">Container Types</div>
+            <div className="flex flex-wrap gap-1">
+              {Object.entries(CONTAINER_TYPES).map(([id, ct]) => (
+                <button key={id} onClick={() => { onPlace(carrierId, gridKey, selectedSlot, id); setSelectedSlot(null); }} className="px-2 py-1.5 text-[10px] border border-green-600 text-green-400 hover:bg-green-950/20">
+                  <div>{ct.name}</div>
+                  <div className="text-[8px] text-orange-700">{ct.desc}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ===== CARTOGRAPHY PANEL =====
+function CartographyPanel({ carrierId, gridKey, room, discoveredSystems, warpGates, onSetHologram, onClose, onNavigate }) {
+  const systems = Object.values(discoveredSystems);
+  const currentHolo = room.hologramSystem;
+
+  return (
+    <div className="absolute inset-0 z-30 bg-black/80 flex items-center justify-center p-4 overflow-y-auto">
+      <div className="w-full max-w-lg max-h-[80vh] overflow-y-auto border border-cyan-700 bg-black p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="text-cyan-300 text-sm font-bold uppercase">Cartography Room</h3>
+          <button onClick={onClose} className="text-orange-600 hover:text-orange-400 text-xs">✕ CLOSE</button>
+        </div>
+
+        {/* Warp Gates */}
+        <div className="border border-cyan-900 p-3 space-y-2">
+          <div className="text-cyan-500 text-xs font-bold uppercase">Warp Gate Network ({warpGates.length})</div>
+          {warpGates.length === 0 ? (
+            <div className="text-orange-700 text-[10px]">No warp gates established. Build one from the Warp Gates screen.</div>
+          ) : (
+            <div className="space-y-1 max-h-32 overflow-y-auto">
+              {warpGates.map(gate => (
+                <div key={gate.id} className="flex items-center justify-between border border-cyan-950 p-1.5 text-xs">
+                  <div>
+                    <div className="text-cyan-300">{gate.name}</div>
+                    <div className="text-cyan-700 text-[9px]">{gate.systemName || 'Unknown system'}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          <button onClick={() => onNavigate?.('warpgates')} className="w-full py-1 border border-cyan-800 text-cyan-600 hover:text-cyan-400 text-[9px]">MANAGE WARP GATES →</button>
+        </div>
+
+        {/* Hologram System Selector */}
+        <div className="border border-cyan-900 p-3 space-y-2">
+          <div className="text-cyan-500 text-xs font-bold uppercase">Holographic Orrery</div>
+          <div className="text-orange-600 text-[10px]">Current hologram: <span className="text-cyan-300">{currentHolo?.name || 'None'}</span></div>
+          {currentHolo && <button onClick={() => onSetHologram(carrierId, gridKey, null)} className="text-red-600 hover:text-red-400 text-[9px]">CLEAR HOLOGRAM</button>}
+          {systems.length === 0 ? (
+            <div className="text-orange-700 text-[10px]">No discovered systems. Explore the galaxy to find systems for the hologram.</div>
+          ) : (
+            <div className="space-y-0.5 max-h-48 overflow-y-auto">
+              {systems.map((sys, i) => (
+                <button key={sys.seed || i} onClick={() => onSetHologram(carrierId, gridKey, { name: sys.name, seed: sys.seed, bodyCount: sys.bodyCount })} className={`flex items-center justify-between w-full px-2 py-1 text-[10px] border ${currentHolo?.name === sys.name ? 'border-cyan-500 text-cyan-300 bg-cyan-950/20' : 'border-orange-950 text-orange-600 hover:text-orange-400'}`}>
+                  <span>{sys.name}</span>
+                  <span className="text-orange-800">{sys.bodyCount || '?'} bodies</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="text-cyan-700 text-[9px] italic text-center">The holographic orrery is a cosmetic display. Select any discovered system to project it on the center table.</div>
       </div>
     </div>
   );
