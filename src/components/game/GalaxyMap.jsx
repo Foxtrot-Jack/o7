@@ -324,7 +324,8 @@ export default function GalaxyMap({ onJumpToSystem }) {
 
     // Landmark markers — gold rings around major hubs (Cradle's End, Vagrant's Horizon, Sol)
     if (landmarkMarkersRef.current) { sceneRef.current.remove(landmarkMarkersRef.current); landmarkMarkersRef.current.geometry.dispose(); landmarkMarkersRef.current.material.dispose(); landmarkMarkersRef.current = null; }
-    const landmarkStars = stars.filter(s => LANDMARK_SYSTEMS.some(l => l.seed === s.seed));
+    const visibleLandmarks = LANDMARK_SYSTEMS.filter(l => state.saveMode === 'sandbox' || !l.isSol);
+    const landmarkStars = stars.filter(s => visibleLandmarks.some(l => l.seed === s.seed));
     if (landmarkStars.length > 0) {
       const lp = new Float32Array(landmarkStars.length * 3);
       landmarkStars.forEach((s, i) => { lp[i*3] = s.x-center.x; lp[i*3+1] = s.y-center.y; lp[i*3+2] = s.z-center.z; });
@@ -355,7 +356,7 @@ export default function GalaxyMap({ onJumpToSystem }) {
 
     // Galaxy overview — spiral structure background for wide view
     if (overviewRef.current) { sceneRef.current.remove(overviewRef.current); overviewRef.current.geometry.dispose(); overviewRef.current.material.dispose(); }
-    const ovPts = generateGalaxyOverview();
+    const ovPts = generateGalaxyOverview({ includeSol: state.saveMode === 'sandbox' });
     const ovPos = new Float32Array(ovPts.length * 3);
     const ovCol = new Float32Array(ovPts.length * 3);
     ovPts.forEach((p, i) => {
@@ -421,8 +422,9 @@ export default function GalaxyMap({ onJumpToSystem }) {
 
     // Landmark + bubble + colony markers (cyan) — shows populated space reach
     {
+      const galaxyLandmarks = LANDMARK_SYSTEMS.filter(l => state.saveMode === 'sandbox' || !l.isSol);
       const entries = [
-        ...LANDMARK_SYSTEMS.map(l => ({ x: l.x, y: l.y, z: l.z })),
+        ...galaxyLandmarks.map(l => ({ x: l.x, y: l.y, z: l.z })),
         ...BUBBLE_CENTERS.map(b => ({ x: b.x, y: b.y, z: b.z })),
         ...(state.colonies || []).map(c => {
           const disc = state.discoveredSystems?.[c.systemSeed];

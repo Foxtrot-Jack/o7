@@ -360,7 +360,8 @@ export function getStarColor(starClass) {
 export const TOTAL_STARS_ESTIMATE = '4,000,000,000+';
 
 // Generate overview points sampling the galaxy's spiral structure (for galaxy-wide view)
-export function generateGalaxyOverview() {
+export function generateGalaxyOverview(options = {}) {
+  const { includeSol = true } = options;
   const points = [];
   const step = GALACTIC_RADIUS / 80;
   const rng = makeRng(hashSeed('galaxy_overview'));
@@ -377,6 +378,7 @@ export function generateGalaxyOverview() {
   // Add bridge star trails so the zoomed-out map shows landmark connections
   const bridges = generateLandmarkBridges();
   for (const bridge of bridges) {
+    if (!includeSol && bridge.id.startsWith('bridge:sol:')) continue;
     points.push({ x: bridge.x, y: bridge.y, z: bridge.z, density: 0.1, isBridge: true });
   }
 
