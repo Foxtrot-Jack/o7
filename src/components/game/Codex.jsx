@@ -79,7 +79,7 @@ The background galaxy overlay (spiral cloud) has its own brightness slider.`,
 • Fuel cost for the jump
 • Population (if inhabited)
 
-Each light year costs 0.5 tons of fuel. If you lack sufficient fuel, the JUMP button is disabled. You can bookmark the star for later, or engage your Frame Shift Drive (FSD) to jump.
+Each light year costs 0.5 tons of fuel. Jumping from a neutron star supercharges your FSD and halves fuel cost to 0.25 T/LY. If you lack sufficient fuel, the JUMP button is disabled. You can bookmark the star for later, or engage your Frame Shift Drive (FSD) to jump.
 
 Visited systems turn green on the map. Your current position is marked by a pulsing green diamond.`,
       },
@@ -247,7 +247,7 @@ Docking is required for: buying/selling commodities, purchasing ships, outfittin
         title: 'Refueling',
         body: `Refuel at any station from the Station screen. Fuel cost is proportional to the amount needed. Your fuel capacity depends on your ship type and installed modules.
 
-Fuel is consumed at 0.5 tons per light year jumped. Plan your routes to avoid running dry!`,
+Fuel is consumed at 0.5 tons per light year jumped (halved to 0.25 T/LY when jumping from a neutron star). Plan your routes to avoid running dry!`,
       },
       {
         title: 'Repair',
