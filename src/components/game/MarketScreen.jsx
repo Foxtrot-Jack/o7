@@ -12,6 +12,8 @@ export default function MarketScreen() {
   const { state, getSystemData, addCredits, addCargo, removeCargo } = useGameState();
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [tradeAmounts, setTradeAmounts] = useState({});
+  const [sortKey, setSortKey] = useState(null);
+  const [sortDir, setSortDir] = useState('asc');
 
   const systemData = getSystemData();
   const station = systemData?.stations.find(s => s.id === state.currentStationId);
@@ -121,9 +123,49 @@ export default function MarketScreen() {
   };
 
   const categories = ['all', ...Object.values(COMMODITY_CATEGORIES)];
-  const filteredMarket = selectedCategory === 'all'
-    ? market
-    : market.filter(m => m.category === selectedCategory);
+  const filteredMarket = useMemo(() => {
+    let items = selectedCategory === 'all'
+      ? market
+      : market.filter(m => m.category === selectedCategory);
+    if (sortKey) {
+      const dir = sortDir === 'asc' ? 1 : -1;
+      items = [...items].sort((a, b) => {
+        let va, vb;
+        if (sortKey === 'name') {
+          va = a.name.toLowerCase(); vb = b.name.toLowerCase();
+          return va < vb ? -dir : va > vb ? dir : 0;
+        }
+        if (sortKey === 'cargo') {
+          va = (state.ship?.cargo || []).find(c => c.commodity === a.id)?.qty || 0;
+          vb = (state.ship?.cargo || []).find(c => c.commodity === b.id)?.qty || 0;
+        } else {
+          va = a[sortKey] ?? 0;
+          vb = b[sortKey] ?? 0;
+        }
+        return (va - vb) * dir;
+      });
+    }
+    return items;
+  }, [market, selectedCategory, sortKey, sortDir, state.ship?.cargo]);
+
+  const handleSort = (key) => {
+    if (sortKey === key) {
+      setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortKey(key);
+      setSortDir('asc');
+    }
+    soundEngine.play('click');
+  };
+
+  const renderSortHeader = (label, key, alignClass) => (
+    <th className={alignClass}>
+      <button onClick={() => handleSort(key)} className="inline-flex items-center gap-1 hover:text-orange-400">
+        {label}
+        {sortKey === key && <span className="text-orange-400">{sortDir === 'asc' ? '▲' : '▼'}</span>}
+      </button>
+    </th>
+  );
 
   const getLevelLabel = (level) => {
     if (level < 10) return { label: 'Very Low', color: 'text-red-500' };
@@ -187,14 +229,14 @@ export default function MarketScreen() {
         <table className="w-full text-xs">
           <thead className="sticky top-0 bg-black border-b border-orange-900">
             <tr className="text-orange-700 uppercase text-[10px]">
-              <th className="text-left p-2">Commodity</th>
-              <th className="text-right p-2">Buy</th>
-              <th className="text-right p-2">Sell</th>
+              {renderSortHeader('Commodity', 'name', 'text-left p-2')}
+              {renderSortHeader('Buy', 'buyPrice', 'text-right p-2')}
+              {renderSortHeader('Sell', 'sellPrice', 'text-right p-2')}
               <th className="text-center p-2 hidden md:table-cell">Trend</th>
-              <th className="text-center p-2 hidden sm:table-cell">Supply</th>
-              <th className="text-center p-2 hidden sm:table-cell">Demand</th>
-              <th className="text-right p-2 hidden sm:table-cell">Stock</th>
-              <th className="text-center p-2">Cargo</th>
+              {renderSortHeader('Supply', 'supply', 'text-center p-2 hidden sm:table-cell')}
+              {renderSortHeader('Demand', 'demand', 'text-center p-2 hidden sm:table-cell')}
+              {renderSortHeader('Stock', 'stock', 'text-right p-2 hidden sm:table-cell')}
+              {renderSortHeader('Cargo', 'cargo', 'text-center p-2')}
               <th className="text-center p-2">Qty</th>
               <th className="text-center p-2">Trade</th>
             </tr>
