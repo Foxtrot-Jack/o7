@@ -78,7 +78,7 @@ export default function CarrierInteriorView({ room, gridX, gridY, grid, onNaviga
       camera.rotation.x = lk.pitch + Math.cos(now * 0.0013) * 0.002;
       for (const ind of indicatorsRef.current) { const p = 1 + Math.sin(now * 0.005 + ind.phase) * 0.3; ind.scale.set(p, p, p); }
       for (const p of plantsRef.current) p.rotation.z = Math.sin(now * 0.001 + p.phase) * 0.05;
-      for (const p of holoRef.current) { const a = now * 0.0004 * p.speed + p.phase; p.mesh.position.set(Math.cos(a) * p.r, p.y, Math.sin(a) * p.r); }
+      for (const p of holoRef.current) { const a = now * 0.0004 * p.speed + p.phase; p.mesh.position.set((p.cx||0) + Math.cos(a) * p.r, p.y, (p.cz||0) + Math.sin(a) * p.r); }
       if (starfieldRef.current) starfieldRef.current.rotation.y = now * 0.00005;
       renderer.render(scene, camera);
     };
@@ -354,29 +354,33 @@ function buildRoomProps(rg, roomType, clickablesRef, indicatorsRef, plantsRef, h
       // Warp gate wall display (south wall)
       const display = new THREE.Mesh(new THREE.PlaneGeometry(1.5,0.8), new THREE.MeshBasicMaterial({ color: 0x003366, side: THREE.DoubleSide })); display.position.set(0, 0.3, hd-0.06); rg.add(display);
       const displayFrame = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(1.5,0.8)), new THREE.LineBasicMaterial({ color: 0x004477 })); displayFrame.position.set(0, 0.3, hd-0.06); rg.add(displayFrame);
-      // Holographic orrery
+      // Holographic orrery — moved to front-right corner on a pedestal
       const holo = room.hologramSystem;
-      const holoY = -hh + 0.6;
+      const cx = hw - 1.2, cz = hd - 1.2;
+      // Corner pedestal
+      const ped = new THREE.Mesh(new THREE.CylinderGeometry(0.3,0.35,0.7,10), propMat); ped.position.set(cx, -hh+0.35, cz); rg.add(ped);
+      const pedTop = new THREE.Mesh(new THREE.CylinderGeometry(0.32,0.3,0.04,10), accentMat); pedTop.position.set(cx, -hh+0.72, cz); rg.add(pedTop);
+      const holoY = -hh + 0.75;
       // Holo base disc
-      const holoBase = new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.4,0.02,16), new THREE.MeshBasicMaterial({ color: 0x00aaff, transparent: true, opacity: 0.2 })); holoBase.position.set(0, holoY, 0); rg.add(holoBase);
+      const holoBase = new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.4,0.02,16), new THREE.MeshBasicMaterial({ color: 0x00aaff, transparent: true, opacity: 0.2 })); holoBase.position.set(cx, holoY, cz); rg.add(holoBase);
       if (holo) {
         const seed = typeof holo.seed === 'string' ? holo.seed.split('').reduce((a,c)=>a+c.charCodeAt(0),0) : (holo.seed || 42);
         const starColor = new THREE.Color().setHSL((seed % 360) / 360, 0.7, 0.5);
-        const star = new THREE.Mesh(new THREE.SphereGeometry(0.1,8,6), new THREE.MeshBasicMaterial({ color: starColor })); star.position.set(0, holoY+0.15, 0); rg.add(star);
-        const glow = new THREE.Mesh(new THREE.SphereGeometry(0.18,8,6), new THREE.MeshBasicMaterial({ color: starColor, transparent: true, opacity: 0.15 })); glow.position.set(0, holoY+0.15, 0); rg.add(glow);
+        const star = new THREE.Mesh(new THREE.SphereGeometry(0.1,8,6), new THREE.MeshBasicMaterial({ color: starColor })); star.position.set(cx, holoY+0.15, cz); rg.add(star);
+        const glow = new THREE.Mesh(new THREE.SphereGeometry(0.18,8,6), new THREE.MeshBasicMaterial({ color: starColor, transparent: true, opacity: 0.15 })); glow.position.set(cx, holoY+0.15, cz); rg.add(glow);
         const bodyCount = Math.min(holo.bodyCount || 4, 6);
         for (let i = 0; i < bodyCount; i++) {
           const r = 0.15 + i * 0.1;
-          const orbitPts = []; for (let j = 0; j <= 32; j++) { const a = (j/32)*Math.PI*2; orbitPts.push(new THREE.Vector3(Math.cos(a)*r, holoY+0.15, Math.sin(a)*r)); }
+          const orbitPts = []; for (let j = 0; j <= 32; j++) { const a = (j/32)*Math.PI*2; orbitPts.push(new THREE.Vector3(cx+Math.cos(a)*r, holoY+0.15, cz+Math.sin(a)*r)); }
           rg.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(orbitPts), new THREE.LineBasicMaterial({ color: 0x004466, transparent: true, opacity: 0.3 })));
           const planet = new THREE.Mesh(new THREE.SphereGeometry(0.03,6,4), new THREE.MeshBasicMaterial({ color: 0x00aaff, transparent: true, opacity: 0.6 }));
-          planet.position.set(Math.cos(i)*r, holoY+0.15, Math.sin(i)*r); rg.add(planet);
-          holoRef.current.push({ mesh: planet, r, speed: 0.5/Math.sqrt(r), phase: (i/bodyCount)*Math.PI*2, y: holoY+0.15 });
+          planet.position.set(cx+Math.cos(i)*r, holoY+0.15, cz+Math.sin(i)*r); rg.add(planet);
+          holoRef.current.push({ mesh: planet, r, cx, cz, speed: 0.5/Math.sqrt(r), phase: (i/bodyCount)*Math.PI*2, y: holoY+0.15 });
         }
       } else {
-        const empty = new THREE.Mesh(new THREE.PlaneGeometry(0.5,0.15), new THREE.MeshBasicMaterial({ color: 0x00aaff, transparent: true, opacity: 0.15, side: THREE.DoubleSide })); empty.position.set(0, holoY+0.15, 0); empty.rotation.x = -0.5; rg.add(empty);
+        const empty = new THREE.Mesh(new THREE.PlaneGeometry(0.5,0.15), new THREE.MeshBasicMaterial({ color: 0x00aaff, transparent: true, opacity: 0.15, side: THREE.DoubleSide })); empty.position.set(cx, holoY+0.15, cz); empty.rotation.x = -0.5; rg.add(empty);
       }
-      addInteractable(rg, clickablesRef, indicatorsRef, 0, -hh+0.5, 0, 0.8, 0.4, action, 0x00aaff); break;
+      addInteractable(rg, clickablesRef, indicatorsRef, cx, -hh+0.7, cz, 0.8, 0.5, action, 0x00aaff); break;
     }
   }
 }
