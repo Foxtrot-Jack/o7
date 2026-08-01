@@ -413,7 +413,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
       flushSave();
     };
   }, [flushSave]);
-```
+
   // Update function
   const update = useCallback((updater) => {
     setState(prev => {
