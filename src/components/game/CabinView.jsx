@@ -18,6 +18,18 @@ export default function CabinView({ target = 'ship', targetId = null, room = 0, 
   const planetMeshesRef = useRef([]);
   const raycasterRef = useRef(new THREE.Raycaster());
   const lookRef = useRef({ yaw: 0, pitch: 0, targetYaw: 0, targetPitch: 0 });
+  const [confirmAction, setConfirmAction] = useState(null);
+
+  const executeAction = (action) => {
+    if (action === 'window') { onNavigate?.('system'); }
+    else if (action === 'left-door') {
+      if (room === 0) onNavigate?.('ship');
+      else onRoomChange?.(0);
+    } else if (action === 'right-door') {
+      if (room === 0 && config.rooms > 1) onRoomChange?.(1);
+      else onExitGame?.();
+    }
+  };
   const animationIdRef = useRef(null);
 
   const { state, getSystemData } = useGameState();
@@ -370,16 +382,7 @@ export default function CabinView({ target = 'ship', targetId = null, room = 0, 
     let lastX = 0, lastY = 0;
     let dragStartX = 0, dragStartY = 0;
 
-    const handleAction = (action) => {
-      if (action === 'window') { onNavigate?.('system'); }
-      else if (action === 'left-door') {
-        if (room === 0) onNavigate?.('ship');
-        else onRoomChange?.(0);
-      } else if (action === 'right-door') {
-        if (room === 0 && config.rooms > 1) onRoomChange?.(1);
-        else onExitGame?.();
-      }
-    };
+    const handleAction = (action) => { setConfirmAction(action); };
 
     const handleClick = (cx, cy) => {
       const rect = canvas.getBoundingClientRect();
@@ -447,6 +450,22 @@ export default function CabinView({ target = 'ship', targetId = null, room = 0, 
         <div className="flex items-center gap-1 justify-end" style={{ color: rightDoorLabel === 'EXIT GAME' ? '#ff4444' : '#ffaa00' }}><span>●</span> {rightDoorLabel} →</div>
       </div>
       <div className="absolute bottom-1 left-1 text-[9px] text-orange-700 pointer-events-none">{config.name}{config.rooms > 1 ? ` · ROOM ${room + 1}/${config.rooms}` : ''}</div>
+      {confirmAction && (
+        <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/80">
+          <div className="border border-orange-700 bg-black p-4 text-center space-y-3 max-w-xs">
+            <div className="text-orange-300 text-xs font-bold uppercase">
+              {confirmAction === 'window' ? 'Open Orrery View?' : confirmAction === 'left-door' ? `${leftDoorLabel}?` : `${rightDoorLabel}?`}
+            </div>
+            <div className="text-orange-600 text-[10px]">
+              {confirmAction === 'window' ? 'Navigate to the full system orrery.' : confirmAction === 'right-door' && rightDoorLabel === 'EXIT GAME' ? 'Return to the title screen. Progress is auto-saved.' : 'Proceed through this door.'}
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => { executeAction(confirmAction); setConfirmAction(null); }} className="flex-1 py-1.5 border border-green-600 text-green-400 hover:bg-green-950/30 text-[10px] font-bold">CONFIRM</button>
+              <button onClick={() => setConfirmAction(null)} className="flex-1 py-1.5 border border-orange-900 text-orange-600 hover:text-orange-400 text-[10px]">CANCEL</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

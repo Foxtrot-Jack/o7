@@ -66,6 +66,10 @@ import TimeEventScreen from '@/components/game/TimeEventScreen';
 import PlayerTitlesScreen from '@/components/game/PlayerTitlesScreen';
 import WarpGateScreen from '@/components/game/WarpGateScreen';
 import CabinScreen from '@/components/game/CabinScreen';
+import RoomManagerScreen from '@/components/game/RoomManagerScreen';
+import AquariumScreen from '@/components/game/AquariumScreen';
+import GardenScreen from '@/components/game/GardenScreen';
+import GeneticsLabScreen from '@/components/game/GeneticsLabScreen';
 
 function GameContent() {
   const { state } = useGameState();
@@ -201,6 +205,14 @@ function GameContent() {
         return <WarpGateScreen />;
       case 'cabin':
         return <CabinScreen onNavigate={handleNavigate} />;
+      case 'roommanager':
+        return <RoomManagerScreen onNavigate={handleNavigate} />;
+      case 'aquarium':
+        return <AquariumScreen />;
+      case 'garden':
+        return <GardenScreen />;
+      case 'geneticslab':
+        return <GeneticsLabScreen />;
       default:
         return <SystemOrrery />;
     }

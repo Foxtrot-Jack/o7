@@ -1,6 +1,6 @@
 // Navigation bar — dropdown-grouped access to all screens
 import React, { useState, useRef, useEffect } from 'react';
-import { Compass, Store, Package, ClipboardList, Pickaxe, Telescope, Home, Map, Rocket, Layers, Anchor, Trophy, Settings, Wrench, MapPin, TrendingUp, User, Hammer, BookOpen, Briefcase, ChevronDown, Lock, Sparkles, Medal, Palette, DoorOpen, ArrowLeftRight, FlaskConical, Users, Crown, Target, Skull, Newspaper, Crosshair, Swords, AlertTriangle, Gem, UserCheck, Building, ScrollText, Plane, Activity, Leaf, Route, Radio, ListChecks, Award, Save, Brain, LayoutDashboard, Zap, Network, Eye } from 'lucide-react';
+import { Compass, Store, Package, ClipboardList, Pickaxe, Telescope, Home, Map, Rocket, Layers, Anchor, Trophy, Settings, Wrench, MapPin, TrendingUp, User, Hammer, BookOpen, Briefcase, ChevronDown, Lock, Sparkles, Medal, Palette, DoorOpen, ArrowLeftRight, FlaskConical, Users, Crown, Target, Skull, Newspaper, Crosshair, Swords, AlertTriangle, Gem, UserCheck, Building, ScrollText, Plane, Activity, Leaf, Route, Radio, ListChecks, Award, Save, Brain, LayoutDashboard, Zap, Network, Eye, Fish } from 'lucide-react';
 import { useGameState } from '@/lib/gameState';
 
 const NAV_GROUPS = [
@@ -52,6 +52,10 @@ const NAV_GROUPS = [
     items: [
       { id: 'ship', label: 'Ship', icon: Package },
       { id: 'cabin', label: 'Cabin', icon: Eye },
+      { id: 'roommanager', label: 'Room Manager', icon: LayoutDashboard },
+      { id: 'aquarium', label: 'Aquarium', icon: Fish },
+      { id: 'garden', label: 'Garden', icon: Leaf },
+      { id: 'geneticslab', label: 'Genetics Lab', icon: FlaskConical },
       { id: 'fleet', label: 'Fleet Manager', icon: Layers },
       { id: 'wingmates', label: 'Wingmates', icon: Users },
       { id: 'fighters', label: 'Fighter Hangar', icon: Plane },

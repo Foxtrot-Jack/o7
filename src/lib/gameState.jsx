@@ -16,6 +16,8 @@ import { shouldTriggerEncounter, generateEncounter } from './encounters';
 import { CRIME_TYPES, getCleanRecordCost } from './crime';
 import { STATION_BUILD_COST, STATION_SERVICES, calculateStationRevenue } from './stationBuilder';
 import { FIGHTER_TYPES, getFighterHangarCapacity } from './fighters';
+import { ROOM_TYPES, MAX_CARRIER_ROOMS, getRoomCost, getStationRoomCost } from './cabinRooms';
+import { generateFish, generateFlora } from './specimens';
 
 const STORAGE_KEY = 'starfarer_save_v1';
 const STORAGE_KEY_SANDBOX = 'starfarer_sandbox_v1';
@@ -196,6 +198,9 @@ function createInitialState() {
     surfaceMaps: {},
     warpGates: [],
     eventCooldownUntil: 0,
+    carrierRooms: {},
+    aquaticLife: { collected: [], tankIds: [], tankCapacity: 8 },
+    floraCollection: { collected: [], displayIds: [], capacity: 8 },
     createdAt: Date.now(),
   };
 }
@@ -287,6 +292,9 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
           surfaceMaps: parsed.surfaceMaps || {},
           warpGates: parsed.warpGates || [],
           eventCooldownUntil: parsed.eventCooldownUntil || 0,
+          carrierRooms: parsed.carrierRooms || {},
+          aquaticLife: parsed.aquaticLife || { collected: [], tankIds: [], tankCapacity: 8 },
+          floraCollection: parsed.floraCollection || { collected: [], displayIds: [], capacity: 8 },
           ship: { ...prev.ship, ...(parsed.ship || {}), cockpitDecoration: parsed.ship?.cockpitDecoration || { parts: {} } },
           saveMode: saveSlot,
           lightYearsTraveled: parsed.lightYearsTraveled || 0,
@@ -1588,6 +1596,124 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     });
   }, []);
 
+  // ===== ROOM MANAGEMENT =====
+  const addCarrierRoom = useCallback((targetId, roomType, roomName, isStation) => {
+    let success = true;
+    setState(prev => {
+      const rooms = prev.carrierRooms?.[targetId] || [];
+      if (!isStation && rooms.length >= MAX_CARRIER_ROOMS) { success = false; return prev; }
+      const roomDef = ROOM_TYPES[roomType];
+      if (!roomDef) { success = false; return prev; }
+      const isSb = prev.saveMode === 'sandbox';
+      const cost = isStation ? getStationRoomCost(rooms, isSb) : getRoomCost(rooms, isSb);
+      if (!isSb && prev.credits < cost) { success = false; return prev; }
+      const newRoom = { id: `room_${Date.now()}_${Math.floor(Math.random()*999)}`, type: roomType, name: roomName || roomDef.name, createdAt: Date.now() };
+      return {
+        ...prev,
+        credits: prev.credits - (isSb ? 0 : cost),
+        carrierRooms: { ...prev.carrierRooms, [targetId]: [...rooms, newRoom] },
+      };
+    });
+    return success;
+  }, []);
+
+  const removeCarrierRoom = useCallback((targetId, roomId) => {
+    setState(prev => ({
+      ...prev,
+      carrierRooms: {
+        ...prev.carrierRooms,
+        [targetId]: (prev.carrierRooms?.[targetId] || []).filter(r => r.id !== roomId),
+      },
+    }));
+  }, []);
+
+  // ===== AQUARIUM & GARDEN =====
+  const collectAquaticLife = useCallback((body, systemName) => {
+    if (!body) return null;
+    const isWater = body.planetType === 'water_world' || body.planetType === 'earthlike';
+    if (!isWater) return null;
+    const fish = generateFish(body, systemName);
+    setState(prev => ({
+      ...prev,
+      aquaticLife: {
+        ...prev.aquaticLife,
+        collected: [...(prev.aquaticLife?.collected || []), fish],
+      },
+    }));
+    return fish;
+  }, []);
+
+  const collectFloraSpecimen = useCallback((signal, body, systemName) => {
+    if (!signal || signal.type !== 'biological') return null;
+    const flora = generateFlora(signal, body, systemName);
+    setState(prev => ({
+      ...prev,
+      floraCollection: {
+        ...prev.floraCollection,
+        collected: [...(prev.floraCollection?.collected || []), flora],
+      },
+    }));
+    return flora;
+  }, []);
+
+  const moveAquaticToTank = useCallback((fishId) => {
+    setState(prev => {
+      const tank = prev.aquaticLife?.tankIds || [];
+      if (tank.includes(fishId)) return prev;
+      if (tank.length >= (prev.aquaticLife?.tankCapacity || 8)) return prev;
+      return { ...prev, aquaticLife: { ...prev.aquaticLife, tankIds: [...tank, fishId] } };
+    });
+  }, []);
+
+  const moveAquaticToStorage = useCallback((fishId) => {
+    setState(prev => ({
+      ...prev,
+      aquaticLife: { ...prev.aquaticLife, tankIds: (prev.aquaticLife?.tankIds || []).filter(id => id !== fishId) },
+    }));
+  }, []);
+
+  const moveFloraToDisplay = useCallback((floraId) => {
+    setState(prev => {
+      const display = prev.floraCollection?.displayIds || [];
+      if (display.includes(floraId)) return prev;
+      if (display.length >= (prev.floraCollection?.capacity || 8)) return prev;
+      return { ...prev, floraCollection: { ...prev.floraCollection, displayIds: [...display, floraId] } };
+    });
+  }, []);
+
+  const moveFloraToStorage = useCallback((floraId) => {
+    setState(prev => ({
+      ...prev,
+      floraCollection: { ...prev.floraCollection, displayIds: (prev.floraCollection?.displayIds || []).filter(id => id !== floraId) },
+    }));
+  }, []);
+
+  const editSpecimen = useCallback((specimenId, type, changes) => {
+    setState(prev => {
+      const isSb = prev.saveMode === 'sandbox';
+      const cost = 50000;
+      if (!isSb && prev.credits < cost) return prev;
+      if (type === 'fish') {
+        return {
+          ...prev,
+          credits: prev.credits - (isSb ? 0 : cost),
+          aquaticLife: {
+            ...prev.aquaticLife,
+            collected: (prev.aquaticLife?.collected || []).map(f => f.id === specimenId ? { ...f, ...changes, edited: true } : f),
+          },
+        };
+      }
+      return {
+        ...prev,
+        credits: prev.credits - (isSb ? 0 : cost),
+        floraCollection: {
+          ...prev.floraCollection,
+          collected: (prev.floraCollection?.collected || []).map(f => f.id === specimenId ? { ...f, ...changes, edited: true } : f),
+        },
+      };
+    });
+  }, []);
+
   const isSandbox = state.saveMode === 'sandbox';
 
   // ===== COMMUNITY GOALS =====
@@ -2059,6 +2185,15 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     buildWarpGate,
     warpJump,
     saveCockpitDecoration,
+    addCarrierRoom,
+    removeCarrierRoom,
+    collectAquaticLife,
+    collectFloraSpecimen,
+    moveAquaticToTank,
+    moveAquaticToStorage,
+    moveFloraToDisplay,
+    moveFloraToStorage,
+    editSpecimen,
   };
 
   return (
