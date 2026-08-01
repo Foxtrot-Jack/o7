@@ -2,6 +2,7 @@
 import React from 'react';
 import { useGameState } from '@/lib/gameState';
 import { getCommodityById } from '@/lib/commodities';
+import { getActiveHolidays, getNextHoliday } from '@/lib/publicHolidays';
 
 export default function StatusHeader() {
   const { state } = useGameState();
@@ -24,6 +25,9 @@ export default function StatusHeader() {
     low: 'text-orange-500',
     anarchy: 'text-red-500',
   };
+
+  const activeHolidays = getActiveHolidays();
+  const nextHoliday = getNextHoliday();
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-3 py-2 border-b border-orange-900/50 bg-black text-xs">
@@ -79,6 +83,23 @@ export default function StatusHeader() {
           <span className="text-orange-700 text-[10px] uppercase">Explored</span>
           <span className="text-orange-400">{systemsVisited} / 4B</span>
         </div>
+        {activeHolidays.length > 0 ? (
+          <div className="flex flex-col">
+            <span className="text-green-700 text-[10px] uppercase">Holiday</span>
+            <span className="text-green-400 font-bold flex items-center gap-1">
+              <span className="text-sm">{activeHolidays[0].icon}</span>
+              <span className="text-[10px]">{activeHolidays[0].name} ({activeHolidays[0].daysLeft}d)</span>
+            </span>
+          </div>
+        ) : nextHoliday ? (
+          <div className="flex flex-col">
+            <span className="text-yellow-700 text-[10px] uppercase">Next Holiday</span>
+            <span className="text-yellow-500 flex items-center gap-1">
+              <span className="text-sm">{nextHoliday.icon}</span>
+              <span className="text-[10px]">{nextHoliday.daysUntil}d</span>
+            </span>
+          </div>
+        ) : null}
       </div>
     </div>
   );

@@ -1,5 +1,6 @@
 // StarNet News Feed — procedurally generated in-universe news articles
 // Categories: political, economic, exploration, community, anomalies
+import { getActiveHolidays, getUpcomingHolidays } from './publicHolidays';
 
 const FACTION_NAMES = ['Republic', 'Dynasty', 'Coalition', 'Independent Coalition', 'Pilots Guild', 'Shadow Council'];
 const SYSTEM_PREFIXES = ['New', 'Alpha', 'Beta', 'Delta', 'Epsilon', 'Theta', 'Kappa', 'Sigma', 'Omega', 'Tau'];
@@ -61,6 +62,12 @@ export function generateNews(gameState) {
   const categories = Object.keys(TEMPLATES);
   let s = seed * 0.1234;
 
+  // Inject public holiday announcements (real-calendar based)
+  const holidayArticles = getHolidayNews();
+  for (const article of holidayArticles) {
+    articles.push(article);
+  }
+
   for (let i = 0; i < 12; i++) {
     const cat = categories[Math.floor(s * categories.length) % categories.length];
     const templates = TEMPLATES[cat];
@@ -92,6 +99,34 @@ export function generateNews(gameState) {
       category: 'political',
       headline: `${gameState.powerPlay.powerName} consolidates influence. Rank ${gameState.powerPlay.rank} commanders report increased operational support.`,
       timestamp: Date.now() - 3600000,
+    });
+  }
+
+  return articles;
+}
+
+// Generate news articles for active and upcoming public holidays
+function getHolidayNews() {
+  const articles = [];
+  const now = new Date();
+
+  const active = getActiveHolidays(now);
+  for (const h of active) {
+    articles.push({
+      id: `news_holiday_active_${h.id}`,
+      category: 'community',
+      headline: `${h.icon} ${h.name} is underway! ${h.profitSummary} ${h.daysLeft} day${h.daysLeft !== 1 ? 's' : ''} remaining.`,
+      timestamp: now.getTime(),
+    });
+  }
+
+  const upcoming = getUpcomingHolidays(now);
+  for (const h of upcoming) {
+    articles.push({
+      id: `news_holiday_upcoming_${h.id}`,
+      category: 'economic',
+      headline: `${h.icon} ${h.name} begins in ${h.daysUntil} day${h.daysUntil !== 1 ? 's' : ''}. ${h.profitSummary} Stock up now!`,
+      timestamp: now.getTime() - 3600000,
     });
   }
 

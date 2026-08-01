@@ -1149,6 +1149,228 @@ Support factions (500K CR, +3 influence) or undermine rivals (1M CR, -5 influenc
       },
     ],
   },
+  {
+    category: 'Public Holidays',
+    icon: '🎉',
+    entries: [
+      {
+        title: 'How Public Holidays Work',
+        body: `Public Holidays are real-calendar seasonal events separate from Community Goals. They are tracked by real-life calendar dates — not in-game time — so every player experiences them simultaneously.
+
+• ANNOUNCEMENT — 14 days before each holiday, a countdown begins. The event appears in the Status Header (next holiday countdown), StarNet News publishes advance warnings, and the Public Holidays screen (Commander > Public Holidays) shows the upcoming event.
+
+• DURATION — Each holiday lasts exactly 7 days, giving all players adequate time to participate regardless of play schedule.
+
+• PROFIT — Holidays offer extremely lucrative profit opportunities. Commodity sell prices can multiply by 2× to 10×, exploration data payouts can triple, colony income can double, and fuel costs can be halved — all depending on the specific holiday.
+
+Plan ahead: stock up on the right commodities before the holiday starts, then sell during the event for maximum profit. The StarNet News feed and the Public Holidays screen tell you exactly what's coming and what to stockpile.`,
+      },
+      {
+        title: 'Holiday Calendar',
+        body: `Ten public holidays occur throughout the year:
+
+🎆 GALACTIC NEW YEAR FESTIVAL — January 1–7
+ALL commodities sell for 2× at every station.
+
+🍾 THE BOOZE CRUISE — February 14–20
+LEGAL DRUGS commodities sell for 10× normal price. The most profitable single-category event.
+
+🏛️ FOUNDERS DAY (CORE WORLDS) — March 15–21
+CONSUMER ITEMS and TECHNOLOGY sell for 5×.
+
+📈 SPRING TRADE SUMMIT — April 20–26
+ALL commodities sell for 3× at every station.
+
+🔭 EXPLORERS WEEK — May 25–31
+Exploration data sells for 3× at Universal Cartographics.
+
+🌍 SOL REMEMBRANCE DAY — July 4–10
+ALL commodities sell for 3× in solemn remembrance.
+
+⛏️ MINERS WEEK — August 10–16
+MINERALS, METALS, and RAW MATERIALS sell for 5×.
+
+🌟 COLONIA FOUNDERS DAY — September 15–21
+TECHNOLOGY and CONSUMER ITEMS sell for 5×.
+
+⚡ NEUTRON HIGHWAY FESTIVAL — October 31–November 6
+ALL commodities 2× + fuel consumption halved for all jumps.
+
+🚀 FRONTIER DAY — December 1–7
+ALL commodities 2× + colony passive income doubled.`,
+      },
+      {
+        title: 'The Booze Cruise',
+        body: `The most legendary event in the galaxy. Every February 14th, the Booze Cruise transforms known space into a week-long floating festival.
+
+Carrier fleets convert into party barges. Stations host dockside celebrations. And the demand for legal drugs — wine, beer, spirits, tobacco, recreational substances — reaches absurd heights, with sell prices hitting 10× the standard rate.
+
+Savvy commanders begin stockpiling legal drug commodities the moment the 2-week countdown appears in StarNet News. They clear cargo holds, buy out every legal drugs market they can find, and wait for kickoff. When the festival begins, they sell everything for astronomical profit.
+
+A single cargo hold of spirits purchased at normal prices can yield tens of millions in profit during the Booze Cruise. It is, quite simply, the single most profitable week of the year for a prepared trader.`,
+      },
+      {
+        title: 'Holiday Profit Strategies',
+        body: `MAXIMIZE YOUR EARNINGS during public holidays:
+
+• STOCKPILE EARLY — When the 14-day countdown appears, start buying the boosted commodity categories. Purchase at producing economies (Extraction for minerals, Agriculture for foods, etc.) for the lowest buy prices.
+
+• SELL DURING THE EVENT — Wait until the holiday is active, then sell at consuming economies (High Tech, Industrial, Service) for the maximum multiplied sell price.
+
+• ALL-CATEGORY HOLIDAYS — During Galactic New Year (2×), Spring Trade Summit (3×), Sol Remembrance (3×), and Frontier Day (2×), every commodity is boosted. Fill your cargo with the highest base-price commodities you can afford.
+
+• SPECIAL HOLIDAYS — Explorers Week triples exploration data. Save your scans and sell during this week. Neutron Highway Festival halves fuel costs — perfect for long-range exploration trips. Frontier Day doubles colony income — collect during this week for double payouts.
+
+• ROUTE PLANNING — Use the 14-day countdown to plan your route. If you're far from civilization, start heading back to populated space before the holiday begins.
+
+Check Commander > Public Holidays at any time to see what's active, what's upcoming, and the full annual calendar.`,
+      },
+    ],
+  },
+  {
+    category: 'Game Overview',
+    icon: '📖',
+    entries: [
+      {
+        title: 'Dogstar Interstellar — Feature List',
+        body: `A procedurally generated, menu-driven 90s-retro space simulation featuring galaxy exploration, trading, and fleet management.
+
+🗺️ GALAXY & EXPLORATION
+• 4,000,000,000+ procedurally generated star systems
+• Full 3D interactive galaxy map with rotation, zoom, pan, and filtering
+• Spiral arm galaxy structure with realistic star density
+• 13 star classes (O, B, A, F, G, K, M, L, T, Neutron Star, White Dwarf, Black Hole, Red Giant)
+• Populated "bubble" starting region (The Core Worlds) with 200 LY radius
+• Landmark systems: Cradle's End (galactic core hub), Vagrant's Horizon (rim outpost), Sol (hidden easter egg)
+• Neutron star highway with 4× FSD boost for long-range jumping
+• Real-time 3D system orrery with orbiting planets, moons, and stations
+• Full Spectrum Scanner (FSS) with 4-band frequency tuning
+• Detailed body scanning with 18 planet types and 9 star classes
+• Surface mapping with probe deployment
+• Planetary landings and surface surveying (biological, geological, mineral signals)
+• Exobiology scanner with genetic sample collection
+• Universal Cartographics with 20 LY travel requirement and regional bonus multipliers
+• Discovery database tracking 12 stellar types, 9 planet types, and biological species
+• Personal exploration leaderboard with 13 record categories
+• Flight trail visualization on galaxy map
+• Bookmark system for saving favorite systems
+• Route plotter with multi-jump pathfinding and neutron star routing
+• 3D coordinate grid with readouts on galaxy map
+
+🏪 TRADING & ECONOMY
+• 230+ commodities across 13 categories
+• 9 economy types (Extraction, Refinery, Industrial, Agriculture, High Tech, Service, Military, Colony, Tourism)
+• Dynamic market prices with supply/demand, economy modifiers, and jump-cycle fluctuations
+• Restricted commodities (black market smuggling in anarchy systems)
+• Trade route finder with profit-per-light-year ranking (Inara-style)
+• Route plotter with neutron star highway support (Spansh-style)
+• AI-powered market analysis with in-character reports
+• Dynamic economy with price trends and market cycles
+• 10 real-calendar public holidays with 2×–10× profit multipliers
+
+📋 MISSIONS & OBJECTIVES
+• 7 mission types (Delivery, Courier, Mining, Passenger, Salvage, Exploration, Colonization Supply)
+• 4 mission chains with branching narratives (The Lost Surveyor, Trade War, Pirate King Takedown, The Alien Artifact)
+• Mission destination markers on galaxy map and system view
+• Weekly community goals with tiered rewards and NPC leaderboards
+• 5 cosmic event types (Supernova, Cometary Transit, Alien Artifact, Pilgrim Fleet, Derelict Megaship)
+
+🚢 SHIP MANAGEMENT
+• 30+ ship models from 6 manufacturers
+• Ship classes 1–6 (small fighter to huge transport)
+• Full outfitting system: core modules, optional internal, utility mounts, hardpoints
+• 5 outfitting tiers with engineering modifications
+• Module wear & degradation system with AFMU field repairs
+• Loadout preset saving and instant swapping
+• 3D custom ship builder with snappable low-poly parts
+• Ship yard infrastructure with 6 unlock levels
+• Blueprint saving and encoded share codes for ship designs
+• Fleet management with ship storage, transfer, and switching
+• Fighter hangar with 3 fighter types and wingmate pilots
+
+⚓ FLEET CARRIERS
+• Purchase carriers (5 billion CR) at high-population systems
+• Up to 5 carriers per commander
+• Tritium-based jumping (500 LY range)
+• Toggleable services: Market, Shipyard, Outfitting, Refuel, Repair
+• 6-room carrier interior: Bar, Quarters, Garden, Trophy Room, Command Deck, Observation Lounge
+• Carrier buy/sell orders for passive income
+• 3D custom carrier builder with carrier-scale parts
+• Carrier command dashboard for multi-carrier management
+• Carrier logistics with multi-jump route planning using bookmarks
+
+🌱 COLONIZATION & INDUSTRY
+• Colonize habitable bodies with 5 station tiers (Outpost to Dodec Station)
+• 5 colony specializations (Agricultural, Industrial, Research, Mining, Mixed)
+• 5 development stages (Outpost to Metropolis)
+• Colony commodity delivery for infrastructure and happiness boosts
+• Passive credit income from colonies (collect periodically)
+• Special features at higher tiers: Market, Outfitting, Material Trader, Engineer
+• Station builder — construct orbital stations at colonies with 5 economy types
+• Custom station creator with 3D builder
+• Warp gate network construction and management
+
+⛏️ MINING & MATERIALS
+• Asteroid belt and planetary surface mining
+• Refinery with raw material processing
+• Ship locker for raw and manufactured materials
+• Material trader with grade-based exchange ratios
+• Synthesis system for ammo, limpets, and hull patches
+• Mining sites (RES) with prospector and collector gameplay
+
+⚔️ COMBAT & PIRACY
+• Turn-based ship combat with damage, shield, and hull mechanics
+• Multi-crew system: Pilot, Gunner, Shield Operator, Engineer with unique abilities
+• Fighter hangar with 3 fighter types (Taipan, GU-97, Trident)
+• Piracy & interdiction in low-security/anarchy systems
+• Black market fencing for stolen cargo
+• Bounty board with combat contracts
+• Conflict zones with faction warfare
+• Wingmate system with hired NPC wingmen
+• Notoriety and bounty system
+
+🎖️ COMMANDER PROGRESSION
+• 3 rank tracks: Exploration (14 tiers), Trade, Mining
+• 130+ achievements across first discoveries, milestones, and count progression
+• Player titles earned from gameplay milestones
+• Commander profile with lifetime statistics
+• Power Play — pledge to 1 of 6 galactic powers for passive bonuses
+• Crew progression — hire and train crew with 5 levels
+• Player reputation with 5 factions (Federation, Empire, Alliance, Independent, Pirate Syndicates)
+• Background Simulation — faction influence, states (Boom, Bust, War, Expansion, Retreat)
+• Badge maker with custom SVG designs and share codes
+• Company system with trade contracts and passive income
+• Player-owned station revenue
+
+🎨 CUSTOMIZATION & DISPLAY
+• 8 CRT color themes (Elite Orange, Matrix Green, Amber, Ice Blue, Crimson, Violet, Monochrome, Sol Gold)
+• Adjustable CRT effects: scanlines, glow, flicker, vignette
+• Text brightness control (10%–200%)
+• Mini screen mode for compact displays (Moto Razr 50)
+• Procedural Web Audio API sound engine — all SFX and music synthesized at runtime
+• 6 music presets (Standard, Cinematic, Retro, Minimal, Intense, Ethereal)
+• Per-screen track customization
+• Screen-aware background music
+• Cabin decoration system with customizable cockpit
+• Room manager for carrier interior rooms
+• Virtual garden with plantable flora
+• Aquarium system
+• Genetics lab
+
+⚙️ TECHNICAL FEATURES
+• Persistent game state via localStorage
+• Save migration with versioning and automatic field population
+• Error boundary with crash recovery (Retry / Reset Save)
+• Two save modes: Commander (standard) and Sandbox (unrestricted)
+• Save import/export via JSON
+• Deterministic procedural generation with seeded PRNG
+• Real-calendar public holiday system with 2-week countdowns
+• No dead ends — every screen reachable from every other
+• Responsive design (mobile + desktop)
+• CRT retro aesthetic with burnt-orange-on-black styling`,
+      },
+    ],
+  },
 ];
 
 export default function Codex() {

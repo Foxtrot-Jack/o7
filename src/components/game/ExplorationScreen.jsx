@@ -2,11 +2,13 @@
 import React, { useMemo } from 'react';
 import { useGameState } from '@/lib/gameState';
 import { distance3D } from '@/lib/galaxy';
+import { getHolidayExplorationMult } from '@/lib/publicHolidays';
 import { Telescope, DollarSign, Star, Globe, Map, Award, BookOpen } from 'lucide-react';
 
 export default function ExplorationScreen() {
-  const { state, getSystemData, sellExplorationData } = useGameState();
+  const { state, getSystemData, sellExplorationData, addCredits } = useGameState();
   const systemData = getSystemData();
+  const holidayMult = getHolidayExplorationMult();
 
   // Calculate sellable vs locked (within 20 LY of origin) scan value
   const { sellableValue, lockedValue } = useMemo(() => {
@@ -51,6 +53,9 @@ export default function ExplorationScreen() {
   const handleSell = () => {
     if (sellableValue === 0) return;
     sellExplorationData();
+    if (holidayMult > 1) {
+      addCredits(Math.round(sellableValue * (holidayMult - 1)));
+    }
   };
 
   const explorationRank = state.rank.exploration;
@@ -97,9 +102,15 @@ export default function ExplorationScreen() {
               You have <span className="text-orange-300">{scannedBodyCount}</span> unsold body scans
               and <span className="text-orange-300">{unsoldBonusCount}</span> unsold first discovery bonuses.
             </div>
-            <div className="text-2xl text-orange-300 font-bold mb-3">
-              {sellableValue.toLocaleString()} CR
+            <div className="text-2xl text-orange-300 font-bold mb-1">
+              {Math.round(sellableValue * holidayMult).toLocaleString()} CR
             </div>
+            {holidayMult > 1 && (
+              <div className="text-green-500 text-[10px] mb-3">
+                ✨ Holiday bonus active — {holidayMult}× exploration data value! (Base: {sellableValue.toLocaleString()} CR)
+              </div>
+            )}
+            {holidayMult === 1 && <div className="mb-3" />}
             <button
               onClick={handleSell}
               className="w-full py-2 border border-orange-500 text-orange-300 hover:bg-orange-950/50 text-sm font-bold"

@@ -5,6 +5,7 @@ import { COMMODITIES, COMMODITY_CATEGORIES, COMMODITY_MAP, ECONOMY_TYPES } from 
 import { makeRng, randInt, randFloat } from '@/lib/prng';
 import { ShoppingCart, ArrowUp, ArrowDown, Package } from 'lucide-react';
 import { getMarketCycle, getPriceModifier, getPriceTrend, getTrendDisplay } from '@/lib/dynamicEconomy';
+import { getHolidayMarketMultiplier, getActiveHolidays } from '@/lib/publicHolidays';
 import { soundEngine } from '@/lib/soundEngine';
 
 export default function MarketScreen() {
@@ -42,7 +43,8 @@ export default function MarketScreen() {
       const dynMod = getPriceModifier(commodity.basePrice, systemData.seed, station.id, cycle);
       const buyPrice = Math.round(baseBuyPrice * dynMod);
       const trend = getPriceTrend(buyPrice, baseBuyPrice);
-      const sellPrice = Math.round(buyPrice * 0.82); // sell back at 82% of buy
+      const holidayMult = getHolidayMarketMultiplier(commodity.category);
+      const sellPrice = Math.round(buyPrice * 0.82 * holidayMult); // sell back at 82% of buy, boosted by active holidays
 
       // Supply and demand levels
       let supply = randInt(rng, 0, 100);
@@ -80,6 +82,7 @@ export default function MarketScreen() {
 
   const cargoUsed = (state.ship?.cargo || []).reduce((sum, c) => sum + c.qty, 0);
   const cargoFree = (state.ship?.cargoCapacity ?? 0) - cargoUsed;
+  const activeHolidays = getActiveHolidays();
 
   const handleBuy = (commodityId) => {
     const amount = tradeAmounts[commodityId] || 1;
@@ -146,6 +149,18 @@ export default function MarketScreen() {
           <span className="text-orange-600">CYCLE: <span className="text-orange-300">{state.totalJumps}</span></span>
         </div>
       </div>
+
+      {/* Holiday banner */}
+      {activeHolidays.length > 0 && (
+        <div className="border-b border-green-700 bg-green-950/20 p-2 text-xs flex flex-wrap items-center gap-x-3 gap-y-1">
+          {activeHolidays.map(h => (
+            <span key={h.id} className="flex items-center gap-1">
+              <span className="text-green-400 font-bold">{h.icon} {h.name}</span>
+              <span className="text-green-600 text-[10px]">— {h.profitSummary} ({h.daysLeft}d left)</span>
+            </span>
+          ))}
+        </div>
+      )}
 
       {/* Category filter */}
       <div className="flex gap-1 overflow-x-auto p-2 border-b border-orange-900/50">

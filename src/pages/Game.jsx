@@ -36,6 +36,7 @@ import MaterialTraderScreen from '@/components/game/MaterialTraderScreen';
 import CommunityGoalsScreen from '@/components/game/CommunityGoalsScreen';
 import SynthesisScreen from '@/components/game/SynthesisScreen';
 import GalnetScreen from '@/components/game/GalnetScreen';
+import PublicHolidaysScreen from '@/components/game/PublicHolidaysScreen';
 import BlackMarketScreen from '@/components/game/BlackMarketScreen';
 import EngineeringScreen from '@/components/game/EngineeringScreen';
 import SRVRover from '@/components/game/SRVRover';
@@ -183,6 +184,8 @@ function GameContent() {
         return <SynthesisScreen />;
       case 'galnet':
         return <GalnetScreen />;
+      case 'holidays':
+        return <PublicHolidaysScreen />;
       case 'blackmarket':
         return <BlackMarketScreen />;
       case 'engineering':

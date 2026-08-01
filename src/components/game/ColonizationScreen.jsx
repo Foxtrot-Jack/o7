@@ -5,6 +5,7 @@ import React, { useState, useMemo } from 'react';
 import { useGameState } from '@/lib/gameState';
 import { BODY_TYPES } from '@/lib/system';
 import { COMMODITY_MAP, COMMODITY_CATEGORIES } from '@/lib/commodities';
+import { getHolidayColonyIncomeMult } from '@/lib/publicHolidays';
 import { Rocket, Plus, Building, Users, Factory, Wheat, Beaker, Globe, TrendingUp, Package, Coins, ArrowLeftRight, Wrench, Sparkles, Store } from 'lucide-react';
 
 const COLONY_STAGES = [
@@ -67,7 +68,8 @@ function getColonyIncomePerHour(colony) {
     if (tier.features.includes('trader')) featureMult += 0.2;
     if (tier.features.includes('engineer')) featureMult += 0.5;
   }
-  return Math.round(tier.baseIncome * type.incomeMult * infraFactor * happinessFactor * stageBonus * featureMult);
+  const holidayMult = getHolidayColonyIncomeMult();
+  return Math.round(tier.baseIncome * type.incomeMult * infraFactor * happinessFactor * stageBonus * featureMult * holidayMult);
 }
 
 function getUncollectedIncome(colony) {
