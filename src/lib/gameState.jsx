@@ -107,7 +107,7 @@ export const MISSION_TYPES = {
 
 function createInitialState() {
   return {
-    version: 1,
+    version: CURRENT_SAVE_VERSION,
     saveMode: 'normal',
     credits: 100000,
     ship: {

@@ -138,13 +138,19 @@ export default function MissionsScreen() {
   };
 
   const handleCompleteMission = (mission) => {
+    // Travel missions require being at the destination system
+    const travelMissions = [MISSION_TYPES.DELIVERY, MISSION_TYPES.COURIER, MISSION_TYPES.PASSENGER, MISSION_TYPES.COLONIZATION_SUPPLY];
+    if (travelMissions.includes(mission.type) && mission.destinationSystem && state.currentSystem.seed !== mission.destinationSystem.seed) {
+      alert('MUST BE AT DESTINATION SYSTEM TO COMPLETE');
+      return;
+    }
     if (mission.type === MISSION_TYPES.SURFACE_SCAN) {
       const hasMap = Object.values(state.surfaceMaps || {}).some(m => m.systemSeed === mission.destinationSystem?.seed);
       if (!hasMap) {
         alert('REQUIRES SURFACE SCAN DATA FROM TARGET SYSTEM');
         return;
       }
-    } else if (mission.commodity && mission.type !== MISSION_TYPES.EXPLORATION) {
+    } else if (mission.commodity && mission.type !== MISSION_TYPES.EXPLORATION && mission.type !== MISSION_TYPES.PASSENGER) {
       const cargoItem = (state.ship?.cargo || []).find(c => c.commodity === mission.commodity);
       if (!cargoItem || cargoItem.qty < mission.qty) {
         alert(`REQUIRES ${mission.qty}T OF ${mission.commodityName.toUpperCase()}`);
@@ -241,8 +247,9 @@ export default function MissionsScreen() {
           const cargoItem = mission.commodity ? state.ship.cargo.find(c => c.commodity === mission.commodity) : null;
           const hasCargo = cargoItem && cargoItem.qty >= mission.qty;
           const hasSurfaceMap = mission.type === MISSION_TYPES.SURFACE_SCAN && Object.values(state.surfaceMaps || {}).some(m => m.systemSeed === mission.destinationSystem?.seed);
-          const isDataMission = mission.type === MISSION_TYPES.COURIER || mission.type === MISSION_TYPES.EXPLORATION;
-          const canComplete = isDataMission || (mission.type === MISSION_TYPES.SURFACE_SCAN ? hasSurfaceMap : hasCargo);
+          const isDataMission = mission.type === MISSION_TYPES.COURIER || mission.type === MISSION_TYPES.EXPLORATION || mission.type === MISSION_TYPES.PASSENGER;
+          const isAtDestination = !mission.destinationSystem || state.currentSystem.seed === mission.destinationSystem.seed;
+          const canComplete = (isDataMission && isAtDestination) || (mission.type === MISSION_TYPES.SURFACE_SCAN ? hasSurfaceMap : (hasCargo && isAtDestination));
 
           return (
             <div key={mission.id} className="border border-green-900 p-3 text-xs">

@@ -505,6 +505,8 @@ Missions reward credits and advance your Trade rank.`,
         title: 'Completing Missions',
         body: `Active missions appear in the Missions screen. Complete the objective (deliver cargo, reach a system, etc.) then return to claim your reward.
 
+DELIVERY, COURIER, PASSENGER, and COLONIZATION SUPPLY missions require you to be at the destination system to complete them — the COMPLETE button is disabled until you've jumped to the target system and docked at a station there. MINING and SALVAGE missions are local and can be completed at any station in the system where they were accepted.
+
 Mission destination systems are marked with pulsing yellow indicators on both the Galaxy Map and within the System view when you arrive.
 
 Mission rewards count toward your lifetime earnings and Trade rank progression.`,

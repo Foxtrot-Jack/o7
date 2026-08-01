@@ -468,8 +468,25 @@ function generateStations(rng, seed, bodies) {
     suitableBodies = bodies.filter(b => b.type === BODY_TYPES.PLANET);
   }
 
-  // Ensure at least one station if there are any planets at all
-  if (suitableBodies.length === 0) return stations;
+  // Guarantee at least one station per system — if no planets exist, orbit the primary star
+  if (suitableBodies.length === 0) {
+    const primaryStar = bodies.find(b => b.type === BODY_TYPES.STAR);
+    if (primaryStar) {
+      stations.push({
+        id: 'station_0',
+        name: generateStationName(seed, 0),
+        parentId: primaryStar.id,
+        parentName: primaryStar.name,
+        type: 'coriolis',
+        isOrbital: true,
+        stationOrbitRadius: randFloat(rng, 5, 15),
+        distanceFromStar: 0,
+        economy: pickWeighted(rng, ECONOMY_TYPES.map(e => ({ value: e, weight: 1 }))),
+        services: { market: true, refuel: true, repair: true, rearm: false, shipyard: false, outfitting: false, missions: true, exploration: true, cartographics: true, contact: false },
+      });
+    }
+    return stations;
+  }
 
   const stationCount = Math.min(suitableBodies.length, Math.max(1, randInt(rng, 1, 4)));
 
