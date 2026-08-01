@@ -854,6 +854,30 @@ Themes apply a hue-rotate filter to the entire interface for instant visual chan
 Saves are stored locally in your browser. Clearing browser data will erase all progress.`,
       },
       {
+        title: 'Save Stability & Migration',
+        body: `Every time your save loads, the game runs a migration and validation pass to protect against crashes from legacy or partially-corrupted data:
+
+• SCHEMA VERSIONING — Each save stores a version number. When the schema changes (new fields, renamed properties), the migration system runs version-specific fixes automatically on load. You never need to manually update your save.
+
+• SHIP VALIDATION — The most common crash source on older saves was a missing or incomplete ship object. After loading, the game validates that your ship has all required properties (type, name, cargo, fuel, fuel capacity, cargo capacity, modules, integrity, module wear, cockpit decoration). Any missing or invalid field is filled in from defaults automatically.
+
+• FIELD DEFAULTS — Every top-level state field is merged against defaults, so new features added in updates work immediately on old saves without resetting.
+
+This means you can safely keep playing an old save across game updates — the system heals itself on load.`,
+      },
+      {
+        title: 'Crash Recovery',
+        body: `If a rendering error ever occurs (a bug, a data edge case, or a browser issue), the game is wrapped in an Error Boundary that catches the crash and shows a recovery screen instead of a blank white page.
+
+The recovery screen offers two options:
+
+• RETRY — Attempts to re-render the game without losing any save data. Try this first; many errors are transient.
+
+• RESET SAVE — Clears the current save slot from local storage and reloads the page fresh. Use this only if RETRY doesn't work and you're willing to start over.
+
+Your save data is never destroyed by a crash — it persists in localStorage regardless of what happens during rendering. The RESET SAVE button is the only way a crash recovery action touches your save, and it requires an explicit click.`,
+      },
+      {
         title: 'Sound & Music',
         body: `All sound effects and music are synthesized procedurally at runtime using the Web Audio API — no audio files are loaded.
 

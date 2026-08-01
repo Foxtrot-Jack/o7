@@ -24,6 +24,33 @@ import { ADDITIONAL_SHIPS } from './shipRoster';
 const STORAGE_KEY = 'starfarer_save_v1';
 const STORAGE_KEY_SANDBOX = 'starfarer_sandbox_v1';
 
+// Current save schema version. Bump when adding fields or changing structure.
+// The migration guard in loadState() uses this to run version-specific fixes.
+const CURRENT_SAVE_VERSION = 2;
+
+// Validates the ship object after save loading — fills in any missing or
+// invalid fields from the defaults so components can safely access
+// state.ship.* without null checks. This is the post-merge guard that
+// prevents the most common legacy-save crash (undefined ship properties).
+function validateShip(ship, defaultShip) {
+  if (!ship || typeof ship !== 'object' || Array.isArray(ship)) {
+    return { ...defaultShip };
+  }
+  const v = { ...ship };
+  if (typeof v.type !== 'string') v.type = defaultShip.type;
+  if (typeof v.name !== 'string') v.name = defaultShip.name;
+  if (!Array.isArray(v.cargo)) v.cargo = [];
+  if (typeof v.fuel !== 'number' || isNaN(v.fuel)) v.fuel = defaultShip.fuel;
+  if (typeof v.fuelCapacity !== 'number' || isNaN(v.fuelCapacity)) v.fuelCapacity = defaultShip.fuelCapacity;
+  if (typeof v.cargoCapacity !== 'number' || isNaN(v.cargoCapacity)) v.cargoCapacity = defaultShip.cargoCapacity;
+  if (!v.modules || typeof v.modules !== 'object' || Array.isArray(v.modules)) v.modules = defaultShip.modules;
+  if (typeof v.integrity !== 'number' || isNaN(v.integrity)) v.integrity = 100;
+  if (typeof v.moduleWear !== 'number' || isNaN(v.moduleWear)) v.moduleWear = 0;
+  if (!v.cockpitDecoration || typeof v.cockpitDecoration !== 'object') v.cockpitDecoration = { parts: {} };
+  if (!v.cockpitDecoration.parts || typeof v.cockpitDecoration.parts !== 'object') v.cockpitDecoration.parts = {};
+  return v;
+}
+
 // Ship definitions
 export const SHIP_TYPES = [
   { id: 'sidewinder', name: 'Sparrowhawk Mk-I', manufacturer: 'Drake-Voss', cargoCapacity: 4, fuelCapacity: 8, jumpRange: 8, cost: 0, multirole: true, class: 1 },
@@ -312,11 +339,12 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
           carrierCurrentRoom: parsed.carrierCurrentRoom || {},
           aquaticLife: parsed.aquaticLife || { collected: [], tankIds: [], tankCapacity: 8 },
           floraCollection: parsed.floraCollection || { collected: [], displayIds: [], capacity: 8 },
-          ship: { ...prev.ship, ...(parsed.ship || {}), cockpitDecoration: parsed.ship?.cockpitDecoration || { parts: {} } },
+          ship: validateShip({ ...prev.ship, ...(parsed.ship || {}), cockpitDecoration: parsed.ship?.cockpitDecoration || { parts: {} } }, prev.ship),
           saveMode: saveSlot,
           lightYearsTraveled: parsed.lightYearsTraveled || 0,
           lifetimeEarnings: parsed.lifetimeEarnings || 0,
           shipsPurchased: parsed.shipsPurchased || 0,
+          version: CURRENT_SAVE_VERSION,
         };
           // Regenerate system data for the current system (not persisted since it's large)
           if (merged.currentSystem) {

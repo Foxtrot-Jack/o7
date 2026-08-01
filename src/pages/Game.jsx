@@ -71,6 +71,7 @@ import AquariumScreen from '@/components/game/AquariumScreen';
 import GardenScreen from '@/components/game/GardenScreen';
 import GeneticsLabScreen from '@/components/game/GeneticsLabScreen';
 import StationCreator from '@/components/game/StationCreator';
+import GameErrorBoundary from '@/components/game/GameErrorBoundary';
 import { soundEngine } from '@/lib/soundEngine';
 import { SCREEN_CONTEXTS } from '@/lib/soundPresets';
 
@@ -299,11 +300,13 @@ export default function Game() {
   }
 
   return (
-    <GameStateProvider key={saveSlot} saveSlot={saveSlot} onSwitchSave={() => {
-      localStorage.removeItem('starfarer_active_save');
-      setSaveSlot(null);
-    }}>
-      <GameContent />
-    </GameStateProvider>
+    <GameErrorBoundary>
+      <GameStateProvider key={saveSlot} saveSlot={saveSlot} onSwitchSave={() => {
+        localStorage.removeItem('starfarer_active_save');
+        setSaveSlot(null);
+      }}>
+        <GameContent />
+      </GameStateProvider>
+    </GameErrorBoundary>
   );
 }
