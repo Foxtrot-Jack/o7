@@ -1,7 +1,7 @@
-// GalNet News Feed — procedurally generated in-universe news articles
+// StarNet News Feed — procedurally generated in-universe news articles
 // Categories: political, economic, exploration, community, anomalies
 
-const FACTION_NAMES = ['Federation', 'Empire', 'Alliance', 'Independent Coalition', 'Pilots Federation', 'Shadow Council'];
+const FACTION_NAMES = ['Republic', 'Dynasty', 'Coalition', 'Independent Coalition', 'Pilots Guild', 'Shadow Council'];
 const SYSTEM_PREFIXES = ['New', 'Alpha', 'Beta', 'Delta', 'Epsilon', 'Theta', 'Kappa', 'Sigma', 'Omega', 'Tau'];
 const SYSTEM_SUFFIXES = ['Reach', 'Horizon', 'Verge', 'Crossing', 'Anchor', 'Gate', 'Fall', 'Rise', 'Drift', 'Beacon'];
 

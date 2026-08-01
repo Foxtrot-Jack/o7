@@ -1,4 +1,4 @@
-// GalNet News Feed — in-universe news ticker
+// StarNet News Feed — in-universe news ticker
 import React, { useMemo } from 'react';
 import { useGameState } from '@/lib/gameState';
 import { generateNews, NEWS_CATEGORIES } from '@/lib/galnet';
@@ -20,7 +20,7 @@ export default function GalnetScreen() {
     <div className="w-full h-full overflow-y-auto p-4 space-y-3">
       <div className="border border-orange-700 p-4 flex items-center gap-2">
         <Newspaper className="w-5 h-5 text-orange-500" />
-        <h2 className="text-orange-300 font-bold uppercase">GalNet News Feed</h2>
+        <h2 className="text-orange-300 font-bold uppercase">StarNet News Feed</h2>
         <span className="text-orange-700 text-[10px] ml-auto">CYCLE {state.totalJumps}</span>
       </div>
 

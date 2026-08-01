@@ -83,7 +83,7 @@ const NAV_GROUPS = [
     items: [
       { id: 'achievements', label: 'Awards', icon: Trophy },
       { id: 'leaderboard', label: 'Leaderboard', icon: Medal },
-      { id: 'galnet', label: 'GalNet News', icon: Newspaper },
+      { id: 'galnet', label: 'StarNet News', icon: Newspaper },
       { id: 'crime', label: 'Crime Status', icon: AlertTriangle },
       { id: 'bgs', label: 'Faction Status', icon: Activity },
       { id: 'rep', label: 'Reputation', icon: Award },

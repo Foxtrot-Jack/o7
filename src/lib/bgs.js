@@ -16,7 +16,7 @@ export const FACTION_STATES = [
   { id: 'none', label: 'Stable', color: 'text-orange-400', desc: 'No special activity' },
 ];
 
-const FACTION_NAMES = ['Federation', 'Empire', 'Alliance', 'Local Independents', 'Pirate Syndicate', 'Merchant Guild', 'Frontier Coalition'];
+const FACTION_NAMES = ['Republic', 'Dynasty', 'Coalition', 'Local Independents', 'Pirate Syndicate', 'Merchant Guild', 'Frontier Coalition'];
 
 export function generateFactionStates(systemSeed, systemData) {
   const rng = seededRandom(systemSeed + ':bgs');
