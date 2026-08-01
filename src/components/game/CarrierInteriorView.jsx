@@ -40,6 +40,7 @@ export default function CarrierInteriorView({ room, gridX, gridY, grid, onNaviga
   const starfieldRef = useRef(null);
   const raycasterRef = useRef(new THREE.Raycaster());
   const lookRef = useRef({ yaw: 0, pitch: 0, targetYaw: 0, targetPitch: 0 });
+  const zoomRef = useRef({ fov: 75, targetFov: 75 });
   const animationIdRef = useRef(null);
   const [confirmAction, setConfirmAction] = useState(null);
 
@@ -80,6 +81,7 @@ export default function CarrierInteriorView({ room, gridX, gridY, grid, onNaviga
       for (const p of plantsRef.current) p.rotation.z = Math.sin(now * 0.001 + p.phase) * 0.05;
       for (const p of holoRef.current) { const a = now * 0.0004 * p.speed + p.phase; p.mesh.position.set((p.cx||0) + Math.cos(a) * p.r, p.y, (p.cz||0) + Math.sin(a) * p.r); }
       if (starfieldRef.current) starfieldRef.current.rotation.y = now * 0.00005;
+      const z = zoomRef.current; z.fov += (z.targetFov - z.fov) * 0.1; camera.fov = z.fov; camera.updateProjectionMatrix();
       renderer.render(scene, camera);
     };
     animate();
@@ -142,7 +144,7 @@ export default function CarrierInteriorView({ room, gridX, gridY, grid, onNaviga
   useEffect(() => {
     const canvas = rendererRef.current?.domElement;
     if (!canvas) return;
-    let isDragging = false, lastX = 0, lastY = 0, dragStartX = 0, dragStartY = 0;
+    let isDragging = false, lastX = 0, lastY = 0, dragStartX = 0, dragStartY = 0, pinchDist = 0;
     const handleClick = (cx, cy) => {
       const rect = canvas.getBoundingClientRect();
       const mouse = new THREE.Vector2(((cx - rect.left) / rect.width) * 2 - 1, -((cy - rect.top) / rect.height) * 2 + 1);
@@ -153,12 +155,13 @@ export default function CarrierInteriorView({ room, gridX, gridY, grid, onNaviga
     const onPD = (e) => { isDragging = true; lastX = e.clientX; lastY = e.clientY; dragStartX = e.clientX; dragStartY = e.clientY; };
     const onPM = (e) => { if (!isDragging) return; const dx = e.clientX - lastX, dy = e.clientY - lastY; lastX = e.clientX; lastY = e.clientY; const lk = lookRef.current; lk.targetYaw -= dx * 0.003; lk.targetPitch = Math.max(-1.4, Math.min(1.4, lk.targetPitch - dy * 0.003)); };
     const onPU = (e) => { isDragging = false; if (Math.hypot(e.clientX - dragStartX, e.clientY - dragStartY) < 5) handleClick(e.clientX, e.clientY); };
-    const onTS = (e) => { if (e.touches.length === 1) { isDragging = true; lastX = e.touches[0].clientX; lastY = e.touches[0].clientY; dragStartX = lastX; dragStartY = lastY; } };
-    const onTM = (e) => { if (e.touches.length === 1 && isDragging) { e.preventDefault(); const dx = e.touches[0].clientX - lastX, dy = e.touches[0].clientY - lastY; lastX = e.touches[0].clientX; lastY = e.touches[0].clientY; const lk = lookRef.current; lk.targetYaw -= dx * 0.003; lk.targetPitch = Math.max(-1.4, Math.min(1.4, lk.targetPitch - dy * 0.003)); } };
-    const onTE = (e) => { if (isDragging && e.changedTouches.length === 1) { const t = e.changedTouches[0]; if (Math.hypot(t.clientX - dragStartX, t.clientY - dragStartY) < 10) handleClick(t.clientX, t.clientY); } isDragging = false; };
-    canvas.addEventListener('pointerdown', onPD); canvas.addEventListener('pointermove', onPM); canvas.addEventListener('pointerup', onPU);
+    const onWheel = (e) => { e.preventDefault(); const z = zoomRef.current; z.targetFov = Math.max(30, Math.min(90, z.targetFov + e.deltaY * 0.05)); };
+    const onTS = (e) => { if (e.touches.length === 1) { isDragging = true; lastX = e.touches[0].clientX; lastY = e.touches[0].clientY; dragStartX = lastX; dragStartY = lastY; } else if (e.touches.length === 2) { isDragging = false; pinchDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); } };
+    const onTM = (e) => { if (e.touches.length === 2) { e.preventDefault(); const nd = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); const delta = pinchDist - nd; pinchDist = nd; const z = zoomRef.current; z.targetFov = Math.max(30, Math.min(90, z.targetFov + delta * 0.15)); } else if (e.touches.length === 1 && isDragging) { e.preventDefault(); const dx = e.touches[0].clientX - lastX, dy = e.touches[0].clientY - lastY; lastX = e.touches[0].clientX; lastY = e.touches[0].clientY; const lk = lookRef.current; lk.targetYaw -= dx * 0.003; lk.targetPitch = Math.max(-1.4, Math.min(1.4, lk.targetPitch - dy * 0.003)); } };
+    const onTE = (e) => { if (isDragging && e.changedTouches.length === 1) { const t = e.changedTouches[0]; if (Math.hypot(t.clientX - dragStartX, t.clientY - dragStartY) < 10) handleClick(t.clientX, t.clientY); } isDragging = false; pinchDist = 0; };
+    canvas.addEventListener('pointerdown', onPD); canvas.addEventListener('pointermove', onPM); canvas.addEventListener('pointerup', onPU); canvas.addEventListener('wheel', onWheel, { passive: false });
     canvas.addEventListener('touchstart', onTS, { passive: false }); canvas.addEventListener('touchmove', onTM, { passive: false }); canvas.addEventListener('touchend', onTE);
-    return () => { canvas.removeEventListener('pointerdown', onPD); canvas.removeEventListener('pointermove', onPM); canvas.removeEventListener('pointerup', onPU); canvas.removeEventListener('touchstart', onTS); canvas.removeEventListener('touchmove', onTM); canvas.removeEventListener('touchend', onTE); };
+    return () => { canvas.removeEventListener('pointerdown', onPD); canvas.removeEventListener('pointermove', onPM); canvas.removeEventListener('pointerup', onPU); canvas.removeEventListener('wheel', onWheel); canvas.removeEventListener('touchstart', onTS); canvas.removeEventListener('touchmove', onTM); canvas.removeEventListener('touchend', onTE); };
   }, [room, gridX, gridY, grid, onNavigate, onBuildDoor, onInteract]);
 
   const confirmLabel = confirmAction?.startsWith('door-') ? `Enter ${adjacentName(confirmAction.replace('door-', ''))}?` : '';

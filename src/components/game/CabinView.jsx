@@ -18,6 +18,7 @@ export default function CabinView({ target = 'ship', targetId = null, room = 0, 
   const planetMeshesRef = useRef([]);
   const raycasterRef = useRef(new THREE.Raycaster());
   const lookRef = useRef({ yaw: 0, pitch: 0, targetYaw: 0, targetPitch: 0 });
+  const zoomRef = useRef({ fov: 75, targetFov: 75 });
   const [confirmAction, setConfirmAction] = useState(null);
 
   const executeAction = (action) => {
@@ -98,6 +99,7 @@ export default function CabinView({ target = 'ship', targetId = null, room = 0, 
         p.mesh.position.set(Math.cos(angle) * p.orbitR, p.y, p.z + Math.sin(angle) * p.orbitR);
       }
 
+      const z = zoomRef.current; z.fov += (z.targetFov - z.fov) * 0.1; camera.fov = z.fov; camera.updateProjectionMatrix();
       renderer.render(scene, camera);
     };
     animate();
@@ -381,6 +383,7 @@ export default function CabinView({ target = 'ship', targetId = null, room = 0, 
     let isDragging = false;
     let lastX = 0, lastY = 0;
     let dragStartX = 0, dragStartY = 0;
+    let pinchDist = 0;
 
     const handleAction = (action) => { setConfirmAction(action); };
 
@@ -405,9 +408,15 @@ export default function CabinView({ target = 'ship', targetId = null, room = 0, 
       isDragging = false;
       if (Math.hypot(e.clientX - dragStartX, e.clientY - dragStartY) < 5) handleClick(e.clientX, e.clientY);
     };
-    const onTouchStart = (e) => { if (e.touches.length === 1) { isDragging = true; lastX = e.touches[0].clientX; lastY = e.touches[0].clientY; dragStartX = lastX; dragStartY = lastY; } };
+    const onWheel = (e) => { e.preventDefault(); const z = zoomRef.current; z.targetFov = Math.max(30, Math.min(90, z.targetFov + e.deltaY * 0.05)); };
+    const onTouchStart = (e) => { if (e.touches.length === 1) { isDragging = true; lastX = e.touches[0].clientX; lastY = e.touches[0].clientY; dragStartX = lastX; dragStartY = lastY; } else if (e.touches.length === 2) { isDragging = false; pinchDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); } };
     const onTouchMove = (e) => {
-      if (e.touches.length === 1 && isDragging) {
+      if (e.touches.length === 2) {
+        e.preventDefault();
+        const nd = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+        const delta = pinchDist - nd; pinchDist = nd;
+        const z = zoomRef.current; z.targetFov = Math.max(30, Math.min(90, z.targetFov + delta * 0.15));
+      } else if (e.touches.length === 1 && isDragging) {
         e.preventDefault();
         const dx = e.touches[0].clientX - lastX, dy = e.touches[0].clientY - lastY;
         lastX = e.touches[0].clientX; lastY = e.touches[0].clientY;
@@ -421,18 +430,20 @@ export default function CabinView({ target = 'ship', targetId = null, room = 0, 
         const t = e.changedTouches[0];
         if (Math.hypot(t.clientX - dragStartX, t.clientY - dragStartY) < 10) handleClick(t.clientX, t.clientY);
       }
-      isDragging = false;
+      isDragging = false; pinchDist = 0;
     };
 
     canvas.addEventListener('pointerdown', onPointerDown);
     canvas.addEventListener('pointermove', onPointerMove);
     canvas.addEventListener('pointerup', onPointerUp);
+    canvas.addEventListener('wheel', onWheel, { passive: false });
     canvas.addEventListener('touchstart', onTouchStart, { passive: false });
     canvas.addEventListener('touchmove', onTouchMove, { passive: false });
     canvas.addEventListener('touchend', onTouchEnd);
     return () => {
       canvas.removeEventListener('pointerdown', onPointerDown);
       canvas.removeEventListener('pointermove', onPointerMove);
+      canvas.removeEventListener('wheel', onWheel);
       canvas.removeEventListener('pointerup', onPointerUp);
       canvas.removeEventListener('touchstart', onTouchStart);
       canvas.removeEventListener('touchmove', onTouchMove);
