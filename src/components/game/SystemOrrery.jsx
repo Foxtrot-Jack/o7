@@ -326,25 +326,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
           group.add(ring);
         }
       } else if (body.type === BODY_TYPES.BELT) {
-        // Asteroid belt — ring of small dots
-        const beltRadius = body.orbitRadius;
-        const segments = 64;
-        const positions = new Float32Array(segments * 3);
-        for (let i = 0; i < segments; i++) {
-          const a = (i / segments) * Math.PI * 2;
-          positions[i * 3] = Math.cos(a) * beltRadius + (Math.random() - 0.5) * 2;
-          positions[i * 3 + 1] = (Math.random() - 0.5) * 0.5;
-          positions[i * 3 + 2] = Math.sin(a) * beltRadius + (Math.random() - 0.5) * 2;
-        }
-        const geom = new THREE.BufferGeometry();
-        geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        const mat = new THREE.PointsMaterial({
-          color: 0x665544,
-          size: 1.5,
-          sizeAttenuation: false,
-        });
-        const points = new THREE.Points(geom, mat);
-        group.add(points);
+        // Asteroid belt — orbit line only (dots removed to prevent venn-diagram overlap with orbit rings)
       } else if (body.type === BODY_TYPES.RING) {
         // Skip — rings are handled on the planet
         continue;
