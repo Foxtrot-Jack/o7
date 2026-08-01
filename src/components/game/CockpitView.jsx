@@ -1,6 +1,6 @@
 // Cockpit Viewer — interior perspective looking out the window
 // Shows the cockpit frame, system background, and placed accessories
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import * as THREE from 'three';
 import { useGameState, SHIP_MAP } from '@/lib/gameState';
 import { getCockpitConfig, COCKPIT_PART_MAP } from '@/lib/cockpitParts';
@@ -15,8 +15,11 @@ export default function CockpitView({ target = 'ship', targetId = null, decorati
   const accessoriesRef = useRef(null);
   const animationIdRef = useRef(null);
   const lookRef = useRef({ yaw: 0, pitch: 0, targetYaw: 0, targetPitch: 0 });
+  const bgMeshesRef = useRef([]);
+  const raycasterRef = useRef(new THREE.Raycaster());
 
   const { state, getSystemData } = useGameState();
+  const [selectedObject, setSelectedObject] = useState(null);
 
   const shipClass = target === 'ship'
     ? (SHIP_MAP[state.ship.type]?.class || (state.ship.type === 'custom' ? 2 : 1))
@@ -159,6 +162,86 @@ export default function CockpitView({ target = 'ship', targetId = null, decorati
       hud.rotation.x = -0.25;
       frame.add(hud);
     }
+
+    // Floor panel — from dashboard to behind pilot
+    const floorGeom = new THREE.BoxGeometry(config.windowWidth + 0.4, 0.05, config.depth + 2.5);
+    const floor = new THREE.Mesh(floorGeom, panelMat);
+    floor.position.set(0, -wh - 0.35, 0.3);
+    frame.add(floor);
+
+    // Rear bulkhead
+    const backGeom = new THREE.BoxGeometry(config.windowWidth + 0.6, config.windowHeight + 0.8, 0.05);
+    const back = new THREE.Mesh(backGeom, panelMat);
+    back.position.set(0, 0, 1.5);
+    frame.add(back);
+
+    // Canopy ribs — cross-section rings from window to bulkhead
+    const ribMat = new THREE.LineBasicMaterial({ color: 0x331a00, transparent: true, opacity: 0.5 });
+    const ribCount = Math.max(3, Math.ceil(config.windowWidth / 2));
+    for (let i = 1; i <= ribCount; i++) {
+      const t = i / (ribCount + 1);
+      const ribZ = z + t * (1.5 - z);
+      const rw = ww * (1 + t * 0.15);
+      const rh = wh * (1 + t * 0.1);
+      const ribPts = [
+        new THREE.Vector3(-rw, -rh, ribZ), new THREE.Vector3(rw, -rh, ribZ),
+        new THREE.Vector3(rw, -rh, ribZ), new THREE.Vector3(rw, rh, ribZ),
+        new THREE.Vector3(rw, rh, ribZ), new THREE.Vector3(-rw, rh, ribZ),
+        new THREE.Vector3(-rw, rh, ribZ), new THREE.Vector3(-rw, -rh, ribZ),
+      ];
+      const ribGeom = new THREE.BufferGeometry().setFromPoints(ribPts);
+      frame.add(new THREE.LineSegments(ribGeom, ribMat));
+    }
+
+    // Canopy edge sweeps — from window corners to bulkhead
+    const edgeMat = new THREE.LineBasicMaterial({ color: 0x4a2a00 });
+    const edgePts = [
+      new THREE.Vector3(-ww, wh, z), new THREE.Vector3(-ww - 0.2, wh + 0.15, z + 0.6),
+      new THREE.Vector3(-ww - 0.2, wh + 0.15, z + 0.6), new THREE.Vector3(-ww - 0.05, wh + 0.05, 1.5),
+      new THREE.Vector3(ww, wh, z), new THREE.Vector3(ww + 0.2, wh + 0.15, z + 0.6),
+      new THREE.Vector3(ww + 0.2, wh + 0.15, z + 0.6), new THREE.Vector3(ww + 0.05, wh + 0.05, 1.5),
+      new THREE.Vector3(-ww, -wh, z), new THREE.Vector3(-ww - 0.15, -wh - 0.1, z + 0.6),
+      new THREE.Vector3(-ww - 0.15, -wh - 0.1, z + 0.6), new THREE.Vector3(-ww, -wh - 0.3, 1.5),
+      new THREE.Vector3(ww, -wh, z), new THREE.Vector3(ww + 0.15, -wh - 0.1, z + 0.6),
+      new THREE.Vector3(ww + 0.15, -wh - 0.1, z + 0.6), new THREE.Vector3(ww, -wh - 0.3, 1.5),
+    ];
+    const edgeGeom = new THREE.BufferGeometry().setFromPoints(edgePts);
+    frame.add(new THREE.LineSegments(edgeGeom, edgeMat));
+
+    // Seat — headrest and base in foreground
+    const seatMat = new THREE.MeshBasicMaterial({ color: 0x2a1500, wireframe: true });
+    const headGeom = new THREE.BoxGeometry(0.6, 0.35, 0.12);
+    const headrest = new THREE.Mesh(headGeom, seatMat);
+    headrest.position.set(0, -wh - 0.12, 0.75);
+    frame.add(headrest);
+    const seatBaseGeom = new THREE.BoxGeometry(0.7, 0.08, 0.5);
+    const seatBase = new THREE.Mesh(seatBaseGeom, seatMat);
+    seatBase.position.set(0, -wh - 0.3, 0.5);
+    frame.add(seatBase);
+
+    // Control sticks on dashboard
+    const stickMat = new THREE.MeshBasicMaterial({ color: 0x4a2a00, wireframe: true });
+    const stickGeom = new THREE.CylinderGeometry(0.03, 0.05, 0.18, 6);
+    const stickL = new THREE.Mesh(stickGeom, stickMat);
+    stickL.position.set(-0.4, -wh + 0.04, z + 0.25);
+    frame.add(stickL);
+    const stickR = new THREE.Mesh(stickGeom, stickMat);
+    stickR.position.set(0.4, -wh + 0.04, z + 0.25);
+    frame.add(stickR);
+
+    // Overhead console with indicator lights
+    const ohGeom = new THREE.BoxGeometry(config.windowWidth * 0.6, 0.04, 0.3);
+    const ohConsole = new THREE.Mesh(ohGeom, panelMat);
+    ohConsole.position.set(0, wh + 0.18, z + 0.4);
+    frame.add(ohConsole);
+    const lightColors = [0x00ff66, 0xff8800, 0xff0000];
+    for (let i = 0; i < 3; i++) {
+      const indGeom = new THREE.SphereGeometry(0.025, 4, 3);
+      const indMat = new THREE.MeshBasicMaterial({ color: lightColors[i] });
+      const ind = new THREE.Mesh(indGeom, indMat);
+      ind.position.set((i - 1) * 0.15, wh + 0.2, z + 0.4);
+      frame.add(ind);
+    }
   }, [config]);
 
   // Build system background
@@ -171,6 +254,8 @@ export default function CockpitView({ target = 'ship', targetId = null, decorati
       if (child.geometry) child.geometry.dispose();
       if (child.material) child.material.dispose();
     }
+
+    bgMeshesRef.current = [];
 
     // Starfield
     const starCount = 800;
@@ -196,7 +281,9 @@ export default function CockpitView({ target = 'ship', targetId = null, decorati
         const beam = new THREE.Mesh(geom, structMat);
         beam.position.set((Math.random() - 0.5) * config.windowWidth * 2, (Math.random() - 0.5) * config.windowHeight * 2, -5 - Math.random() * 5);
         beam.rotation.z = Math.random() * Math.PI;
+        beam.userData.info = { name: 'Docking Bay Structure', typeLabel: 'Station Interior', details: { 'Location': state.currentSystem?.name || 'Unknown', 'Status': 'Docked' } };
         bg.add(beam);
+        bgMeshesRef.current.push(beam);
       }
       for (let i = 0; i < 3; i++) {
         const lightGeom = new THREE.SphereGeometry(0.15, 6, 4);
@@ -213,7 +300,17 @@ export default function CockpitView({ target = 'ship', targetId = null, decorati
       const surfaceMat = new THREE.MeshBasicMaterial({ color: surfaceColor, wireframe: true });
       const surface = new THREE.Mesh(surfaceGeom, surfaceMat);
       surface.position.set(0, -28, -5);
+      surface.userData.info = {
+        name: body?.name || body?.designation || 'Planetary Surface',
+        typeLabel: body?.planetTypeName || 'Surface',
+        details: {
+          'Gravity': body ? body.gravity?.toFixed(2) + ' G' : '—',
+          'Temp': body ? Math.round(body.temperature) + ' K' : '—',
+          'Atmosphere': body?.atmosphere ? 'Yes' : 'No',
+        },
+      };
       bg.add(surface);
+      bgMeshesRef.current.push(surface);
     }
 
     // Always render the system star (unless docked)
@@ -225,7 +322,17 @@ export default function CockpitView({ target = 'ship', targetId = null, decorati
         const starMat = new THREE.MeshBasicMaterial({ color: starColor, wireframe: true });
         const starMesh = new THREE.Mesh(starGeom, starMat);
         starMesh.position.set(6, 3, -45);
+        starMesh.userData.info = {
+          name: star.name || star.designation || 'Star',
+          typeLabel: 'Stellar Body',
+          details: {
+            'Class': star.starClass?.class || '—',
+            'Temperature': Math.round(star.temperature) + ' K',
+            'Radius': star.radius?.toFixed(2) + ' R☉',
+          },
+        };
         bg.add(starMesh);
+        bgMeshesRef.current.push(starMesh);
         const glowGeom = new THREE.SphereGeometry(7, 8, 6);
         const glowMat = new THREE.MeshBasicMaterial({ color: starColor, transparent: true, opacity: 0.15 });
         const glow = new THREE.Mesh(glowGeom, glowMat);
@@ -241,7 +348,20 @@ export default function CockpitView({ target = 'ship', targetId = null, decorati
         const pMesh = new THREE.Mesh(pGeom, pMat);
         const angle = (i / Math.max(planets.length, 1)) * Math.PI * 2;
         pMesh.position.set(Math.cos(angle) * 8, Math.sin(angle) * 3, -20 - i * 5);
+        pMesh.userData.info = {
+          name: planet.name || planet.designation || 'Planet',
+          typeLabel: planet.planetTypeName || planet.type || 'Planet',
+          details: {
+            'Radius': planet.radius?.toFixed(2) + ' R⊕',
+            'Gravity': planet.gravity?.toFixed(2) + ' G',
+            'Temp': Math.round(planet.temperature) + ' K',
+            'Atmosphere': planet.atmosphere ? 'Yes' : 'No',
+            'Habitable': planet.habitable ? 'Yes' : 'No',
+            'Orbit': planet.orbitRadius?.toFixed(1) + ' AU',
+          },
+        };
         bg.add(pMesh);
+        bgMeshesRef.current.push(pMesh);
       });
     }
   }, [systemData, location, config, state.currentSurfaceBody]);
@@ -274,14 +394,29 @@ export default function CockpitView({ target = 'ship', targetId = null, decorati
     }
   }, [decoration, config]);
 
-  // Look-around interaction
+  // Look-around + click-to-inspect interaction
   useEffect(() => {
     const canvas = rendererRef.current?.domElement;
     if (!canvas) return;
     let isDragging = false;
     let lastX = 0, lastY = 0;
+    let dragStartX = 0, dragStartY = 0;
 
-    const onPointerDown = (e) => { isDragging = true; lastX = e.clientX; lastY = e.clientY; };
+    const handleClick = (cx, cy) => {
+      const rect = canvas.getBoundingClientRect();
+      const mouse = new THREE.Vector2(((cx - rect.left) / rect.width) * 2 - 1, -((cy - rect.top) / rect.height) * 2 + 1);
+      raycasterRef.current.setFromCamera(mouse, cameraRef.current);
+      const meshes = bgMeshesRef.current.filter(m => m);
+      const intersects = raycasterRef.current.intersectObjects(meshes, false);
+      if (intersects.length > 0) {
+        const info = intersects[0].object.userData.info;
+        if (info) setSelectedObject(info);
+      } else {
+        setSelectedObject(null);
+      }
+    };
+
+    const onPointerDown = (e) => { isDragging = true; lastX = e.clientX; lastY = e.clientY; dragStartX = e.clientX; dragStartY = e.clientY; };
     const onPointerMove = (e) => {
       if (!isDragging) return;
       const dx = e.clientX - lastX, dy = e.clientY - lastY;
@@ -290,8 +425,11 @@ export default function CockpitView({ target = 'ship', targetId = null, decorati
       lk.targetYaw = Math.max(-0.6, Math.min(0.6, lk.targetYaw - dx * 0.003));
       lk.targetPitch = Math.max(-0.4, Math.min(0.4, lk.targetPitch - dy * 0.003));
     };
-    const onPointerUp = () => { isDragging = false; };
-    const onTouchStart = (e) => { if (e.touches.length === 1) { isDragging = true; lastX = e.touches[0].clientX; lastY = e.touches[0].clientY; } };
+    const onPointerUp = (e) => {
+      isDragging = false;
+      if (Math.hypot(e.clientX - dragStartX, e.clientY - dragStartY) < 5) handleClick(e.clientX, e.clientY);
+    };
+    const onTouchStart = (e) => { if (e.touches.length === 1) { isDragging = true; lastX = e.touches[0].clientX; lastY = e.touches[0].clientY; dragStartX = lastX; dragStartY = lastY; } };
     const onTouchMove = (e) => {
       if (e.touches.length === 1 && isDragging) {
         e.preventDefault();
@@ -302,7 +440,13 @@ export default function CockpitView({ target = 'ship', targetId = null, decorati
         lk.targetPitch = Math.max(-0.4, Math.min(0.4, lk.targetPitch - dy * 0.003));
       }
     };
-    const onTouchEnd = () => { isDragging = false; };
+    const onTouchEnd = (e) => {
+      if (isDragging && e.changedTouches.length === 1) {
+        const t = e.changedTouches[0];
+        if (Math.hypot(t.clientX - dragStartX, t.clientY - dragStartY) < 10) handleClick(t.clientX, t.clientY);
+      }
+      isDragging = false;
+    };
 
     canvas.addEventListener('pointerdown', onPointerDown);
     canvas.addEventListener('pointermove', onPointerMove);
@@ -323,8 +467,20 @@ export default function CockpitView({ target = 'ship', targetId = null, decorati
   return (
     <div className="relative w-full h-full bg-black">
       <div ref={mountRef} className="w-full h-full" style={{ touchAction: 'none' }} />
-      <div className="absolute top-1 left-1 text-[9px] text-orange-700 pointer-events-none">DRAG TO LOOK AROUND</div>
+      <div className="absolute top-1 left-1 text-[9px] text-orange-700 pointer-events-none">DRAG TO LOOK · TAP OBJECTS THROUGH WINDOW FOR INFO</div>
       <div className="absolute bottom-1 left-1 text-[9px] text-orange-700 pointer-events-none">{config.name}</div>
+      {selectedObject && (
+        <div className="absolute bottom-2 right-2 w-56 border border-cyan-700 bg-black/95 p-3 text-xs space-y-1 z-30">
+          <div className="flex items-center justify-between border-b border-cyan-900 pb-1">
+            <span className="text-cyan-300 font-bold">{selectedObject.name}</span>
+            <button onClick={() => setSelectedObject(null)} className="text-cyan-700 hover:text-cyan-400 text-[10px]">✕</button>
+          </div>
+          <div className="text-cyan-600 text-[10px] uppercase">{selectedObject.typeLabel}</div>
+          {selectedObject.details && Object.entries(selectedObject.details).map(([key, val]) => (
+            <div key={key} className="text-cyan-500 text-[10px]">{key}: <span className="text-cyan-300">{val}</span></div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
