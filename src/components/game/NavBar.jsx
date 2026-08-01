@@ -1,73 +1,121 @@
-// Navigation bar — dropdown-grouped access to all screens
+// Navigation bar — dropdown-grouped access with nested subfolder accordions
 import React, { useState, useRef, useEffect } from 'react';
-import { Compass, Store, Package, ClipboardList, Pickaxe, Telescope, Home, Map, Rocket, Layers, Anchor, Trophy, Settings, Wrench, MapPin, TrendingUp, User, Hammer, BookOpen, Briefcase, ChevronDown, Lock, Sparkles, Medal, Palette, DoorOpen, ArrowLeftRight, FlaskConical, Users, Crown, Target, Skull, Newspaper, Crosshair, Swords, AlertTriangle, Gem, UserCheck, Building, ScrollText, Plane, Activity, Leaf, Route, Radio, ListChecks, Award, Save, Brain, LayoutDashboard, Zap, Network, Eye, Fish, Calendar, Gamepad2 } from 'lucide-react';
+import { Compass, Store, Package, ClipboardList, Pickaxe, Telescope, Home, Map, Rocket, Layers, Anchor, Trophy, Settings, Wrench, MapPin, TrendingUp, User, Hammer, BookOpen, Briefcase, ChevronDown, Lock, Sparkles, Medal, Palette, DoorOpen, ArrowLeftRight, FlaskConical, Users, Crown, Target, Skull, Newspaper, Crosshair, Swords, AlertTriangle, Gem, UserCheck, Building, ScrollText, Plane, Activity, Leaf, Route, Radio, ListChecks, Award, Save, Brain, LayoutDashboard, Network, Eye, Fish, Calendar, Gamepad2, Zap } from 'lucide-react';
 import { useGameState } from '@/lib/gameState';
 import { soundEngine } from '@/lib/soundEngine';
 
 const NAV_GROUPS = [
   {
     id: 'explore', label: 'Explore', icon: Compass, align: 'left',
-    items: [
-      { id: 'galaxy', label: 'Galaxy Map', icon: Map },
-      { id: 'system', label: 'System', icon: Compass },
-      { id: 'exploration', label: 'Exploration', icon: Telescope },
-      { id: 'survey', label: 'Surface Survey', icon: MapPin },
-      { id: 'srv', label: 'SRV Rover', icon: Crosshair },
-      { id: 'conflictzone', label: 'Conflict Zones', icon: Swords },
-      { id: 'res', label: 'Mining Sites', icon: Gem },
-      { id: 'exobiology', label: 'Exobiology', icon: Leaf },
-      { id: 'piracy', label: 'Piracy', icon: Skull },
-      { id: 'fss', label: 'FSS Scanner', icon: Radio },
+    folders: [
+      {
+        label: 'Navigation', items: [
+          { id: 'galaxy', label: 'Galaxy Map', icon: Map },
+          { id: 'system', label: 'System', icon: Compass },
+        ],
+      },
+      {
+        label: 'Scanning', items: [
+          { id: 'exploration', label: 'Exploration', icon: Telescope },
+          { id: 'fss', label: 'FSS Scanner', icon: Radio },
+          { id: 'survey', label: 'Surface Survey', icon: MapPin },
+          { id: 'srv', label: 'SRV Rover', icon: Crosshair },
+        ],
+      },
+      {
+        label: 'Field Ops', items: [
+          { id: 'conflictzone', label: 'Conflict Zones', icon: Swords },
+          { id: 'res', label: 'Mining Sites', icon: Gem },
+          { id: 'piracy', label: 'Piracy', icon: Skull },
+          { id: 'exobiology', label: 'Exobiology', icon: Leaf },
+        ],
+      },
     ],
   },
   {
     id: 'station', label: 'Station', icon: Home, align: 'left', stationOnly: true,
-    items: [
-      { id: 'station', label: 'Station Services', icon: Home },
-      { id: 'market', label: 'Market', icon: Store },
-      { id: 'outfitting', label: 'Outfitting', icon: Wrench },
-      { id: 'engineering', label: 'Engineering', icon: FlaskConical },
-      { id: 'multicrew', label: 'Multi-Crew', icon: Users },
-      { id: 'cartography', label: 'Cartographics', icon: ScrollText },
-      { id: 'maintenance', label: 'Maintenance', icon: Wrench },
-      { id: 'blackmarket', label: 'Black Market', icon: Skull },
-      { id: 'bountyboard', label: 'Bounty Board', icon: Crosshair },
-      { id: 'passengers', label: 'Passenger Lounge', icon: UserCheck },
-      { id: 'materialtrader', label: 'Material Trader', icon: ArrowLeftRight },
-      { id: 'synthesis', label: 'Synthesis', icon: FlaskConical },
-      { id: 'crew', label: 'Crew Quarters', icon: Users },
+    folders: [
+      {
+        label: 'Services', items: [
+          { id: 'station', label: 'Station Services', icon: Home },
+          { id: 'market', label: 'Market', icon: Store },
+          { id: 'cartography', label: 'Cartographics', icon: ScrollText },
+          { id: 'maintenance', label: 'Maintenance', icon: Wrench },
+        ],
+      },
+      {
+        label: 'Outfitting', items: [
+          { id: 'outfitting', label: 'Outfitting', icon: Wrench },
+          { id: 'engineering', label: 'Engineering', icon: FlaskConical },
+          { id: 'synthesis', label: 'Synthesis', icon: FlaskConical },
+          { id: 'materialtrader', label: 'Material Trader', icon: ArrowLeftRight },
+        ],
+      },
+      {
+        label: 'Personnel', items: [
+          { id: 'multicrew', label: 'Multi-Crew', icon: Users },
+          { id: 'crew', label: 'Crew Quarters', icon: Users },
+          { id: 'passengers', label: 'Passenger Lounge', icon: UserCheck },
+        ],
+      },
+      {
+        label: 'Underworld', items: [
+          { id: 'blackmarket', label: 'Black Market', icon: Skull },
+          { id: 'bountyboard', label: 'Bounty Board', icon: Crosshair },
+        ],
+      },
     ],
   },
   {
     id: 'commerce', label: 'Commerce', icon: TrendingUp, align: 'left',
     items: [
+      { id: 'missions', label: 'Missions', icon: ClipboardList },
+      { id: 'chains', label: 'Mission Chains', icon: ListChecks },
       { id: 'trade', label: 'Trade Tools', icon: TrendingUp },
       { id: 'marketai', label: 'Market Analysis', icon: Brain },
       { id: 'company', label: 'Company', icon: Briefcase },
-      { id: 'missions', label: 'Missions', icon: ClipboardList },
-      { id: 'chains', label: 'Mission Chains', icon: ListChecks },
     ],
   },
   {
     id: 'fleet', label: 'Fleet', icon: Package, align: 'left',
-    items: [
-      { id: 'ship', label: 'Ship', icon: Package },
-      { id: 'cabin', label: 'Cabin', icon: Eye },
-      { id: 'roommanager', label: 'Room Manager', icon: LayoutDashboard },
-      { id: 'aquarium', label: 'Aquarium', icon: Fish },
-      { id: 'garden', label: 'Garden', icon: Leaf },
-      { id: 'geneticslab', label: 'Genetics Lab', icon: FlaskConical },
-      { id: 'fleet', label: 'Fleet Manager', icon: Layers },
-      { id: 'wingmates', label: 'Wingmates', icon: Users },
-      { id: 'fighters', label: 'Fighter Hangar', icon: Plane },
-      { id: 'carriers', label: 'Fleet Carriers', icon: Anchor },
-      { id: 'carrierlogistics', label: 'Carrier Logistics', icon: Route },
-      { id: 'carriercommand', label: 'Carrier Command', icon: LayoutDashboard },
-      { id: 'presets', label: 'Loadout Presets', icon: Save },
-      { id: 'shipcreator', label: 'Ship Yard', icon: Hammer },
-      { id: 'carriercreator', label: 'Carrier Yard', icon: Hammer },
-      { id: 'carrierinterior', label: 'Carrier Interior', icon: DoorOpen },
-      { id: 'warpgates', label: 'Warp Gates', icon: Network },
+    folders: [
+      {
+        label: 'Ship', items: [
+          { id: 'ship', label: 'Ship', icon: Package },
+          { id: 'presets', label: 'Loadout Presets', icon: Save },
+          { id: 'shipcreator', label: 'Ship Yard', icon: Hammer },
+        ],
+      },
+      {
+        label: 'Carriers', items: [
+          { id: 'carriers', label: 'Fleet Carriers', icon: Anchor },
+          { id: 'carrierlogistics', label: 'Carrier Logistics', icon: Route },
+          { id: 'carriercommand', label: 'Carrier Command', icon: LayoutDashboard },
+          { id: 'carriercreator', label: 'Carrier Yard', icon: Hammer },
+          { id: 'carrierinterior', label: 'Carrier Interior', icon: DoorOpen },
+        ],
+      },
+      {
+        label: 'Cabin', items: [
+          { id: 'cabin', label: 'Cabin', icon: Eye },
+          { id: 'roommanager', label: 'Room Manager', icon: LayoutDashboard },
+          { id: 'aquarium', label: 'Aquarium', icon: Fish },
+          { id: 'garden', label: 'Garden', icon: Leaf },
+          { id: 'geneticslab', label: 'Genetics Lab', icon: FlaskConical },
+        ],
+      },
+      {
+        label: 'Squadron', items: [
+          { id: 'fleet', label: 'Fleet Manager', icon: Layers },
+          { id: 'wingmates', label: 'Wingmates', icon: Users },
+          { id: 'fighters', label: 'Fighter Hangar', icon: Plane },
+        ],
+      },
+      {
+        label: 'Infrastructure', items: [
+          { id: 'warpgates', label: 'Warp Gates', icon: Network },
+        ],
+      },
     ],
   },
   {
@@ -81,26 +129,50 @@ const NAV_GROUPS = [
   },
   {
     id: 'commander', label: 'Commander', icon: User, align: 'right',
-    items: [
-      { id: 'achievements', label: 'Awards', icon: Trophy },
-      { id: 'leaderboard', label: 'Leaderboard', icon: Medal },
-      { id: 'holidays', label: 'Public Holidays', icon: Calendar },
-      { id: 'galnet', label: 'StarNet News', icon: Newspaper },
-      { id: 'crime', label: 'Crime Status', icon: AlertTriangle },
-      { id: 'bgs', label: 'Faction Status', icon: Activity },
-      { id: 'rep', label: 'Reputation', icon: Award },
-      { id: 'powerplay', label: 'Power Play', icon: Crown },
-      { id: 'events', label: 'Cosmic Events', icon: Zap },
-      { id: 'titles', label: 'Titles', icon: Medal },
-      { id: 'goals', label: 'Community Goals', icon: Target },
-      { id: 'badgemaker', label: 'Badge Maker', icon: Palette },
-      { id: 'profile', label: 'Profile', icon: User },
-      { id: 'codex', label: 'Codex', icon: BookOpen },
-      { id: 'discoveries', label: 'Discoveries', icon: BookOpen },
-      { id: 'cheats', label: 'Cheats', icon: Sparkles },
-      { id: 'canisstella', label: 'Canis Stella', icon: Building },
-      { id: 'controllerconfig', label: 'Controller Config', icon: Gamepad2 },
-      { id: 'settings', label: 'Settings', icon: Settings },
+    folders: [
+      {
+        label: 'Identity', items: [
+          { id: 'profile', label: 'Profile', icon: User },
+          { id: 'titles', label: 'Titles', icon: Medal },
+          { id: 'badgemaker', label: 'Badge Maker', icon: Palette },
+          { id: 'rep', label: 'Reputation', icon: Award },
+        ],
+      },
+      {
+        label: 'Progress', items: [
+          { id: 'achievements', label: 'Awards', icon: Trophy },
+          { id: 'leaderboard', label: 'Leaderboard', icon: Medal },
+          { id: 'goals', label: 'Community Goals', icon: Target },
+        ],
+      },
+      {
+        label: 'World', items: [
+          { id: 'galnet', label: 'StarNet News', icon: Newspaper },
+          { id: 'holidays', label: 'Public Holidays', icon: Calendar },
+          { id: 'events', label: 'Cosmic Events', icon: Zap },
+        ],
+      },
+      {
+        label: 'Status', items: [
+          { id: 'crime', label: 'Crime Status', icon: AlertTriangle },
+          { id: 'bgs', label: 'Faction Status', icon: Activity },
+          { id: 'powerplay', label: 'Power Play', icon: Crown },
+          { id: 'canisstella', label: 'Canis Stella', icon: Building },
+        ],
+      },
+      {
+        label: 'Reference', items: [
+          { id: 'codex', label: 'Codex', icon: BookOpen },
+          { id: 'discoveries', label: 'Discoveries', icon: BookOpen },
+          { id: 'cheats', label: 'Cheats', icon: Sparkles },
+        ],
+      },
+      {
+        label: 'System', items: [
+          { id: 'controllerconfig', label: 'Controller Config', icon: Gamepad2 },
+          { id: 'settings', label: 'Settings', icon: Settings },
+        ],
+      },
     ],
   },
 ];
@@ -108,8 +180,15 @@ const NAV_GROUPS = [
 const STATION_ONLY_SCREENS = ['station', 'market', 'outfitting', 'materialtrader', 'synthesis', 'crew', 'blackmarket', 'engineering', 'bountyboard', 'passengers', 'multicrew', 'cartography'];
 const CARRIER_REQUIRED_SCREENS = ['carriercreator'];
 
+// Flatten all items from a group (whether foldered or flat) for active-check
+function getAllItems(group) {
+  if (group.folders) return group.folders.flatMap(f => f.items);
+  return group.items || [];
+}
+
 export default function NavBar({ currentScreen, onNavigate, location }) {
   const [openGroup, setOpenGroup] = useState(null);
+  const [openSubfolder, setOpenSubfolder] = useState(null);
   const navRef = useRef(null);
   const { state } = useGameState();
 
@@ -118,6 +197,7 @@ export default function NavBar({ currentScreen, onNavigate, location }) {
     const handler = (e) => {
       if (navRef.current && !navRef.current.contains(e.target)) {
         setOpenGroup(null);
+        setOpenSubfolder(null);
       }
     };
     document.addEventListener('mousedown', handler);
@@ -136,20 +216,64 @@ export default function NavBar({ currentScreen, onNavigate, location }) {
     soundEngine.play('click');
     onNavigate(item.id);
     setOpenGroup(null);
+    setOpenSubfolder(null);
+  };
+
+  const handleGroupClick = (group) => {
+    const isOpen = openGroup === group.id;
+    soundEngine.play(isOpen ? 'back' : 'select');
+    setOpenGroup(isOpen ? null : group.id);
+    setOpenSubfolder(null);
+  };
+
+  const handleFolderClick = (folderKey) => {
+    const isOpen = openSubfolder === folderKey;
+    soundEngine.play(isOpen ? 'back' : 'select');
+    setOpenSubfolder(isOpen ? null : folderKey);
+  };
+
+  const isItemDisabled = (itemId) =>
+    (STATION_ONLY_SCREENS.includes(itemId) && location !== 'station') ||
+    (CARRIER_REQUIRED_SCREENS.includes(itemId) && (state.fleetCarriers || []).length === 0);
+
+  const renderItem = (item) => {
+    if (item.id === 'cheats' && !state.cheats?.unlocked) return null;
+    const ItemIcon = item.icon;
+    const itemDisabled = isItemDisabled(item.id);
+    const itemActive = currentScreen === item.id;
+    return (
+      <button
+        key={item.id}
+        onClick={() => handleItemClick(item)}
+        disabled={itemDisabled}
+        className={`flex items-center gap-2 w-full px-3 py-1.5 text-xs whitespace-nowrap text-left border-b border-orange-950/50 last:border-b-0 transition-all ${
+          itemActive
+            ? 'bg-orange-950/40 text-orange-300'
+            : itemDisabled
+              ? 'text-gray-700 cursor-not-allowed'
+              : 'text-orange-600 hover:bg-orange-950/30 hover:text-orange-400'
+        }`}
+      >
+        <ItemIcon className="w-3.5 h-3.5 flex-shrink-0" />
+        <span>{item.label}</span>
+        {itemDisabled && <Lock className="w-2.5 h-2.5 ml-auto" />}
+      </button>
+    );
   };
 
   return (
-    <nav ref={navRef} className="relative z-50 flex items-center gap-1 px-2 py-1.5 border-b border-orange-900/50 bg-black">
+    <nav ref={navRef} className="relative z-50 flex items-center gap-1 px-2 py-1.5 border-b border-orange-900/50 bg-black overflow-x-auto">
       {NAV_GROUPS.map((group) => {
         const Icon = group.icon;
-        const hasActive = group.items.some(i => i.id === currentScreen);
+        const allItems = getAllItems(group);
+        const hasActive = allItems.some(i => i.id === currentScreen);
         const groupDisabled = group.stationOnly && location !== 'station';
         const isOpen = openGroup === group.id;
 
         return (
           <div key={group.id} className="relative flex-shrink-0">
             <button
-              onClick={() => { if (!groupDisabled) { soundEngine.play(isOpen ? 'back' : 'select'); setOpenGroup(isOpen ? null : group.id); } }}
+              onClick={() => { if (!groupDisabled) handleGroupClick(group); }}
               disabled={groupDisabled}
               className={`flex items-center gap-1 px-2.5 py-1.5 text-xs whitespace-nowrap border transition-all ${
                 hasActive
@@ -168,28 +292,37 @@ export default function NavBar({ currentScreen, onNavigate, location }) {
             </button>
 
             {isOpen && !groupDisabled && (
-              <div className={`absolute top-full ${group.align === 'right' ? 'right-0' : 'left-0'} mt-0.5 min-w-[150px] border border-orange-800 bg-black z-50 shadow-lg shadow-black`}>
-                {group.items.map((item) => {
-                  if (item.id === 'cheats' && !state.cheats?.unlocked) return null;
-                  const ItemIcon = item.icon;
-                  const itemDisabled = (STATION_ONLY_SCREENS.includes(item.id) && location !== 'station') || (CARRIER_REQUIRED_SCREENS.includes(item.id) && (state.fleetCarriers || []).length === 0);
-                  const itemActive = currentScreen === item.id;
+              <div className={`absolute top-full ${group.align === 'right' ? 'right-0' : 'left-0'} mt-0.5 min-w-[160px] max-h-[70vh] overflow-y-auto border border-orange-800 bg-black z-50 shadow-lg shadow-black`}>
+                {/* Flat items (no folders) */}
+                {group.items && group.items.map(item => renderItem(item))}
+
+                {/* Foldered items with accordion expansion */}
+                {group.folders && group.folders.map((folder) => {
+                  const folderKey = `${group.id}:${folder.label}`;
+                  const folderOpen = openSubfolder === folderKey;
+                  const folderHasActive = folder.items.some(i => i.id === currentScreen);
                   return (
-                    <button
-                      key={item.id}
-                      onClick={() => handleItemClick(item)}
-                      disabled={itemDisabled}
-                      className={`flex items-center gap-2 w-full px-3 py-1.5 text-xs whitespace-nowrap text-left border-b border-orange-950/50 last:border-b-0 transition-all ${
-                        itemActive
-                          ? 'bg-orange-950/40 text-orange-300'
-                          : itemDisabled
-                            ? 'text-gray-700 cursor-not-allowed'
-                            : 'text-orange-600 hover:bg-orange-950/30 hover:text-orange-400'
-                      }`}
-                    >
-                      <ItemIcon className="w-3.5 h-3.5 flex-shrink-0" />
-                      <span>{item.label}</span>
-                    </button>
+                    <div key={folder.label} className="border-b border-orange-950/50 last:border-b-0">
+                      <button
+                        onClick={() => handleFolderClick(folderKey)}
+                        className={`flex items-center gap-1.5 w-full px-3 py-1.5 text-[10px] uppercase tracking-wider font-bold whitespace-nowrap text-left transition-all ${
+                          folderHasActive
+                            ? 'text-orange-300'
+                            : folderOpen
+                              ? 'text-orange-400 bg-orange-950/20'
+                              : 'text-orange-700 hover:text-orange-500'
+                        }`}
+                      >
+                        <span className={`inline-block w-2 text-center transition-transform ${folderOpen ? 'rotate-90' : ''}`}>▸</span>
+                        <span>{folder.label}</span>
+                        <span className="ml-auto text-orange-800">{folder.items.length}</span>
+                      </button>
+                      {folderOpen && (
+                        <div className="bg-black/50">
+                          {folder.items.map(item => renderItem(item))}
+                        </div>
+                      )}
+                    </div>
                   );
                 })}
               </div>
