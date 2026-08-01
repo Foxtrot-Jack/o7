@@ -362,10 +362,18 @@ export default function GalaxyMap({ onJumpToSystem }) {
       ovPos[i*3] = p.x - center.x;
       ovPos[i*3+1] = p.y - center.y;
       ovPos[i*3+2] = p.z - center.z;
-      const b = Math.min(1, p.density / 2) * 0.9;
-      ovCol[i*3] = b;
-      ovCol[i*3+1] = b * 0.5;
-      ovCol[i*3+2] = b * 0.1;
+      if (p.isBridge) {
+        // Bridge trails — dim cyan to stand out from the orange galaxy
+        const b = 0.45;
+        ovCol[i*3] = 0;
+        ovCol[i*3+1] = b * 0.8;
+        ovCol[i*3+2] = b;
+      } else {
+        const b = Math.min(1, p.density / 2) * 0.9;
+        ovCol[i*3] = b;
+        ovCol[i*3+1] = b * 0.5;
+        ovCol[i*3+2] = b * 0.1;
+      }
     });
     const ovGeom = new THREE.BufferGeometry();
     ovGeom.setAttribute('position', new THREE.BufferAttribute(ovPos, 3));

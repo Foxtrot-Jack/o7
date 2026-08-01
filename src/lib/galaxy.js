@@ -367,11 +367,18 @@ export function generateGalaxyOverview() {
   for (let x = -GALACTIC_RADIUS; x <= GALACTIC_RADIUS; x += step) {
     for (let y = -GALACTIC_RADIUS; y <= GALACTIC_RADIUS; y += step) {
       const density = galacticDensity(x, y, 0);
-      if (density > 0.05) {
+      if (density > 0) {
         const zJitter = (rng() - 0.5) * GALACTIC_HEIGHT * 0.3;
         points.push({ x, y, z: zJitter, density });
       }
     }
   }
+
+  // Add bridge star trails so the zoomed-out map shows landmark connections
+  const bridges = generateLandmarkBridges();
+  for (const bridge of bridges) {
+    points.push({ x: bridge.x, y: bridge.y, z: bridge.z, density: 0.1, isBridge: true });
+  }
+
   return points;
 }
