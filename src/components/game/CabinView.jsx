@@ -4,7 +4,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import * as THREE from 'three';
 import { useGameState, SHIP_MAP } from '@/lib/gameState';
 import { COCKPIT_PART_MAP } from '@/lib/cockpitParts';
-import { getCabinConfig, genCabinSlots, getWindowConfig, DOOR_W, DOOR_H } from '@/lib/cabinConfig';
+import { getCabinConfig, genCabinSlots, getWindowConfig, DOOR_W, DOOR_H, createCabinTexture } from '@/lib/cabinConfig';
 
 export default function CabinView({ target = 'ship', targetId = null, room = 0, onNavigate, onExitGame, onRoomChange, decorationOverride = null }) {
   const mountRef = useRef(null);
@@ -121,9 +121,9 @@ export default function CabinView({ target = 'ship', targetId = null, room = 0, 
     const { width, height, depth } = config;
     const hw = width / 2, hh = height / 2, hd = depth / 2;
     const t = 0.1;
-    const wallMat = new THREE.MeshBasicMaterial({ color: 0x1a0d00 });
-    const floorMat = new THREE.MeshBasicMaterial({ color: 0x150800 });
-    const ceilMat = new THREE.MeshBasicMaterial({ color: 0x0f0500 });
+    let wallMat = getSurfaceMaterial(decoration, room, 'wallBack', [26, 13, 0]);
+    const floorMat = getSurfaceMaterial(decoration, room, 'floor', [21, 8, 0]);
+    const ceilMat = getSurfaceMaterial(decoration, room, 'ceiling', [15, 5, 0]);
     const frameMat = new THREE.LineBasicMaterial({ color: 0x4a2a00 });
     const doorMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.4, side: THREE.DoubleSide });
     const windowMat = new THREE.MeshBasicMaterial({ color: 0x001122, transparent: true, opacity: 0.1, side: THREE.DoubleSide });
@@ -142,6 +142,7 @@ export default function CabinView({ target = 'ship', targetId = null, room = 0, 
     rg.add(backWall);
 
     // Front wall
+    wallMat = getSurfaceMaterial(decoration, room, 'wallFront', [26, 13, 0]);
     if (room === 0) {
       const win = getWindowConfig(width, height);
       const topH = hh - (win.y + win.h / 2);
@@ -178,6 +179,7 @@ export default function CabinView({ target = 'ship', targetId = null, room = 0, 
     }
 
     // Left wall with door
+    wallMat = getSurfaceMaterial(decoration, room, 'wallLeft', [26, 13, 0]);
     const lTopH = height - DOOR_H;
     const lTop = new THREE.Mesh(new THREE.BoxGeometry(t, lTopH, depth), wallMat); lTop.position.set(-hw, -hh + DOOR_H + lTopH / 2, 0); rg.add(lTop);
     const lSideW = depth / 2 - DOOR_W / 2;
@@ -202,6 +204,7 @@ export default function CabinView({ target = 'ship', targetId = null, room = 0, 
     rg.add(lInd);
 
     // Right wall with door
+    wallMat = getSurfaceMaterial(decoration, room, 'wallRight', [26, 13, 0]);
     const rTop = new THREE.Mesh(new THREE.BoxGeometry(t, lTopH, depth), wallMat); rTop.position.set(hw, -hh + DOOR_H + lTopH / 2, 0); rg.add(rTop);
     const rFront = new THREE.Mesh(new THREE.BoxGeometry(t, DOOR_H, lSideW), wallMat); rFront.position.set(hw, -hh + DOOR_H / 2, -hd + lSideW / 2); rg.add(rFront);
     const rBack = new THREE.Mesh(new THREE.BoxGeometry(t, DOOR_H, lSideW), wallMat); rBack.position.set(hw, -hh + DOOR_H / 2, hd - lSideW / 2); rg.add(rBack);
@@ -264,7 +267,7 @@ export default function CabinView({ target = 'ship', targetId = null, room = 0, 
         rg.add(shelf);
       }
     }
-  }, [config, room]);
+  }, [config, room, decoration]);
 
   // Build mini orrery (room 0 only)
   useEffect(() => {
@@ -392,8 +395,8 @@ export default function CabinView({ target = 'ship', targetId = null, room = 0, 
       const dx = e.clientX - lastX, dy = e.clientY - lastY;
       lastX = e.clientX; lastY = e.clientY;
       const lk = lookRef.current;
-      lk.targetYaw = Math.max(-1.2, Math.min(1.2, lk.targetYaw - dx * 0.003));
-      lk.targetPitch = Math.max(-0.5, Math.min(0.5, lk.targetPitch - dy * 0.003));
+      lk.targetYaw = lk.targetYaw - dx * 0.003;
+      lk.targetPitch = Math.max(-1.4, Math.min(1.4, lk.targetPitch - dy * 0.003));
     };
     const onPointerUp = (e) => {
       isDragging = false;
@@ -406,8 +409,8 @@ export default function CabinView({ target = 'ship', targetId = null, room = 0, 
         const dx = e.touches[0].clientX - lastX, dy = e.touches[0].clientY - lastY;
         lastX = e.touches[0].clientX; lastY = e.touches[0].clientY;
         const lk = lookRef.current;
-        lk.targetYaw = Math.max(-1.2, Math.min(1.2, lk.targetYaw - dx * 0.003));
-        lk.targetPitch = Math.max(-0.5, Math.min(0.5, lk.targetPitch - dy * 0.003));
+        lk.targetYaw = lk.targetYaw - dx * 0.003;
+        lk.targetPitch = Math.max(-1.4, Math.min(1.4, lk.targetPitch - dy * 0.003));
       }
     };
     const onTouchEnd = (e) => {
@@ -446,6 +449,17 @@ export default function CabinView({ target = 'ship', targetId = null, room = 0, 
       <div className="absolute bottom-1 left-1 text-[9px] text-orange-700 pointer-events-none">{config.name}{config.rooms > 1 ? ` · ROOM ${room + 1}/${config.rooms}` : ''}</div>
     </div>
   );
+}
+
+function getSurfaceMaterial(decoration, room, surfaceName, defaultRgb) {
+  const surfaceConfig = decoration?.surfaces?.[room]?.[surfaceName];
+  const rgb = surfaceConfig?.rgb || defaultRgb;
+  const textureType = surfaceConfig?.texture || 'solid';
+  if (textureType === 'solid') {
+    return new THREE.MeshBasicMaterial({ color: new THREE.Color(rgb[0] / 255, rgb[1] / 255, rgb[2] / 255) });
+  }
+  const texture = createCabinTexture(textureType, rgb);
+  return new THREE.MeshBasicMaterial({ map: texture });
 }
 
 function createTrinketGeometry(shape) {

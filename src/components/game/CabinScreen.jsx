@@ -2,10 +2,10 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { useGameState, SHIP_MAP } from '@/lib/gameState';
 import { computeCockpitCost } from '@/lib/cockpitParts';
-import { getCabinConfig, genCabinSlots, getCabinPartsForSlot } from '@/lib/cabinConfig';
+import { getCabinConfig, genCabinSlots, getCabinPartsForSlot, CABIN_TEXTURES, CABIN_THEMES, getThemeSurfaces, DEFAULT_SURFACE_COLORS } from '@/lib/cabinConfig';
 import CabinView from './CabinView';
 import CabinBuilder3D from './CabinBuilder3D';
-import { Eye, Wrench, Map, Save, Trash2 } from 'lucide-react';
+import { Eye, Wrench, Map, Save, Trash2, Palette } from 'lucide-react';
 
 export default function CabinScreen({ onNavigate }) {
   const { state, isSandbox, saveCockpitDecoration, switchSave } = useGameState();
@@ -15,6 +15,7 @@ export default function CabinScreen({ onNavigate }) {
   const [stationId, setStationId] = useState(state.ownedStations?.[0]?.id || null);
   const [room, setRoom] = useState(0);
   const [selectedSlot, setSelectedSlot] = useState(null);
+  const [selectedSurface, setSelectedSurface] = useState('floor');
   const [design, setDesign] = useState(null);
   const [saveMsg, setSaveMsg] = useState(null);
 
@@ -87,6 +88,25 @@ export default function CabinScreen({ onNavigate }) {
     });
   }, [savedDecor, roomKey]);
 
+  const handleSurfaceChange = useCallback((surface, field, value) => {
+    setDesign(prev => {
+      const base = prev || savedDecor;
+      const surfaces = { ...(base.surfaces || {}) };
+      const roomSurfaces = { ...(surfaces[room] || {}) };
+      const current = roomSurfaces[surface] || { texture: 'solid', rgb: DEFAULT_SURFACE_COLORS[surface] || [26, 13, 0] };
+      roomSurfaces[surface] = { ...current, [field]: value };
+      surfaces[room] = roomSurfaces;
+      return { ...base, surfaces };
+    });
+  }, [savedDecor, room]);
+
+  const handleThemeChange = useCallback((theme) => {
+    setDesign(prev => {
+      const base = prev || savedDecor;
+      return { ...base, theme, surfaces: getThemeSurfaces(theme) };
+    });
+  }, [savedDecor]);
+
   const handleSave = () => {
     saveCockpitDecoration(activeDesign, target, activeTargetId);
     setDesign(null);
@@ -147,6 +167,9 @@ export default function CabinScreen({ onNavigate }) {
           </button>
           <button onClick={() => setTab('map')} className={`flex items-center gap-1 px-2 py-1 text-[10px] border ${tab === 'map' ? 'border-orange-500 text-orange-300 bg-orange-950/30' : 'border-orange-900 text-orange-600'}`}>
             <Map className="w-3 h-3" /> MAP
+          </button>
+          <button onClick={() => setTab('surfaces')} className={`flex items-center gap-1 px-2 py-1 text-[10px] border ${tab === 'surfaces' ? 'border-orange-500 text-orange-300 bg-orange-950/30' : 'border-orange-900 text-orange-600'}`}>
+            <Palette className="w-3 h-3" /> SURFACES
           </button>
         </div>
       </div>
@@ -233,9 +256,72 @@ export default function CabinScreen({ onNavigate }) {
             </div>
           </div>
         </div>
+      ) : tab === 'surfaces' ? (
+        <CabinSurfaces config={config} room={room} decoration={activeDesign} selectedSurface={selectedSurface} onSelectSurface={setSelectedSurface} onSurfaceChange={handleSurfaceChange} onThemeChange={handleThemeChange} currentTheme={activeDesign?.theme || 'rustic'} />
       ) : (
         <CabinInteriorMap config={config} room={room} decoration={activeDesign} selectedSlot={selectedSlot} onSelectSlot={handleSelectSlot} />
       )}
+    </div>
+  );
+}
+
+function CabinSurfaces({ config, room, decoration, selectedSurface, onSelectSurface, onSurfaceChange, onThemeChange, currentTheme }) {
+  const surfaces = ['floor', 'ceiling', 'wallFront', 'wallBack', 'wallLeft', 'wallRight'];
+  const surfaceLabels = { floor: 'Floor', ceiling: 'Ceiling', wallFront: 'Front Wall', wallBack: 'Back Wall', wallLeft: 'Left Wall', wallRight: 'Right Wall' };
+  const currentSurfaces = decoration?.surfaces?.[room] || {};
+  const currentConfig = currentSurfaces[selectedSurface] || { texture: 'solid', rgb: DEFAULT_SURFACE_COLORS[selectedSurface] || [26, 13, 0] };
+
+  return (
+    <div className="w-full h-full overflow-auto p-3 space-y-3">
+      <div>
+        <div className="text-orange-700 text-[9px] uppercase mb-1">Preset Theme</div>
+        <div className="flex flex-wrap gap-1">
+          {Object.entries(CABIN_THEMES).map(([id, theme]) => (
+            <button key={id} onClick={() => onThemeChange(id)} className={`px-2 py-1 text-[10px] border ${currentTheme === id ? 'border-cyan-500 text-cyan-300 bg-cyan-950/20' : 'border-orange-900 text-orange-600'}`}>
+              {theme.name}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <div className="text-orange-700 text-[9px] uppercase mb-1">Surface — {room === 0 ? 'Living Quarters' : 'Custom Room'}</div>
+        <div className="flex flex-wrap gap-1">
+          {surfaces.map(s => (
+            <button key={s} onClick={() => onSelectSurface(s)} className={`px-2 py-1 text-[10px] border ${selectedSurface === s ? 'border-orange-500 text-orange-300 bg-orange-950/30' : 'border-orange-900 text-orange-600'}`}>
+              {surfaceLabels[s]}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <div className="text-orange-700 text-[9px] uppercase mb-1">Texture — {surfaceLabels[selectedSurface]}</div>
+        <div className="flex flex-wrap gap-1">
+          {CABIN_TEXTURES.map(t => (
+            <button key={t.id} onClick={() => onSurfaceChange(selectedSurface, 'texture', t.id)} className={`px-2 py-1 text-[10px] border ${currentConfig.texture === t.id ? 'border-orange-500 text-orange-300 bg-orange-950/30' : 'border-orange-900 text-orange-600'}`}>
+              {t.name}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="space-y-2 border border-orange-950 p-2">
+        <div className="text-orange-700 text-[9px] uppercase">Color (RGB)</div>
+        <div>
+          <label className="text-[9px] text-red-500">R: {currentConfig.rgb[0]}</label>
+          <input type="range" min="0" max="255" step="1" value={currentConfig.rgb[0]} onChange={(e) => onSurfaceChange(selectedSurface, 'rgb', [parseInt(e.target.value), currentConfig.rgb[1], currentConfig.rgb[2]])} className="w-full" />
+        </div>
+        <div>
+          <label className="text-[9px] text-green-500">G: {currentConfig.rgb[1]}</label>
+          <input type="range" min="0" max="255" step="1" value={currentConfig.rgb[1]} onChange={(e) => onSurfaceChange(selectedSurface, 'rgb', [currentConfig.rgb[0], parseInt(e.target.value), currentConfig.rgb[2]])} className="w-full" />
+        </div>
+        <div>
+          <label className="text-[9px] text-blue-500">B: {currentConfig.rgb[2]}</label>
+          <input type="range" min="0" max="255" step="1" value={currentConfig.rgb[2]} onChange={(e) => onSurfaceChange(selectedSurface, 'rgb', [currentConfig.rgb[0], currentConfig.rgb[1], parseInt(e.target.value)])} className="w-full" />
+        </div>
+        <div className="w-full h-6 border border-orange-900" style={{ background: `rgb(${currentConfig.rgb[0]}, ${currentConfig.rgb[1]}, ${currentConfig.rgb[2]})` }} />
+      </div>
     </div>
   );
 }

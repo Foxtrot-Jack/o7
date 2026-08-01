@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import { COCKPIT_PARTS, COCKPIT_PART_MAP } from './cockpitParts';
 
 // Cabin room configurations — player living quarters
@@ -85,4 +86,167 @@ export function getCabinConfig(shipClass) {
 export function getCabinPartsForSlot(slot) {
   if (!slot) return [];
   return COCKPIT_PARTS[slot.category] || [];
+}
+
+// === SURFACE CUSTOMIZATION ===
+
+export const CABIN_TEXTURES = [
+  { id: 'solid', name: 'Solid' },
+  { id: 'checker', name: 'Checker' },
+  { id: 'stripes', name: 'Stripes' },
+  { id: 'grid', name: 'Grid' },
+  { id: 'herringbone', name: 'Herringbone' },
+  { id: 'metal', name: 'Brushed Metal' },
+  { id: 'wood', name: 'Wood Grain' },
+  { id: 'carbon', name: 'Carbon Fiber' },
+];
+
+export const DEFAULT_SURFACE_COLORS = {
+  floor: [21, 8, 0],
+  ceiling: [15, 5, 0],
+  wallFront: [26, 13, 0],
+  wallBack: [26, 13, 0],
+  wallLeft: [26, 13, 0],
+  wallRight: [26, 13, 0],
+};
+
+export const CABIN_THEMES = {
+  rustic: {
+    name: 'Rustic',
+    floor: { texture: 'wood', rgb: [21, 8, 0] },
+    ceiling: { texture: 'metal', rgb: [15, 5, 0] },
+    walls: { texture: 'solid', rgb: [26, 13, 0] },
+  },
+  military: {
+    name: 'Military',
+    floor: { texture: 'metal', rgb: [30, 30, 30] },
+    ceiling: { texture: 'metal', rgb: [25, 25, 25] },
+    walls: { texture: 'grid', rgb: [35, 35, 35] },
+  },
+  cyber: {
+    name: 'Cyber',
+    floor: { texture: 'grid', rgb: [10, 10, 30] },
+    ceiling: { texture: 'solid', rgb: [5, 5, 20] },
+    walls: { texture: 'grid', rgb: [10, 20, 50] },
+  },
+  sterile: {
+    name: 'Sterile',
+    floor: { texture: 'checker', rgb: [200, 200, 200] },
+    ceiling: { texture: 'solid', rgb: [220, 220, 220] },
+    walls: { texture: 'solid', rgb: [180, 180, 180] },
+  },
+  cozy: {
+    name: 'Cozy',
+    floor: { texture: 'wood', rgb: [40, 20, 10] },
+    ceiling: { texture: 'solid', rgb: [30, 15, 5] },
+    walls: { texture: 'stripes', rgb: [45, 22, 8] },
+  },
+  jungle: {
+    name: 'Jungle',
+    floor: { texture: 'wood', rgb: [15, 30, 10] },
+    ceiling: { texture: 'solid', rgb: [10, 20, 8] },
+    walls: { texture: 'carbon', rgb: [12, 35, 12] },
+  },
+};
+
+export function getThemeSurfaces(theme) {
+  const t = CABIN_THEMES[theme] || CABIN_THEMES.rustic;
+  const rooms = {};
+  for (let r = 0; r < 2; r++) {
+    rooms[r] = {
+      floor: { ...t.floor },
+      ceiling: { ...t.ceiling },
+      wallFront: { ...t.walls },
+      wallBack: { ...t.walls },
+      wallLeft: { ...t.walls },
+      wallRight: { ...t.walls },
+    };
+  }
+  return rooms;
+}
+
+export function createCabinTexture(type, rgb) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 128;
+  canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  const [r, g, b] = rgb;
+  const dark = `rgb(${Math.max(0, r - 30)},${Math.max(0, g - 30)},${Math.max(0, b - 30)})`;
+  const light = `rgb(${Math.min(255, r + 40)},${Math.min(255, g + 40)},${Math.min(255, b + 40)})`;
+
+  ctx.fillStyle = `rgb(${r},${g},${b})`;
+  ctx.fillRect(0, 0, 128, 128);
+
+  switch (type) {
+    case 'checker':
+      ctx.fillStyle = dark;
+      for (let y = 0; y < 128; y += 32)
+        for (let x = 0; x < 128; x += 32)
+          if (((x + y) / 32) % 2 === 0) ctx.fillRect(x, y, 32, 32);
+      break;
+    case 'stripes':
+      ctx.fillStyle = dark;
+      for (let y = 0; y < 128; y += 16)
+        if (Math.floor(y / 16) % 2 === 0) ctx.fillRect(0, y, 128, 8);
+      break;
+    case 'grid':
+      ctx.strokeStyle = dark;
+      ctx.lineWidth = 1;
+      for (let i = 0; i <= 128; i += 16) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 128); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(128, i); ctx.stroke();
+      }
+      break;
+    case 'herringbone':
+      ctx.fillStyle = dark;
+      for (let row = 0; row < 8; row++)
+        for (let col = 0; col < 8; col++) {
+          ctx.save();
+          ctx.translate(col * 16 + 8, row * 16);
+          ctx.rotate(Math.PI / 4);
+          ctx.fillRect(-6, -3, 12, 6);
+          ctx.restore();
+        }
+      break;
+    case 'metal':
+      for (let y = 0; y < 128; y += 2) {
+        ctx.globalAlpha = 0.2 + Math.random() * 0.4;
+        ctx.strokeStyle = y % 4 === 0 ? light : dark;
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(128, y); ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+      break;
+    case 'wood':
+      ctx.strokeStyle = dark;
+      ctx.lineWidth = 1;
+      for (let y = 0; y < 128; y += 6) {
+        ctx.globalAlpha = 0.3 + Math.random() * 0.3;
+        ctx.beginPath();
+        ctx.moveTo(0, y + Math.random() * 3);
+        ctx.lineTo(128, y + Math.random() * 3);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 0.4;
+      for (let i = 0; i < 5; i++) {
+        ctx.beginPath();
+        ctx.moveTo(Math.random() * 128, 0);
+        ctx.lineTo(Math.random() * 128, 128);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+      break;
+    case 'carbon':
+      ctx.fillStyle = dark;
+      for (let y = 0; y < 128; y += 8)
+        for (let x = 0; x < 128; x += 8)
+          if (Math.random() > 0.5) ctx.fillRect(x, y, 4, 4);
+      break;
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(3, 3);
+  return texture;
 }
