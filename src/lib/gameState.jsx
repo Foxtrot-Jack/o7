@@ -413,6 +413,10 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
       wear *= (1 - wearReduction);
       const newIntegrity = Math.max(0, (prev.ship.integrity ?? 100) - wear);
       const newModuleWear = Math.min(100, (prev.ship.moduleWear ?? 0) + wear * 0.5);
+      // Fuel consumption — 0.5 T per LY, halved by FSD boost (neutron star)
+      const hasFuelCheat = prev.cheats?.unlocked && (prev.cheats?.active?.instant_jumps || prev.cheats?.active?.infinite_fuel);
+      const fuelCost = hasFuelCheat ? 0 : Math.ceil(dist * (prev.fsdBoost ? 0.25 : 0.5));
+      const newFuel = Math.max(0, (prev.ship.fuel ?? 0) - fuelCost);
       return {
         ...prev,
         currentSystem: system,
@@ -434,7 +438,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
         },
         fsdBoost: false,
         heatSinkCharges: Math.max(0, (prev.heatSinkCharges || 0) - (isNeutron ? 1 : 0)),
-        ship: { ...prev.ship, integrity: newIntegrity, moduleWear: newModuleWear },
+        ship: { ...prev.ship, fuel: newFuel, integrity: newIntegrity, moduleWear: newModuleWear },
         ...(system.seed === SOL_SYSTEM.seed && !prev.cheats?.unlocked ? {
           cheats: { ...prev.cheats, unlocked: true },
           achievements: {

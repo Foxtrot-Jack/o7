@@ -583,9 +583,9 @@ export default function GalaxyMap({ onJumpToSystem }) {
 
     const cheatActive = (id) => state.cheats?.unlocked && state.cheats?.active?.[id];
 
-    // Check fuel — each LY costs 0.5 fuel (skip if cheats active)
+    // Check fuel — each LY costs 0.5 fuel, halved by FSD boost (skip if cheats active)
     if (!cheatActive('instant_jumps') && !cheatActive('infinite_fuel')) {
-      const fuelCost = Math.ceil(dist * 0.5);
+      const fuelCost = Math.ceil(dist * (state.fsdBoost ? 0.25 : 0.5));
       if (fuelCost > (state.ship?.fuel ?? 0)) {
         alert('INSUFFICIENT FUEL FOR JUMP');
         return;
