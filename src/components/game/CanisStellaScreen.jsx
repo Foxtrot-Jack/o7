@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useGameState } from '@/lib/gameState';
 import { CANIS_STELLA_RANKS, CEO_TITLE, GUILDED_CARRIER_COST, GUILDED_MULTIPLIER, getCanisStellaRank, getNextRank, hasGuildedCarrier } from '@/lib/canisStella';
-import { Building, Crown, Star, Swords, ArrowUp, Check, Rocket } from 'lucide-react';
+import { Building, Crown, Star, Swords, Check, Rocket } from 'lucide-react';
 import { soundEngine } from '@/lib/soundEngine';
 
 export default function CanisStellaScreen() {

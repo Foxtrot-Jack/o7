@@ -303,6 +303,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
           surfaceMaps: parsed.surfaceMaps || {},
           warpGates: parsed.warpGates || [],
           eventCooldownUntil: parsed.eventCooldownUntil || 0,
+          canisStella: parsed.canisStella || prev.canisStella,
           carrierRooms: parsed.carrierRooms || {},
           carrierRoomGrid: parsed.carrierRoomGrid || {},
           carrierCurrentRoom: parsed.carrierCurrentRoom || {},
