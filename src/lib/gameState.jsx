@@ -68,6 +68,7 @@ export const MISSION_TYPES = {
   SALVAGE: 'salvage',
   EXPLORATION: 'exploration',
   COLONIZATION_SUPPLY: 'colonization_supply',
+  SURFACE_SCAN: 'surface_scan',
 };
 
 function createInitialState() {
@@ -188,6 +189,8 @@ function createInitialState() {
     loadoutPresets: [],
     timeEvents: [],
     playerTitle: null,
+    notebook: '',
+    surfaceMaps: {},
     createdAt: Date.now(),
   };
 }
@@ -274,6 +277,8 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
           loadoutPresets: parsed.loadoutPresets || [],
           timeEvents: parsed.timeEvents || [],
           playerTitle: parsed.playerTitle || null,
+          notebook: parsed.notebook || '',
+          surfaceMaps: parsed.surfaceMaps || {},
           saveMode: saveSlot,
           lightYearsTraveled: parsed.lightYearsTraveled || 0,
           lifetimeEarnings: parsed.lifetimeEarnings || 0,
@@ -726,18 +731,31 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
       for (const [key, disc] of Object.entries(prev.surfaceDiscoveries || {})) {
         surfaceValue += disc.value || 0;
       }
+      // Sell surface maps (non-mission-locked only)
+      let surfaceMapValue = 0;
+      let mapsSold = 0;
+      const remainingMaps = {};
+      for (const [mapId, map] of Object.entries(prev.surfaceMaps || {})) {
+        if (map.missionLocked) {
+          remainingMaps[mapId] = map;
+        } else {
+          surfaceMapValue += map.value || 0;
+          mapsSold++;
+        }
+      }
       const crewBonuses = getCrewBonuses(prev.crew);
       const scanMult = 1 + (crewBonuses.scanValue || 0);
-      const totalPayout = Math.floor((totalValue + systemBonus + surfaceValue) * scanMult);
+      const totalPayout = Math.floor((totalValue + systemBonus + surfaceValue + surfaceMapValue) * scanMult);
       if (totalPayout === 0) return prev;
       return {
         ...prev,
         credits: prev.credits + totalPayout,
         lifetimeEarnings: (prev.lifetimeEarnings || 0) + totalPayout,
-        soldExplorationData: [...prev.soldExplorationData, { value: totalPayout, date: Date.now(), bodies: soldBodies.length }],
+        soldExplorationData: [...prev.soldExplorationData, { value: totalPayout, date: Date.now(), bodies: soldBodies.length + mapsSold }],
         scannedBodies: {},
         discoveredSystems: updatedDiscovered,
         surfaceDiscoveries: {},
+        surfaceMaps: remainingMaps,
         rank: {
           ...prev.rank,
           exploration: updateRank(prev.rank.exploration, totalPayout),
@@ -811,6 +829,38 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
   // Update display settings
   const updateSettings = useCallback((updates) => {
     setState(prev => ({ ...prev, settings: { ...prev.settings, ...updates } }));
+  }, []);
+
+  // Update commander notebook
+  const updateNotebook = useCallback((text) => {
+    setState(prev => ({ ...prev, notebook: text }));
+  }, []);
+
+  // Lock a surface map to a mission (when accepting a surface scan mission)
+  const lockSurfaceMap = useCallback((missionId, systemSeed) => {
+    setState(prev => {
+      const maps = { ...(prev.surfaceMaps || {}) };
+      for (const [mapId, map] of Object.entries(maps)) {
+        if (!map.missionLocked && map.systemSeed === systemSeed) {
+          maps[mapId] = { ...map, missionLocked: missionId };
+          break;
+        }
+      }
+      return { ...prev, surfaceMaps: maps };
+    });
+  }, []);
+
+  // Unlock surface maps locked to a completed mission
+  const unlockSurfaceMaps = useCallback((missionId) => {
+    setState(prev => {
+      const maps = { ...(prev.surfaceMaps || {}) };
+      for (const [mapId, map] of Object.entries(maps)) {
+        if (map.missionLocked === missionId) {
+          maps[mapId] = { ...map, missionLocked: null };
+        }
+      }
+      return { ...prev, surfaceMaps: maps };
+    });
   }, []);
 
   // Decommission a fleet carrier (75% refund, ships relocated)
@@ -932,6 +982,24 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
             ...(prev.achievements?.milestones?.first_mapping ? {} : { first_mapping: { date: Date.now() } }),
           },
         };
+        // Create a surface map entry
+        if (!(prev.surfaceMaps || {})[bodyId]) {
+          const activeScanMission = (prev.activeMissions || []).find(m =>
+            m.type === 'surface_scan' && m.destinationSystem?.seed === prev.currentSystem.seed
+          );
+          updates.surfaceMaps = {
+            ...(prev.surfaceMaps || {}),
+            [bodyId]: {
+              bodyId,
+              bodyName: body.name || body.designation,
+              systemName: prev.currentSystem.name,
+              systemSeed: prev.currentSystem.seed,
+              value: Math.round((body.scanValue || 1000) * 3),
+              missionLocked: activeScanMission ? activeScanMission.id : null,
+              obtainedAt: Date.now(),
+            },
+          };
+        }
       }
       return { ...prev, ...updates };
     });
@@ -1846,6 +1914,9 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     buildFighter,
     dismissFighter,
     recordExobiology,
+    updateNotebook,
+    lockSurfaceMap,
+    unlockSurfaceMaps,
   };
 
   return (

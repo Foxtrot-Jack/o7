@@ -75,9 +75,8 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
     rendererRef.current = renderer;
     cameraRef.current = camera;
 
-    // Reference grid
-    const gridHelper = new THREE.GridHelper(200, 20, 0x221100, 0x110800);
-    gridHelper.rotation.x = Math.PI / 2;
+    // Reference grid — horizontal (coplanar with orbits)
+    const gridHelper = new THREE.GridHelper(200, 20, 0x1a0a00, 0x110800);
     scene.add(gridHelper);
 
     const animate = () => {

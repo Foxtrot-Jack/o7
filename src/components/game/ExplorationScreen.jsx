@@ -19,8 +19,12 @@ export default function ExplorationScreen() {
         total += 5000 + (sys.bodyCount || 0) * 500;
       }
     }
+    // Add sellable surface maps (non-mission-locked)
+    for (const map of Object.values(state.surfaceMaps || {})) {
+      if (!map.missionLocked) total += map.value || 0;
+    }
     return total;
-  }, [state.scannedBodies, state.discoveredSystems]);
+  }, [state.scannedBodies, state.discoveredSystems, state.surfaceMaps]);
 
   const scannedBodyCount = Object.keys(state.scannedBodies).length;
   const discoveredSystemCount = Object.keys(state.discoveredSystems).length;
@@ -129,6 +133,34 @@ export default function ExplorationScreen() {
               <div key={i} className="flex justify-between text-xs text-orange-600 border-b border-orange-950/50 py-1">
                 <span>{entry.bodies} bodies sold</span>
                 <span className="text-orange-400">+{entry.value.toLocaleString()} CR</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Surface maps */}
+      {Object.keys(state.surfaceMaps || {}).length > 0 && (
+        <div className="border border-orange-900 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Map className="w-4 h-4 text-orange-500" />
+            <h3 className="text-orange-400 text-sm font-bold uppercase">Planetary Surface Maps ({Object.keys(state.surfaceMaps).length})</h3>
+          </div>
+          <div className="text-xs text-orange-700 mb-2">
+            Surface maps are obtained by completing full probe scans. Mission-locked maps cannot be sold until the mission is completed.
+          </div>
+          <div className="space-y-1 max-h-48 overflow-y-auto">
+            {Object.entries(state.surfaceMaps).map(([mapId, map]) => (
+              <div key={mapId} className="flex items-center justify-between border-b border-orange-950/50 py-1 text-xs">
+                <div>
+                  <span className="text-orange-400">{map.bodyName}</span>
+                  <span className="text-orange-700 text-[10px] ml-2">{map.systemName}</span>
+                </div>
+                {map.missionLocked ? (
+                  <span className="text-yellow-500 text-[10px] border border-yellow-900 px-1.5 py-0.5">🔒 MISSION LOCKED</span>
+                ) : (
+                  <span className="text-orange-300 text-[10px]">{map.value.toLocaleString()} CR</span>
+                )}
               </div>
             ))}
           </div>

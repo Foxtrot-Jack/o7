@@ -19,6 +19,7 @@ export default function GalaxyMap({ onJumpToSystem }) {
   const missionMarkersRef = useRef(null);
   const trailRef = useRef(null);
   const overviewRef = useRef(null);
+  const gridRef = useRef(null);
   const raycasterRef = useRef(new THREE.Raycaster());
   const animationIdRef = useRef(null);
 
@@ -34,6 +35,7 @@ export default function GalaxyMap({ onJumpToSystem }) {
   const [starBrightness, setStarBrightness] = useState(100);
   const [trailBrightness, setTrailBrightness] = useState(40);
   const [overviewBrightness, setOverviewBrightness] = useState(80);
+  const [showGrid, setShowGrid] = useState(false);
   const brightnessRef = useRef({ star: 100, trail: 40, overview: 80 });
   brightnessRef.current = { star: starBrightness, trail: trailBrightness, overview: overviewBrightness };
 
@@ -88,6 +90,29 @@ export default function GalaxyMap({ onJumpToSystem }) {
     gridHelper.rotation.x = Math.PI / 2;
     scene.add(gridHelper);
 
+    // 3D orientation grid (toggleable) — horizontal plane + X/Y/Z axis lines
+    const gridGroup = new THREE.Group();
+    const hGrid = new THREE.GridHelper(200, 20, 0x442200, 0x221100);
+    gridGroup.add(hGrid);
+    const xAxis = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-100, 0, 0), new THREE.Vector3(100, 0, 0)]),
+      new THREE.LineBasicMaterial({ color: 0xff4400, transparent: true, opacity: 0.6 })
+    );
+    gridGroup.add(xAxis);
+    const yAxis = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, -100, 0), new THREE.Vector3(0, 100, 0)]),
+      new THREE.LineBasicMaterial({ color: 0x44ff00, transparent: true, opacity: 0.6 })
+    );
+    gridGroup.add(yAxis);
+    const zAxis = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, -100), new THREE.Vector3(0, 0, 100)]),
+      new THREE.LineBasicMaterial({ color: 0x0088ff, transparent: true, opacity: 0.6 })
+    );
+    gridGroup.add(zAxis);
+    gridGroup.visible = false;
+    scene.add(gridGroup);
+    gridRef.current = gridGroup;
+
     // Animation loop
     const animate = () => {
       animationIdRef.current = requestAnimationFrame(animate);
@@ -137,6 +162,11 @@ export default function GalaxyMap({ onJumpToSystem }) {
       }
     };
   }, []);
+
+  // Toggle 3D grid visibility
+  useEffect(() => {
+    if (gridRef.current) gridRef.current.visible = showGrid;
+  }, [showGrid]);
 
   // Update stars when generated
   useEffect(() => {
@@ -605,7 +635,26 @@ export default function GalaxyMap({ onJumpToSystem }) {
         <button onClick={() => { rotState.current.targetDistance = 30000; }} className="px-2 py-0.5 border border-orange-700 bg-black/80 text-orange-500 hover:bg-orange-950/30 text-[10px]">GALAXY VIEW</button>
         <button onClick={() => { rotState.current.targetPanX = 0; rotState.current.targetPanZ = 0; rotState.current.targetDistance = 120; }} className="px-2 py-0.5 border border-orange-700 bg-black/80 text-orange-500 hover:bg-orange-950/30 text-[10px]">⊕ CENTER</button>
         <button onClick={() => { rotState.current.targetDistance = 120; }} className="px-2 py-0.5 border border-orange-700 bg-black/80 text-orange-500 hover:bg-orange-950/30 text-[10px]">LOCAL VIEW</button>
+        <button onClick={() => setShowGrid(!showGrid)} className={`px-2 py-0.5 border text-[10px] ${showGrid ? 'border-cyan-600 text-cyan-400' : 'border-orange-700 bg-black/80 text-orange-500'}`}>⊞ GRID</button>
       </div>
+
+      {/* Coordinate display when grid is on */}
+      {showGrid && (
+        <div className="absolute top-28 left-2 text-[10px] space-y-0.5 pointer-events-none z-20">
+          <div className="text-cyan-700 uppercase">Coordinates</div>
+          <div>X: <span className="text-red-400">{state.currentSystem.x.toFixed(1)}</span></div>
+          <div>Y: <span className="text-green-400">{state.currentSystem.y.toFixed(1)}</span></div>
+          <div>Z: <span className="text-blue-400">{state.currentSystem.z.toFixed(1)}</span></div>
+          {selectedStar && (
+            <div className="mt-1 border-t border-cyan-900 pt-1">
+              <div className="text-cyan-700 uppercase">Selected</div>
+              <div>X: <span className="text-red-400">{selectedStar.x.toFixed(1)}</span></div>
+              <div>Y: <span className="text-green-400">{selectedStar.y.toFixed(1)}</span></div>
+              <div>Z: <span className="text-blue-400">{selectedStar.z.toFixed(1)}</span></div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Star legend - top right */}
       <div className="absolute top-2 right-2 text-xs space-y-0.5 pointer-events-none">

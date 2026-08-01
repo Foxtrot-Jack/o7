@@ -2,11 +2,11 @@
 import React from 'react';
 import { useGameState, SHIP_MAP } from '@/lib/gameState';
 import { SOL_SYSTEM, distance3D } from '@/lib/galaxy';
-import { User, Rocket, Ship, Map, Globe, DollarSign, Route, Trophy, Anchor, Clock, Zap, Telescope, Pickaxe } from 'lucide-react';
+import { User, Rocket, Ship, Map, Globe, DollarSign, Route, Trophy, Anchor, Clock, Zap, Telescope, Pickaxe, BookOpen } from 'lucide-react';
 import BadgeDisplay from './BadgeDisplay';
 
 export default function CommanderProfile() {
-  const { state } = useGameState();
+  const { state, updateNotebook } = useGameState();
 
   const fmt = (n) => {
     if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
@@ -69,6 +69,16 @@ export default function CommanderProfile() {
         <Stat label="Trade" value={state.rank.trade.name} icon={DollarSign} />
         <Stat label="Mining" value={state.rank.mining.name} icon={Pickaxe} />
       </Section>
+
+      <div className="border border-orange-900 p-4 space-y-2">
+        <h3 className="text-orange-500 text-sm font-bold uppercase flex items-center gap-2"><BookOpen className="w-4 h-4" /> Commander's Notebook</h3>
+        <textarea
+          value={state.notebook || ''}
+          onChange={(e) => updateNotebook(e.target.value)}
+          placeholder="Jot down reminders, coordinates, trade routes, mission targets..."
+          className="w-full h-40 bg-black border border-orange-900 p-2 text-xs text-orange-300 font-mono resize-none focus:outline-none focus:border-orange-500"
+        />
+      </div>
     </div>
   );
 }

@@ -4,7 +4,7 @@ import { useGameState, MISSION_TYPES } from '@/lib/gameState';
 import { makeRng, randInt, randFloat, pick, pickWeighted } from '@/lib/prng';
 import { COMMODITIES } from '@/lib/commodities';
 import { generateStarsInRange, distance3D } from '@/lib/galaxy';
-import { ClipboardList, CheckCircle, Clock, MapPin, Package, Pickaxe, Telescope, Users, Wrench } from 'lucide-react';
+import { ClipboardList, CheckCircle, Clock, MapPin, Package, Pickaxe, Telescope, Users, Wrench, Map } from 'lucide-react';
 
 const MISSION_TEMPLATES = {
   [MISSION_TYPES.DELIVERY]: {
@@ -49,10 +49,16 @@ const MISSION_TEMPLATES = {
     desc: 'Deliver {qty}T of {commodity} to a developing colony.',
     rewardBase: 25000,
   },
+  [MISSION_TYPES.SURFACE_SCAN]: {
+    name: 'Surface Cartography',
+    icon: Map,
+    desc: 'Provide surface scan data for a celestial body in {destination}.',
+    rewardBase: 30000,
+  },
 };
 
 export default function MissionsScreen() {
-  const { state, getSystemData, addMission, completeMission, addCargo, addCredits, removeCargo } = useGameState();
+  const { state, getSystemData, addMission, completeMission, addCargo, addCredits, removeCargo, lockSurfaceMap, unlockSurfaceMaps } = useGameState();
   const [acceptedFilter, setAcceptedFilter] = useState(false);
 
   const systemData = getSystemData();
@@ -82,15 +88,18 @@ export default function MissionsScreen() {
         { value: MISSION_TYPES.SALVAGE, weight: 10 },
         { value: MISSION_TYPES.EXPLORATION, weight: 10 },
         { value: MISSION_TYPES.COLONIZATION_SUPPLY, weight: 5 },
+        { value: MISSION_TYPES.SURFACE_SCAN, weight: 8 },
       ]);
 
       const template = MISSION_TEMPLATES[type];
       const commodity = pick(rng, COMMODITIES);
       const qty = randInt(rng, 1, 20);
       const rewardMultiplier = randFloat(rng, 0.8, 2.5);
-      const reward = Math.round(template.rewardBase * qty * rewardMultiplier / 10) * 10;
+      const isSurfaceScan = type === MISSION_TYPES.SURFACE_SCAN;
+      const scanReward = Math.round(template.rewardBase * randFloat(rng, 0.8, 2.0) / 10) * 10;
+      const reward = isSurfaceScan ? scanReward : Math.round(template.rewardBase * qty * rewardMultiplier / 10) * 10;
 
-      // Pick a destination system — local for mining/salvage/exploration, nearby for delivery/courier/passenger
+      // Pick a destination system — local for mining/salvage/exploration, nearby for delivery/courier/passenger/surface_scan
       const isLocal = [MISSION_TYPES.MINING, MISSION_TYPES.SALVAGE, MISSION_TYPES.EXPLORATION].includes(type);
       const destStar = isLocal ? center : (nearbyStars.length > 0 ? pick(rng, nearbyStars) : null);
       const destination = destStar ? destStar.name : 'unknown sector';
@@ -105,9 +114,9 @@ export default function MissionsScreen() {
         type,
         name: template.name,
         description: desc,
-        commodity: commodity.id,
-        commodityName: commodity.name,
-        qty,
+        commodity: isSurfaceScan ? null : commodity.id,
+        commodityName: isSurfaceScan ? null : commodity.name,
+        qty: isSurfaceScan ? 0 : qty,
         reward,
         deadline: Date.now() + randInt(rng, 1, 7) * 24 * 60 * 60 * 1000,
         reputation: randInt(rng, 1, 5),
@@ -121,10 +130,19 @@ export default function MissionsScreen() {
 
   const handleAccept = (mission) => {
     addMission(mission);
+    if (mission.type === MISSION_TYPES.SURFACE_SCAN && mission.destinationSystem?.seed) {
+      lockSurfaceMap(mission.id, mission.destinationSystem.seed);
+    }
   };
 
   const handleCompleteMission = (mission) => {
-    if (mission.commodity && mission.type !== MISSION_TYPES.EXPLORATION) {
+    if (mission.type === MISSION_TYPES.SURFACE_SCAN) {
+      const hasMap = Object.values(state.surfaceMaps || {}).some(m => m.systemSeed === mission.destinationSystem?.seed);
+      if (!hasMap) {
+        alert('REQUIRES SURFACE SCAN DATA FROM TARGET SYSTEM');
+        return;
+      }
+    } else if (mission.commodity && mission.type !== MISSION_TYPES.EXPLORATION) {
       const cargoItem = state.ship.cargo.find(c => c.commodity === mission.commodity);
       if (!cargoItem || cargoItem.qty < mission.qty) {
         alert(`REQUIRES ${mission.qty}T OF ${mission.commodityName.toUpperCase()}`);
@@ -133,6 +151,9 @@ export default function MissionsScreen() {
       removeCargo(mission.commodity, mission.qty);
     }
     completeMission(mission.id);
+    if (mission.type === MISSION_TYPES.SURFACE_SCAN) {
+      unlockSurfaceMaps(mission.id);
+    }
   };
 
   const formatDeadline = (timestamp) => {
@@ -217,7 +238,8 @@ export default function MissionsScreen() {
           const Icon = template.icon;
           const cargoItem = mission.commodity ? state.ship.cargo.find(c => c.commodity === mission.commodity) : null;
           const hasCargo = cargoItem && cargoItem.qty >= mission.qty;
-          const canComplete = mission.type === MISSION_TYPES.EXPLORATION || hasCargo;
+          const hasSurfaceMap = mission.type === MISSION_TYPES.SURFACE_SCAN && Object.values(state.surfaceMaps || {}).some(m => m.systemSeed === mission.destinationSystem?.seed);
+          const canComplete = mission.type === MISSION_TYPES.EXPLORATION || (mission.type === MISSION_TYPES.SURFACE_SCAN ? hasSurfaceMap : hasCargo);
 
           return (
             <div key={mission.id} className="border border-green-900 p-3 text-xs">
@@ -230,6 +252,13 @@ export default function MissionsScreen() {
                     {mission.commodity && (
                       <div className="text-orange-700 text-[10px] mt-1">
                         PROGRESS: {cargoItem?.qty || 0}/{mission.qty}T
+                      </div>
+                    )}
+                    {mission.type === MISSION_TYPES.SURFACE_SCAN && (
+                      <div className="text-orange-700 text-[10px] mt-1">
+                        {Object.values(state.surfaceMaps || {}).some(m => m.systemSeed === mission.destinationSystem?.seed)
+                          ? '✓ SURFACE DATA OBTAINED — RETURN TO STATION'
+                          : '○ SURFACE DATA REQUIRED — MAP A BODY IN TARGET SYSTEM'}
                       </div>
                     )}
                   </div>
