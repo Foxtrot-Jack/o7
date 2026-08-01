@@ -367,7 +367,53 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     }, 500);
     return () => clearTimeout(timer);
   }, [state, storageKey]);
+```jsx
+  // ---------------------------------------------------------------------------
+  // Periodic autosave (every 120s) + lifecycle-event safety flushes.
+  // The 500ms debounced save above covers normal play, but in a WebView
+  // wrapper (Base44/Appmint), the process can be killed without firing
+  // `beforeunload`, so we also flush on visibilitychange / pagehide /
+  // beforeunload and on a fixed 120s interval as a hard safety net.
+  // ---------------------------------------------------------------------------
+  const AUTOSAVE_INTERVAL_MS = 120000; // 120 seconds
 
+  const flushSave = useCallback(() => {
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(stateRef.current));
+      return true;
+    } catch (e) {
+      console.error('Autosave failed:', e);
+      return false;
+    }
+  }, [storageKey]);
+
+  useEffect(() => {
+    // Fixed-interval autosave
+    const intervalId = setInterval(() => {
+      flushSave();
+    }, AUTOSAVE_INTERVAL_MS);
+
+    // Flush when the tab/webview is hidden or navigated away
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') flushSave();
+    };
+    const onPageHide = () => flushSave();
+    const onBeforeUnload = () => flushSave();
+
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    window.addEventListener('pagehide', onPageHide);
+    window.addEventListener('beforeunload', onBeforeUnload);
+
+    return () => {
+      clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      window.removeEventListener('pagehide', onPageHide);
+      window.removeEventListener('beforeunload', onBeforeUnload);
+      // Final flush on unmount / slot switch
+      flushSave();
+    };
+  }, [flushSave]);
+```
   // Update function
   const update = useCallback((updater) => {
     setState(prev => {
