@@ -38,6 +38,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
   const [selectedStation, setSelectedStation] = useState(null);
   const [travelInfo, setTravelInfo] = useState(null);
   const [orbitingBodyId, setOrbitingBodyId] = useState(null);
+  const [fssDismissedSeed, setFssDismissedSeed] = useState(null);
 
   const rotState = useRef({
     azimuth: Math.PI / 4,
@@ -761,8 +762,9 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
       <div ref={mountRef} className="w-full h-full" style={{ touchAction: 'none' }} />
 
       {/* FSS scan prompt */}
-      {state.currentLocation !== 'station' && !state.fssScannedSystems?.[state.currentSystem.seed] && !selectedBody && (
+      {state.currentLocation !== 'station' && !state.fssScannedSystems?.[state.currentSystem.seed] && !selectedBody && fssDismissedSeed !== state.currentSystem.seed && (
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 border border-cyan-700 bg-black/95 p-4 text-center text-xs space-y-2 z-30">
+          <button onClick={() => setFssDismissedSeed(state.currentSystem.seed)} className="absolute top-1 right-1 text-cyan-700 hover:text-cyan-400 text-[10px]">✕</button>
           <div className="text-cyan-300 font-bold uppercase">FSS Discovery Scanner</div>
           <div className="text-cyan-600 text-[10px] max-w-48">Run a Full Spectrum System scan to discover all stellar bodies in this system.</div>
           <button onClick={() => onNavigate('fss')} className="px-4 py-2 border border-cyan-500 text-cyan-300 hover:bg-cyan-950/30 text-xs font-bold">

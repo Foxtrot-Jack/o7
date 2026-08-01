@@ -75,6 +75,7 @@ const NAV_GROUPS = [
       { id: 'mining', label: 'Mining', icon: Pickaxe },
       { id: 'colonization', label: 'Colonies', icon: Rocket },
       { id: 'stationbuilder', label: 'Station Builder', icon: Building },
+      { id: 'stationcreator', label: 'Station Creator', icon: Hammer },
     ],
   },
   {

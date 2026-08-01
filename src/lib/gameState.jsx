@@ -18,6 +18,7 @@ import { STATION_BUILD_COST, STATION_SERVICES, calculateStationRevenue } from '.
 import { FIGHTER_TYPES, getFighterHangarCapacity } from './fighters';
 import { ROOM_TYPES, MAX_CARRIER_ROOMS, getRoomCost, getStationRoomCost } from './cabinRooms';
 import { generateFish, generateFlora } from './specimens';
+import { ADDITIONAL_SHIPS } from './shipRoster';
 
 const STORAGE_KEY = 'starfarer_save_v1';
 const STORAGE_KEY_SANDBOX = 'starfarer_sandbox_v1';
@@ -59,6 +60,7 @@ export const SHIP_TYPES = [
   { id: 'type10', name: 'Bastion Mk-X', manufacturer: 'Lakon Spaceways', cargoCapacity: 128, fuelCapacity: 64, jumpRange: 9, cost: 125000000, multirole: false, class: 4 },
   { id: 'federal_corvette', name: 'Republic Dreadnought', manufacturer: 'Core Dynamics', cargoCapacity: 16, fuelCapacity: 64, jumpRange: 15, cost: 190000000, multirole: false, class: 4 },
   { id: 'imperial_cutter', name: 'Dynast Sovereign', manufacturer: 'Gutamaya', cargoCapacity: 120, fuelCapacity: 64, jumpRange: 16, cost: 210000000, multirole: true, class: 4 },
+  ...ADDITIONAL_SHIPS,
 ];
 
 export const SHIP_MAP = SHIP_TYPES.reduce((m, s) => { m[s.id] = s; return m; }, {});
@@ -163,6 +165,8 @@ function createInitialState() {
     savedBadges: [],
     // Custom carrier designs
     customCarrierDesigns: [],
+    // Custom station designs
+    customStationDesigns: [],
     // Last body orbited (for returning from surface to correct orbit)
     lastOrbitBodyId: null,
     // Settings
@@ -268,6 +272,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
           playerBadge: parsed.playerBadge || null,
           savedBadges: parsed.savedBadges || [],
           customCarrierDesigns: parsed.customCarrierDesigns || [],
+          customStationDesigns: parsed.customStationDesigns || [],
           lastOrbitBodyId: parsed.lastOrbitBodyId || null,
           crew: parsed.crew || [],
           powerPlay: parsed.powerPlay || null,
@@ -1468,6 +1473,34 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     }));
   }, []);
 
+  // ===== STATION DESIGN =====
+  const saveCustomStationDesign = useCallback((design) => {
+    setState(prev => ({
+      ...prev,
+      customStationDesigns: [...(prev.customStationDesigns || []), { ...design, id: `station_design_${Date.now()}`, createdAt: Date.now() }],
+    }));
+  }, []);
+
+  const deleteCustomStationDesign = useCallback((designId) => {
+    setState(prev => ({ ...prev, customStationDesigns: (prev.customStationDesigns || []).filter(d => d.id !== designId) }));
+  }, []);
+
+  const applyStationDesign = useCallback((stationId, design) => {
+    setState(prev => {
+      if (stationId === null) {
+        // Import as a new saved design
+        return {
+          ...prev,
+          customStationDesigns: [...(prev.customStationDesigns || []), { ...design, id: `station_design_${Date.now()}`, createdAt: Date.now() }],
+        };
+      }
+      return {
+        ...prev,
+        ownedStations: (prev.ownedStations || []).map(s => s.id === stationId ? { ...s, design } : s),
+      };
+    });
+  }, []);
+
   // ===== BADGE & SHARING SYSTEM =====
   const savePlayerBadge = useCallback((badge) => {
     setState(prev => ({ ...prev, playerBadge: badge }));
@@ -2259,6 +2292,9 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     saveCustomCarrierDesign,
     deleteCustomCarrierDesign,
     applyCarrierDesign,
+    saveCustomStationDesign,
+    deleteCustomStationDesign,
+    applyStationDesign,
     refreshCommunityGoals,
     contributeToGoal,
     claimGoalReward,

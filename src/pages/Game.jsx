@@ -70,6 +70,7 @@ import RoomManagerScreen from '@/components/game/RoomManagerScreen';
 import AquariumScreen from '@/components/game/AquariumScreen';
 import GardenScreen from '@/components/game/GardenScreen';
 import GeneticsLabScreen from '@/components/game/GeneticsLabScreen';
+import StationCreator from '@/components/game/StationCreator';
 
 function GameContent() {
   const { state } = useGameState();
@@ -213,6 +214,8 @@ function GameContent() {
         return <GardenScreen />;
       case 'geneticslab':
         return <GeneticsLabScreen />;
+      case 'stationcreator':
+        return <StationCreator />;
       default:
         return <SystemOrrery />;
     }
