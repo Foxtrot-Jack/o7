@@ -1,7 +1,7 @@
 // 3D Galaxy Map — rotatable, pinch-zoomable view of procedurally generated stars
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import * as THREE from 'three';
-import { generateStarsInRange, distance3D, getStarColor, GALACTIC_RADIUS, generateGalaxyOverview, LANDMARK_SYSTEMS } from '@/lib/galaxy';
+import { generateStarsInRange, distance3D, getStarColor, GALACTIC_RADIUS, generateGalaxyOverview, LANDMARK_SYSTEMS, BUBBLE_CENTERS } from '@/lib/galaxy';
 import { getRegionName } from '@/lib/regions';
 import { useGameState } from '@/lib/gameState';
 import { getHolidayFuelMultiplier } from '@/lib/publicHolidays';
@@ -40,6 +40,12 @@ export default function GalaxyMap({ onJumpToSystem }) {
   const [showGrid, setShowGrid] = useState(false);
   const brightnessRef = useRef({ star: 100, trail: 40, overview: 80 });
   brightnessRef.current = { star: starBrightness, trail: trailBrightness, overview: overviewBrightness };
+  const [galaxyViewMode, setGalaxyViewMode] = useState(false);
+  const galaxyViewModeRef = useRef(false);
+  galaxyViewModeRef.current = galaxyViewMode;
+  const galaxyPlayerRef = useRef(null);
+  const galaxyBookmarkRef = useRef(null);
+  const galaxyLandmarkRef = useRef(null);
 
   // Rotation/zoom state
   const rotState = useRef({
@@ -53,6 +59,8 @@ export default function GalaxyMap({ onJumpToSystem }) {
     panZ: 0,
     targetPanX: 0,
     targetPanZ: 0,
+    panY: 0,
+    targetPanY: 0,
   });
 
   // Generate stars around player
@@ -75,7 +83,7 @@ export default function GalaxyMap({ onJumpToSystem }) {
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x000000);
 
-    const camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 10000);
+    const camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 200000);
     updateCameraPosition(camera, rotState.current);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
@@ -126,6 +134,7 @@ export default function GalaxyMap({ onJumpToSystem }) {
       rs.distance += (rs.targetDistance - rs.distance) * 0.1;
       rs.panX += (rs.targetPanX - rs.panX) * 0.1;
       rs.panZ += (rs.targetPanZ - rs.panZ) * 0.1;
+      rs.panY += (rs.targetPanY - rs.panY) * 0.1;
       updateCameraPosition(camera, rs);
 
       // Pulse player marker
@@ -133,6 +142,11 @@ export default function GalaxyMap({ onJumpToSystem }) {
         const t = Date.now() * 0.003;
         const scale = 1 + Math.sin(t) * 0.3;
         playerMarkerRef.current.scale.set(scale, scale, scale);
+      }
+      if (galaxyPlayerRef.current) {
+        const gt = Date.now() * 0.004;
+        const gscale = 1 + Math.sin(gt) * 0.4;
+        galaxyPlayerRef.current.scale.set(gscale, gscale, gscale);
       }
 
       // Rotate selected line
@@ -361,9 +375,72 @@ export default function GalaxyMap({ onJumpToSystem }) {
     sceneRef.current.add(ovCloud);
     overviewRef.current = ovCloud;
 
+    // Galaxy view markers — player "you are here" (red), bookmarks (yellow), landmarks+bubbles+colonies (cyan)
+    if (galaxyPlayerRef.current) { sceneRef.current.remove(galaxyPlayerRef.current); galaxyPlayerRef.current.geometry.dispose(); galaxyPlayerRef.current.material.dispose(); }
+    if (galaxyBookmarkRef.current) { sceneRef.current.remove(galaxyBookmarkRef.current); galaxyBookmarkRef.current.geometry.dispose(); galaxyBookmarkRef.current.material.dispose(); }
+    if (galaxyLandmarkRef.current) { sceneRef.current.remove(galaxyLandmarkRef.current); galaxyLandmarkRef.current.geometry.dispose(); galaxyLandmarkRef.current.material.dispose(); }
+
+    // Player red dot at origin (scene-space = player position)
+    {
+      const gpG = new THREE.BufferGeometry();
+      gpG.setAttribute('position', new THREE.BufferAttribute(new Float32Array([0, 0, 0]), 3));
+      const gpM = new THREE.PointsMaterial({ color: 0xff2200, size: 24, sizeAttenuation: false, transparent: true, opacity: 1 });
+      const gpP = new THREE.Points(gpG, gpM);
+      gpP.visible = galaxyViewModeRef.current;
+      sceneRef.current.add(gpP);
+      galaxyPlayerRef.current = gpP;
+    }
+
+    // Bookmark markers (yellow) positioned via galactic coordinates
+    {
+      const bms = state.bookmarkedSystems || [];
+      if (bms.length > 0) {
+        const pos = new Float32Array(bms.length * 3);
+        bms.forEach((bm, i) => {
+          pos[i*3] = (bm.x || 0) - center.x;
+          pos[i*3+1] = (bm.y || 0) - center.y;
+          pos[i*3+2] = (bm.z || 0) - center.z;
+        });
+        const g = new THREE.BufferGeometry();
+        g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+        const m = new THREE.PointsMaterial({ color: 0xffdd00, size: 18, sizeAttenuation: false, transparent: true, opacity: 0.95 });
+        const p = new THREE.Points(g, m);
+        p.visible = galaxyViewModeRef.current;
+        sceneRef.current.add(p);
+        galaxyBookmarkRef.current = p;
+      }
+    }
+
+    // Landmark + bubble + colony markers (cyan) — shows populated space reach
+    {
+      const entries = [
+        ...LANDMARK_SYSTEMS.map(l => ({ x: l.x, y: l.y, z: l.z })),
+        ...BUBBLE_CENTERS.map(b => ({ x: b.x, y: b.y, z: b.z })),
+        ...(state.colonies || []).map(c => {
+          const disc = state.discoveredSystems?.[c.systemSeed];
+          return disc?.originCoords ? { x: disc.originCoords.x, y: disc.originCoords.y, z: disc.originCoords.z } : null;
+        }).filter(Boolean),
+      ];
+      if (entries.length > 0) {
+        const pos = new Float32Array(entries.length * 3);
+        entries.forEach((e, i) => {
+          pos[i*3] = e.x - center.x;
+          pos[i*3+1] = e.y - center.y;
+          pos[i*3+2] = e.z - center.z;
+        });
+        const g = new THREE.BufferGeometry();
+        g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+        const m = new THREE.PointsMaterial({ color: 0x00ddff, size: 16, sizeAttenuation: false, transparent: true, opacity: 0.9 });
+        const p = new THREE.Points(g, m);
+        p.visible = galaxyViewModeRef.current;
+        sceneRef.current.add(p);
+        galaxyLandmarkRef.current = p;
+      }
+    }
+
     // Set initial zoom to show a good range
     rotState.current.targetDistance = 120;
-  }, [stars, state.currentSystem, filters, state.discoveredSystems, state.ownedShips, state.colonies, state.activeMissions, showTrail, state.flightLog]);
+  }, [stars, state.currentSystem, filters, state.discoveredSystems, state.ownedShips, state.colonies, state.activeMissions, showTrail, state.flightLog, state.bookmarkedSystems]);
 
   // Apply brightness changes without regenerating geometry
   useEffect(() => {
@@ -375,6 +452,13 @@ export default function GalaxyMap({ onJumpToSystem }) {
   useEffect(() => {
     if (overviewRef.current) overviewRef.current.material.opacity = 0.8 * (overviewBrightness / 100);
   }, [overviewBrightness]);
+
+  // Toggle galaxy view marker visibility without rebuilding geometry
+  useEffect(() => {
+    if (galaxyPlayerRef.current) galaxyPlayerRef.current.visible = galaxyViewMode;
+    if (galaxyBookmarkRef.current) galaxyBookmarkRef.current.visible = galaxyViewMode;
+    if (galaxyLandmarkRef.current) galaxyLandmarkRef.current.visible = galaxyViewMode;
+  }, [galaxyViewMode]);
 
   // Mouse + touch interaction — rotate, pinch, two-finger pan, tap to select
   useEffect(() => {
@@ -641,6 +725,7 @@ export default function GalaxyMap({ onJumpToSystem }) {
       {/* HUD overlay - top left */}
       <div className="absolute top-2 left-2 text-orange-600 text-xs space-y-0.5 pointer-events-none">
         <div>GALACTIC POSITION: {state.currentSystem.x.toFixed(0)}, {state.currentSystem.y.toFixed(0)}, {state.currentSystem.z.toFixed(0)}</div>
+        <div>DISTANCE FROM CORE: {Math.sqrt(state.currentSystem.x ** 2 + state.currentSystem.y ** 2).toFixed(0)} LY</div>
         <div>REGION: {getRegionName(state.currentSystem.x, state.currentSystem.y, state.currentSystem.z)}</div>
         <div>STARS IN RANGE: {stars.length}</div>
         <div className="text-orange-800">DRAG TO ROTATE · 2-FINGER PAN/PINCH · SCROLL TO ZOOM · TAP STAR TO SELECT</div>
@@ -648,9 +733,9 @@ export default function GalaxyMap({ onJumpToSystem }) {
 
       {/* Zoom controls */}
       <div className="absolute top-16 left-2 flex gap-1 z-20">
-        <button onClick={() => { rotState.current.targetDistance = 30000; }} className="px-2 py-0.5 border border-orange-700 bg-black/80 text-orange-500 hover:bg-orange-950/30 text-[10px]">GALAXY VIEW</button>
-        <button onClick={() => { rotState.current.targetPanX = 0; rotState.current.targetPanZ = 0; rotState.current.targetDistance = 120; }} className="px-2 py-0.5 border border-orange-700 bg-black/80 text-orange-500 hover:bg-orange-950/30 text-[10px]">⊕ CENTER</button>
-        <button onClick={() => { rotState.current.targetDistance = 120; }} className="px-2 py-0.5 border border-orange-700 bg-black/80 text-orange-500 hover:bg-orange-950/30 text-[10px]">LOCAL VIEW</button>
+        <button onClick={() => { setGalaxyViewMode(true); rotState.current.targetPanX = -state.currentSystem.x; rotState.current.targetPanZ = -state.currentSystem.z; rotState.current.targetPanY = -state.currentSystem.y; rotState.current.targetPolar = 0.15; rotState.current.targetDistance = 35000; }} className={`px-2 py-0.5 border text-[10px] ${galaxyViewMode ? 'border-red-500 bg-red-950/30 text-red-400' : 'border-orange-700 bg-black/80 text-orange-500 hover:bg-orange-950/30'}`}>☁ GALAXY</button>
+        <button onClick={() => { setGalaxyViewMode(false); rotState.current.targetPanX = 0; rotState.current.targetPanZ = 0; rotState.current.targetPanY = 0; rotState.current.targetDistance = 120; }} className="px-2 py-0.5 border border-orange-700 bg-black/80 text-orange-500 hover:bg-orange-950/30 text-[10px]">⊕ CENTER</button>
+        <button onClick={() => { setGalaxyViewMode(false); rotState.current.targetDistance = 120; }} className="px-2 py-0.5 border border-orange-700 bg-black/80 text-orange-500 hover:bg-orange-950/30 text-[10px]">LOCAL VIEW</button>
         <button onClick={() => setShowGrid(!showGrid)} className={`px-2 py-0.5 border text-[10px] ${showGrid ? 'border-cyan-600 text-cyan-400' : 'border-orange-700 bg-black/80 text-orange-500'}`}>⊞ GRID</button>
       </div>
 
@@ -795,6 +880,23 @@ export default function GalaxyMap({ onJumpToSystem }) {
           <div className="w-2 h-2 bg-orange-400 rounded-full" />
           <span className="text-orange-400">LANDMARKS</span>
         </div>
+        {galaxyViewMode && (
+          <div className="border-t border-orange-900 pt-1 mt-1 space-y-0.5">
+            <div className="text-orange-700 uppercase text-[9px]">Galaxy View</div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+              <span className="text-red-400">YOU ARE HERE</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 bg-yellow-400 rounded-full" />
+              <span className="text-yellow-400">BOOKMARKS ({state.bookmarkedSystems?.length || 0})</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 bg-cyan-400 rounded-full" />
+              <span className="text-cyan-400">LANDMARKS & BUBBLES</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Selected star panel */}
@@ -847,6 +949,6 @@ function updateCameraPosition(camera, rs) {
   const x = rs.distance * Math.sin(rs.polar) * Math.cos(rs.azimuth);
   const y = rs.distance * Math.cos(rs.polar);
   const z = rs.distance * Math.sin(rs.polar) * Math.sin(rs.azimuth);
-  camera.position.set(x + rs.panX, y, z + rs.panZ);
-  camera.lookAt(rs.panX, 0, rs.panZ);
+  camera.position.set(x + rs.panX, y + (rs.panY || 0), z + rs.panZ);
+  camera.lookAt(rs.panX, rs.panY || 0, rs.panZ);
 }
