@@ -65,7 +65,7 @@ import CarrierCommandScreen from '@/components/game/CarrierCommandScreen';
 import TimeEventScreen from '@/components/game/TimeEventScreen';
 import PlayerTitlesScreen from '@/components/game/PlayerTitlesScreen';
 import WarpGateScreen from '@/components/game/WarpGateScreen';
-import CockpitScreen from '@/components/game/CockpitScreen';
+import CabinScreen from '@/components/game/CabinScreen';
 
 function GameContent() {
   const { state } = useGameState();
@@ -199,8 +199,8 @@ function GameContent() {
         return <PlayerTitlesScreen />;
       case 'warpgates':
         return <WarpGateScreen />;
-      case 'cockpit':
-        return <CockpitScreen />;
+      case 'cabin':
+        return <CabinScreen onNavigate={handleNavigate} />;
       default:
         return <SystemOrrery />;
     }

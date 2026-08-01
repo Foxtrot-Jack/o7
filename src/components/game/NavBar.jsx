@@ -51,7 +51,7 @@ const NAV_GROUPS = [
     id: 'fleet', label: 'Fleet', icon: Package, align: 'left',
     items: [
       { id: 'ship', label: 'Ship', icon: Package },
-      { id: 'cockpit', label: 'Cockpit', icon: Eye },
+      { id: 'cabin', label: 'Cabin', icon: Eye },
       { id: 'fleet', label: 'Fleet Manager', icon: Layers },
       { id: 'wingmates', label: 'Wingmates', icon: Users },
       { id: 'fighters', label: 'Fighter Hangar', icon: Plane },

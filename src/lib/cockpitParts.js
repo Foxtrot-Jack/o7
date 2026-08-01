@@ -165,7 +165,11 @@ export function getCockpitPartsForSlot(slot) {
 export function computeCockpitCost(decoration) {
   let credits = 0;
   const materials = {};
-  for (const partRef of Object.values(decoration?.parts || {})) {
+  const allPartRefs = [
+    ...Object.values(decoration?.parts || {}),
+    ...Object.values(decoration?.room1Parts || {}),
+  ];
+  for (const partRef of allPartRefs) {
     if (!partRef?.partId) continue;
     const part = COCKPIT_PART_MAP[partRef.partId];
     if (!part) continue;

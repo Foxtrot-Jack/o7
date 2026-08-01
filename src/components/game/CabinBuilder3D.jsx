@@ -1,9 +1,10 @@
-// 3D Cockpit Builder — place and customize cockpit accessories on slot markers
+// Cabin Builder 3D — third-person orbit view for placing trinkets on slots
 import React, { useRef, useEffect } from 'react';
 import * as THREE from 'three';
 import { COCKPIT_PART_MAP } from '@/lib/cockpitParts';
+import { genCabinSlots, getWindowConfig, DOOR_W, DOOR_H } from '@/lib/cabinConfig';
 
-export default function CockpitBuilder3D({ design, config, selectedSlot, onSelectSlot }) {
+export default function CabinBuilder3D({ design, config, room, selectedSlot, onSelectSlot }) {
   const mountRef = useRef(null);
   const sceneRef = useRef(null);
   const rendererRef = useRef(null);
@@ -14,7 +15,7 @@ export default function CockpitBuilder3D({ design, config, selectedSlot, onSelec
   const slotMarkersRef = useRef([]);
   const raycasterRef = useRef(new THREE.Raycaster());
   const animationIdRef = useRef(null);
-  const rotRef = useRef({ azimuth: Math.PI / 2, polar: Math.PI / 2.2, distance: 4, targetDistance: 4 });
+  const rotRef = useRef({ azimuth: Math.PI / 4, polar: Math.PI / 2.5, distance: 8, targetDistance: 8 });
 
   useEffect(() => {
     if (!mountRef.current) return;
@@ -49,7 +50,7 @@ export default function CockpitBuilder3D({ design, config, selectedSlot, onSelec
       const y = rs.distance * Math.cos(rs.polar);
       const z = rs.distance * Math.sin(rs.polar) * Math.sin(rs.azimuth);
       camera.position.set(x, y, z);
-      camera.lookAt(0, 0, -0.5);
+      camera.lookAt(0, 0, 0);
       renderer.render(scene, camera);
     };
     animate();
@@ -70,7 +71,7 @@ export default function CockpitBuilder3D({ design, config, selectedSlot, onSelec
     };
   }, []);
 
-  // Build cockpit frame + slot markers
+  // Build room wireframe + slot markers
   useEffect(() => {
     const frame = frameRef.current;
     if (!frame || !config) return;
@@ -82,68 +83,101 @@ export default function CockpitBuilder3D({ design, config, selectedSlot, onSelec
     }
     slotMarkersRef.current = [];
 
-    const ww = config.windowWidth / 2;
-    const wh = config.windowHeight / 2;
-    const z = -config.depth;
+    const { width, height, depth } = config;
+    const hw = width / 2, hh = height / 2, hd = depth / 2;
+    const lineMat = new THREE.LineBasicMaterial({ color: 0x553300, transparent: true, opacity: 0.6 });
 
-    // Window outline + canopy struts
-    const pts = [
-      [-ww, -wh, z], [ww, -wh, z],
-      [-ww, wh, z], [ww, wh, z],
-      [-ww, -wh, z], [-ww, wh, z],
-      [ww, -wh, z], [ww, wh, z],
-      [0, -wh, z], [0, wh, z],
-      [-ww, wh, z], [-ww - 0.2, wh, z + 0.5],
-      [ww, wh, z], [ww + 0.2, wh, z + 0.5],
-      [-ww, -wh, z], [-ww - 0.2, -wh, z + 0.4],
-      [ww, -wh, z], [ww + 0.2, -wh, z + 0.4],
+    // Room box edges
+    const boxPts = [
+      [-hw,-hh,-hd],[hw,-hh,-hd], [hw,-hh,-hd],[hw,-hh,hd], [hw,-hh,hd],[-hw,-hh,hd], [-hw,-hh,-hd],[-hw,-hh,-hd],
+      [-hw,hh,-hd],[hw,hh,-hd], [hw,hh,-hd],[hw,hh,hd], [hw,hh,hd],[-hw,hh,hd], [-hw,hh,hd],[-hw,hh,-hd],
+      [-hw,-hh,-hd],[-hw,hh,-hd], [hw,-hh,-hd],[hw,hh,-hd], [hw,-hh,hd],[hw,hh,hd], [-hw,-hh,hd],[-hw,hh,hd],
+    ].filter((_, i) => i % 2 === 0 || true);
+    // Build pairs properly
+    const edges = [
+      [-hw,-hh,-hd],[hw,-hh,-hd], [hw,-hh,-hd],[hw,-hh,hd], [hw,-hh,hd],[-hw,-hh,hd], [-hw,-hh,hd],[-hw,-hh,-hd],
+      [-hw,hh,-hd],[hw,hh,-hd], [hw,hh,-hd],[hw,hh,hd], [hw,hh,hd],[-hw,hh,hd], [-hw,hh,hd],[-hw,hh,-hd],
+      [-hw,-hh,-hd],[-hw,hh,-hd], [hw,-hh,-hd],[hw,hh,-hd], [hw,-hh,hd],[hw,hh,hd], [-hw,-hh,hd],[-hw,hh,hd],
     ];
-    const fGeom = new THREE.BufferGeometry().setFromPoints(pts.map(p => new THREE.Vector3(...p)));
-    const fMat = new THREE.LineBasicMaterial({ color: 0x553300, transparent: true, opacity: 0.6 });
-    frame.add(new THREE.LineSegments(fGeom, fMat));
+    const boxGeom = new THREE.BufferGeometry().setFromPoints(edges.map(p => new THREE.Vector3(...p)));
+    frame.add(new THREE.LineSegments(boxGeom, lineMat));
 
-    // Dashboard
-    const dashGeom = new THREE.BoxGeometry(config.windowWidth * 0.9, 0.05, 0.5);
-    const dashMat = new THREE.MeshBasicMaterial({ color: 0x331a00, wireframe: true });
-    const dash = new THREE.Mesh(dashGeom, dashMat);
-    dash.position.set(0, -wh - 0.05, z + 0.25);
-    dash.rotation.x = -0.25;
-    frame.add(dash);
+    // Window outline (room 0)
+    if (room === 0) {
+      const win = getWindowConfig(width, height);
+      const wfPts = [
+        new THREE.Vector3(-win.w/2, win.y-win.h/2, -hd), new THREE.Vector3(win.w/2, win.y-win.h/2, -hd),
+        new THREE.Vector3(win.w/2, win.y-win.h/2, -hd), new THREE.Vector3(win.w/2, win.y+win.h/2, -hd),
+        new THREE.Vector3(win.w/2, win.y+win.h/2, -hd), new THREE.Vector3(-win.w/2, win.y+win.h/2, -hd),
+        new THREE.Vector3(-win.w/2, win.y+win.h/2, -hd), new THREE.Vector3(-win.w/2, win.y-win.h/2, -hd),
+      ];
+      frame.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(wfPts), new THREE.LineBasicMaterial({ color: 0x224466 })));
+    }
+
+    // Door outlines (both walls)
+    const doorMat = new THREE.LineBasicMaterial({ color: 0x4a2a00 });
+    for (const xSign of [-1, 1]) {
+      const dx = xSign * hw;
+      const dp = [
+        new THREE.Vector3(dx, -hh, -DOOR_W/2), new THREE.Vector3(dx, -hh+DOOR_H, -DOOR_W/2),
+        new THREE.Vector3(dx, -hh, DOOR_W/2), new THREE.Vector3(dx, -hh+DOOR_H, DOOR_W/2),
+        new THREE.Vector3(dx, -hh+DOOR_H, -DOOR_W/2), new THREE.Vector3(dx, -hh+DOOR_H, DOOR_W/2),
+      ];
+      frame.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(dp), doorMat));
+    }
+
+    // Bed outline (room 0)
+    if (room === 0) {
+      const bedW = Math.min(width * 0.4, 1.6);
+      const bedZ = hd - 0.4;
+      const bedY = -hh + 0.25;
+      const bp = [
+        new THREE.Vector3(-bedW/2, bedY, bedZ-0.4), new THREE.Vector3(bedW/2, bedY, bedZ-0.4),
+        new THREE.Vector3(bedW/2, bedY, bedZ-0.4), new THREE.Vector3(bedW/2, bedY, bedZ+0.4),
+        new THREE.Vector3(bedW/2, bedY, bedZ+0.4), new THREE.Vector3(-bedW/2, bedY, bedZ+0.4),
+        new THREE.Vector3(-bedW/2, bedY, bedZ+0.4), new THREE.Vector3(-bedW/2, bedY, bedZ-0.4),
+      ];
+      frame.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(bp), new THREE.LineBasicMaterial({ color: 0x664400 })));
+    }
 
     // Slot markers
-    const markerMat = new THREE.MeshBasicMaterial({ color: 0x442200, wireframe: true, transparent: true, opacity: 0.4 });
-    const selMarkerMat = new THREE.MeshBasicMaterial({ color: 0x00ff88, wireframe: true, transparent: true, opacity: 0.8 });
-    for (const slot of config.slots) {
+    const slots = genCabinSlots(config, room);
+    const markerMat = new THREE.MeshBasicMaterial({ color: 0x442200, wireframe: true, transparent: true, opacity: 0.5 });
+    const selMat = new THREE.MeshBasicMaterial({ color: 0x00ff88, wireframe: true, transparent: true, opacity: 0.9 });
+    for (const slot of slots) {
       const isSel = slot.id === selectedSlot;
-      const mGeom = new THREE.SphereGeometry(0.08, 6, 4);
-      const marker = new THREE.Mesh(mGeom, isSel ? selMarkerMat : markerMat);
-      marker.position.set(...slot.pos);
-      marker.userData.slot = slot.id;
-      frame.add(marker);
-      slotMarkersRef.current.push(marker);
+      const m = new THREE.Mesh(new THREE.SphereGeometry(0.08, 6, 4), isSel ? selMat : markerMat);
+      m.position.set(...slot.pos);
+      m.userData.slot = slot.id;
+      frame.add(m);
+      slotMarkersRef.current.push(m);
     }
-  }, [config, selectedSlot]);
 
-  // Build accessory meshes
+    // Adjust camera distance based on room size
+    rotRef.current.targetDistance = Math.max(width, depth) * 1.2;
+  }, [config, room, selectedSlot]);
+
+  // Build trinket meshes
   useEffect(() => {
     const group = groupRef.current;
     if (!group || !config) return;
-
     for (const m of meshesRef.current) {
       if (m) { group.remove(m); m.geometry.dispose(); m.material.dispose(); }
     }
     meshesRef.current = [];
 
+    const slots = genCabinSlots(config, room);
+    const roomKey = room === 0 ? 'parts' : 'room1Parts';
+    const parts = design?.[roomKey] || {};
     const baseMat = new THREE.MeshBasicMaterial({ color: 0xff8800, wireframe: true });
     const selMat = new THREE.MeshBasicMaterial({ color: 0x00ff88, wireframe: true });
 
-    for (const slot of config.slots) {
-      const partRef = design?.parts?.[slot.id];
+    for (const slot of slots) {
+      const partRef = parts[slot.id];
       if (!partRef?.partId) continue;
       const part = COCKPIT_PART_MAP[partRef.partId];
       if (!part) continue;
-
-      const geom = createCockpitGeometry(part.shape);
+      const geom = createTrinketGeometry(part.shape);
       const mat = (slot.id === selectedSlot ? selMat : baseMat).clone();
       const mesh = new THREE.Mesh(geom, mat);
       const offset = partRef.position || [0, 0, 0];
@@ -155,9 +189,9 @@ export default function CockpitBuilder3D({ design, config, selectedSlot, onSelec
       group.add(mesh);
       meshesRef.current.push(mesh);
     }
-  }, [design, config, selectedSlot]);
+  }, [design, config, room, selectedSlot]);
 
-  // Pointer + touch interaction
+  // Interaction
   useEffect(() => {
     const canvas = rendererRef.current?.domElement;
     if (!canvas) return;
@@ -190,7 +224,7 @@ export default function CockpitBuilder3D({ design, config, selectedSlot, onSelec
       isDragging = false;
       if (Math.hypot(e.clientX - dragStartX, e.clientY - dragStartY) < 5) handleClick(e.clientX, e.clientY);
     };
-    const onWheel = (e) => { e.preventDefault(); rotRef.current.targetDistance = Math.max(1.5, Math.min(10, rotRef.current.targetDistance + e.deltaY * 0.01)); };
+    const onWheel = (e) => { e.preventDefault(); rotRef.current.targetDistance = Math.max(2, Math.min(20, rotRef.current.targetDistance + e.deltaY * 0.01)); };
     const onTouchStart = (e) => {
       if (e.touches.length === 2) { isDragging = false; pinchDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); }
       else if (e.touches.length === 1) { isDragging = true; lastX = e.touches[0].clientX; lastY = e.touches[0].clientY; dragStartX = lastX; dragStartY = lastY; }
@@ -200,7 +234,7 @@ export default function CockpitBuilder3D({ design, config, selectedSlot, onSelec
       if (e.touches.length === 2) {
         const newDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
         const delta = pinchDist - newDist; pinchDist = newDist;
-        rotRef.current.targetDistance = Math.max(1.5, Math.min(10, rotRef.current.targetDistance + delta * 0.05));
+        rotRef.current.targetDistance = Math.max(2, Math.min(20, rotRef.current.targetDistance + delta * 0.05));
       } else if (e.touches.length === 1 && isDragging) {
         const dx = e.touches[0].clientX - lastX, dy = e.touches[0].clientY - lastY;
         lastX = e.touches[0].clientX; lastY = e.touches[0].clientY;
@@ -243,17 +277,17 @@ export default function CockpitBuilder3D({ design, config, selectedSlot, onSelec
   );
 }
 
-function createCockpitGeometry(shape) {
+function createTrinketGeometry(shape) {
   switch (shape) {
-    case 'cone': return new THREE.ConeGeometry(0.15, 0.35, 6);
-    case 'box': return new THREE.BoxGeometry(0.25, 0.25, 0.25);
-    case 'cylinder': return new THREE.CylinderGeometry(0.1, 0.1, 0.25, 8);
-    case 'sphere': return new THREE.SphereGeometry(0.13, 8, 6);
-    case 'wedge': return new THREE.CylinderGeometry(0.03, 0.18, 0.35, 4);
-    case 'octagon': return new THREE.CylinderGeometry(0.13, 0.13, 0.25, 8);
-    case 'octahedron': return new THREE.OctahedronGeometry(0.14, 0);
-    case 'tetrahedron': return new THREE.TetrahedronGeometry(0.18, 0);
-    case 'torus': return new THREE.TorusGeometry(0.1, 0.035, 6, 12);
-    default: return new THREE.BoxGeometry(0.25, 0.25, 0.25);
+    case 'cone': return new THREE.ConeGeometry(0.12, 0.3, 6);
+    case 'box': return new THREE.BoxGeometry(0.2, 0.2, 0.2);
+    case 'cylinder': return new THREE.CylinderGeometry(0.08, 0.08, 0.2, 8);
+    case 'sphere': return new THREE.SphereGeometry(0.1, 8, 6);
+    case 'wedge': return new THREE.CylinderGeometry(0.02, 0.15, 0.3, 4);
+    case 'octagon': return new THREE.CylinderGeometry(0.1, 0.1, 0.2, 8);
+    case 'octahedron': return new THREE.OctahedronGeometry(0.12, 0);
+    case 'tetrahedron': return new THREE.TetrahedronGeometry(0.15, 0);
+    case 'torus': return new THREE.TorusGeometry(0.08, 0.03, 6, 12);
+    default: return new THREE.BoxGeometry(0.2, 0.2, 0.2);
   }
 }

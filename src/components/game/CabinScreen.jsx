@@ -1,17 +1,19 @@
-// Cockpit Screen — viewer + decoration editor for ships, carriers, and stations
+// Cabin Screen — living quarters viewer, decoration editor, and interior map
 import React, { useState, useMemo, useCallback } from 'react';
 import { useGameState, SHIP_MAP } from '@/lib/gameState';
-import { getCockpitConfig, getCockpitPartsForSlot, computeCockpitCost } from '@/lib/cockpitParts';
-import CockpitView from './CockpitView';
-import CockpitBuilder3D from './CockpitBuilder3D';
-import { Eye, Wrench, Save, Trash2 } from 'lucide-react';
+import { computeCockpitCost } from '@/lib/cockpitParts';
+import { getCabinConfig, genCabinSlots, getCabinPartsForSlot } from '@/lib/cabinConfig';
+import CabinView from './CabinView';
+import CabinBuilder3D from './CabinBuilder3D';
+import { Eye, Wrench, Map, Save, Trash2 } from 'lucide-react';
 
-export default function CockpitScreen() {
-  const { state, isSandbox, saveCockpitDecoration } = useGameState();
+export default function CabinScreen({ onNavigate }) {
+  const { state, isSandbox, saveCockpitDecoration, switchSave } = useGameState();
   const [tab, setTab] = useState('view');
   const [target, setTarget] = useState('ship');
   const [carrierId, setCarrierId] = useState(state.fleetCarriers?.[0]?.id || null);
   const [stationId, setStationId] = useState(state.ownedStations?.[0]?.id || null);
+  const [room, setRoom] = useState(0);
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [design, setDesign] = useState(null);
   const [saveMsg, setSaveMsg] = useState(null);
@@ -19,7 +21,7 @@ export default function CockpitScreen() {
   const shipClass = target === 'ship'
     ? (SHIP_MAP[state.ship.type]?.class || (state.ship.type === 'custom' ? 2 : 1))
     : target === 'carrier' ? 'carrier' : 'station';
-  const config = getCockpitConfig(shipClass);
+  const config = getCabinConfig(shipClass);
 
   const savedDecor = target === 'ship'
     ? state.ship.cockpitDecoration || { parts: {} }
@@ -29,54 +31,61 @@ export default function CockpitScreen() {
 
   const activeDesign = design || savedDecor;
   const activeTargetId = target === 'carrier' ? carrierId : target === 'station' ? stationId : null;
+  const roomKey = room === 0 ? 'parts' : 'room1Parts';
+  const cabinSlots = useMemo(() => genCabinSlots(config, room), [config, room]);
 
   const handleSelectSlot = useCallback((slotId) => setSelectedSlot(slotId), []);
 
   const handlePartSelect = useCallback((slotId, partId) => {
     setDesign(prev => {
       const base = prev || savedDecor;
-      return {
-        ...base,
-        parts: { ...base.parts, [slotId]: { partId, scale: 1, position: [0, 0, 0], rotation: [0, 0, 0] } },
-      };
+      const rk = room === 0 ? 'parts' : 'room1Parts';
+      return { ...base, [rk]: { ...(base[rk] || {}), [slotId]: { partId, scale: 1, position: [0, 0, 0], rotation: [0, 0, 0] } } };
     });
-  }, [savedDecor]);
+  }, [savedDecor, room]);
 
   const handleScaleChange = useCallback((slotId, value) => {
+    const rk = roomKey;
     setDesign(prev => {
       const base = prev || savedDecor;
-      return { ...base, parts: { ...base.parts, [slotId]: { ...base.parts?.[slotId], scale: value } } };
+      const parts = base[rk] || {};
+      return { ...base, [rk]: { ...parts, [slotId]: { ...parts[slotId], scale: value } } };
     });
-  }, [savedDecor]);
+  }, [savedDecor, roomKey]);
 
   const handleRotationChange = useCallback((slotId, axis, value) => {
+    const rk = roomKey;
     setDesign(prev => {
       const base = prev || savedDecor;
-      const part = base.parts?.[slotId] || {};
+      const parts = base[rk] || {};
+      const part = parts[slotId] || {};
       const rotation = [...(part.rotation || [0, 0, 0])];
       rotation[axis] = value;
-      return { ...base, parts: { ...base.parts, [slotId]: { ...part, rotation } } };
+      return { ...base, [rk]: { ...parts, [slotId]: { ...part, rotation } } };
     });
-  }, [savedDecor]);
+  }, [savedDecor, roomKey]);
 
   const handlePositionChange = useCallback((slotId, axis, value) => {
+    const rk = roomKey;
     setDesign(prev => {
       const base = prev || savedDecor;
-      const part = base.parts?.[slotId] || {};
+      const parts = base[rk] || {};
+      const part = parts[slotId] || {};
       const position = [...(part.position || [0, 0, 0])];
       position[axis] = value;
-      return { ...base, parts: { ...base.parts, [slotId]: { ...part, position } } };
+      return { ...base, [rk]: { ...parts, [slotId]: { ...part, position } } };
     });
-  }, [savedDecor]);
+  }, [savedDecor, roomKey]);
 
   const handleClearSlot = useCallback((slotId) => {
+    const rk = roomKey;
     setDesign(prev => {
       const base = prev || savedDecor;
-      const parts = { ...base.parts };
+      const parts = { ...(base[rk] || {}) };
       delete parts[slotId];
-      return { ...base, parts };
+      return { ...base, [rk]: parts };
     });
-  }, [savedDecor]);
+  }, [savedDecor, roomKey]);
 
   const handleSave = () => {
     saveCockpitDecoration(activeDesign, target, activeTargetId);
@@ -85,21 +94,15 @@ export default function CockpitScreen() {
     setTimeout(() => setSaveMsg(null), 2000);
   };
 
-  const handleReset = () => {
-    setDesign(null);
-    setSelectedSlot(null);
-  };
+  const handleReset = () => { setDesign(null); setSelectedSlot(null); };
 
-  const switchTarget = (t) => {
-    setTarget(t);
-    setDesign(null);
-    setSelectedSlot(null);
-  };
+  const switchTarget = (t) => { setTarget(t); setDesign(null); setSelectedSlot(null); setRoom(0); };
+  const switchRoom = (r) => { setRoom(r); setDesign(null); setSelectedSlot(null); };
 
   const cost = useMemo(() => computeCockpitCost(activeDesign), [activeDesign]);
-  const selectedSlotObj = config.slots.find(s => s.id === selectedSlot);
-  const availableParts = selectedSlotObj ? getCockpitPartsForSlot(selectedSlotObj) : [];
-  const selectedPartRef = selectedSlot ? activeDesign?.parts?.[selectedSlot] : null;
+  const selectedSlotObj = cabinSlots.find(s => s.id === selectedSlot);
+  const availableParts = selectedSlotObj ? getCabinPartsForSlot(selectedSlotObj) : [];
+  const selectedPartRef = selectedSlot ? activeDesign?.[roomKey]?.[selectedSlot] : null;
 
   return (
     <div className="w-full h-full flex flex-col overflow-hidden">
@@ -126,7 +129,14 @@ export default function CockpitScreen() {
           </select>
         )}
 
-        <div className="text-[10px] text-orange-600 ml-1">{config.name} · {config.slots.length} slots</div>
+        <div className="text-[10px] text-orange-600 ml-1">{config.name}</div>
+
+        {config.rooms > 1 && (
+          <div className="flex gap-1">
+            <button onClick={() => switchRoom(0)} className={`px-2 py-1 text-[10px] border ${room === 0 ? 'border-cyan-500 text-cyan-300 bg-cyan-950/20' : 'border-orange-900 text-orange-600'}`}>LIVING QTRS</button>
+            <button onClick={() => switchRoom(1)} className={`px-2 py-1 text-[10px] border ${room === 1 ? 'border-cyan-500 text-cyan-300 bg-cyan-950/20' : 'border-orange-900 text-orange-600'}`}>CUSTOM RM</button>
+          </div>
+        )}
 
         <div className="flex gap-1 ml-auto">
           <button onClick={() => setTab('view')} className={`flex items-center gap-1 px-2 py-1 text-[10px] border ${tab === 'view' ? 'border-cyan-500 text-cyan-300 bg-cyan-950/20' : 'border-orange-900 text-orange-600'}`}>
@@ -135,33 +145,30 @@ export default function CockpitScreen() {
           <button onClick={() => setTab('decorate')} className={`flex items-center gap-1 px-2 py-1 text-[10px] border ${tab === 'decorate' ? 'border-orange-500 text-orange-300 bg-orange-950/30' : 'border-orange-900 text-orange-600'}`}>
             <Wrench className="w-3 h-3" /> DECORATE
           </button>
+          <button onClick={() => setTab('map')} className={`flex items-center gap-1 px-2 py-1 text-[10px] border ${tab === 'map' ? 'border-orange-500 text-orange-300 bg-orange-950/30' : 'border-orange-900 text-orange-600'}`}>
+            <Map className="w-3 h-3" /> MAP
+          </button>
         </div>
       </div>
 
       {/* Main content */}
       {tab === 'view' ? (
         <div className="flex-1 min-h-0">
-          <CockpitView target={target} targetId={activeTargetId} decorationOverride={design} />
+          <CabinView target={target} targetId={activeTargetId} room={room} onNavigate={onNavigate} onExitGame={switchSave} onRoomChange={switchRoom} decorationOverride={design} />
         </div>
-      ) : (
+      ) : tab === 'decorate' ? (
         <div className="flex-1 min-h-0 flex flex-col sm:flex-row">
           <div className="flex-1 min-h-[200px] sm:min-h-0 border-b sm:border-b-0 sm:border-r border-orange-900/50 relative">
-            <CockpitBuilder3D design={activeDesign} config={config} selectedSlot={selectedSlot} onSelectSlot={handleSelectSlot} />
+            <CabinBuilder3D design={activeDesign} config={config} room={room} selectedSlot={selectedSlot} onSelectSlot={handleSelectSlot} />
           </div>
-
           <div className="w-full sm:w-64 flex-shrink-0 overflow-y-auto p-2 space-y-2 bg-black max-h-[40vh] sm:max-h-none">
-            {/* Slot list */}
             <div>
-              <div className="text-orange-700 text-[9px] uppercase mb-1">Slots</div>
+              <div className="text-orange-700 text-[9px] uppercase mb-1">Slots — {room === 0 ? 'Living Quarters' : 'Custom Room'}</div>
               <div className="space-y-0.5">
-                {config.slots.map(slot => {
-                  const hasPart = activeDesign?.parts?.[slot.id]?.partId;
+                {cabinSlots.map(slot => {
+                  const hasPart = activeDesign?.[roomKey]?.[slot.id]?.partId;
                   return (
-                    <button
-                      key={slot.id}
-                      onClick={() => setSelectedSlot(slot.id)}
-                      className={`flex items-center justify-between w-full px-2 py-1 text-[10px] border ${selectedSlot === slot.id ? 'border-green-600 text-green-400 bg-green-950/20' : 'border-orange-950 text-orange-600 hover:text-orange-400'}`}
-                    >
+                    <button key={slot.id} onClick={() => setSelectedSlot(slot.id)} className={`flex items-center justify-between w-full px-2 py-1 text-[10px] border ${selectedSlot === slot.id ? 'border-green-600 text-green-400 bg-green-950/20' : 'border-orange-950 text-orange-600 hover:text-orange-400'}`}>
                       <span>{slot.label}</span>
                       {hasPart && <span className="text-green-600">✓</span>}
                     </button>
@@ -170,17 +177,12 @@ export default function CockpitScreen() {
               </div>
             </div>
 
-            {/* Parts palette */}
             {selectedSlotObj && (
               <div>
                 <div className="text-orange-700 text-[9px] uppercase mb-1">{selectedSlotObj.category} Items</div>
                 <div className="space-y-0.5">
                   {availableParts.map(part => (
-                    <button
-                      key={part.id}
-                      onClick={() => handlePartSelect(selectedSlot, part.id)}
-                      className={`flex items-center justify-between w-full px-2 py-1 text-[10px] border ${selectedPartRef?.partId === part.id ? 'border-orange-500 text-orange-300 bg-orange-950/30' : 'border-orange-950 text-orange-600 hover:text-orange-400'}`}
-                    >
+                    <button key={part.id} onClick={() => handlePartSelect(selectedSlot, part.id)} className={`flex items-center justify-between w-full px-2 py-1 text-[10px] border ${selectedPartRef?.partId === part.id ? 'border-orange-500 text-orange-300 bg-orange-950/30' : 'border-orange-950 text-orange-600 hover:text-orange-400'}`}>
                       <span>{part.name}</span>
                       <span className="text-orange-800">{part.cost}cr</span>
                     </button>
@@ -189,7 +191,6 @@ export default function CockpitScreen() {
               </div>
             )}
 
-            {/* Adjustment controls */}
             {selectedPartRef?.partId && (
               <div className="space-y-2 border border-orange-950 p-2">
                 <div className="text-orange-700 text-[9px] uppercase">Adjust</div>
@@ -215,9 +216,8 @@ export default function CockpitScreen() {
               </div>
             )}
 
-            {/* Cost summary + save */}
             <div className="border border-orange-900 p-2 space-y-1">
-              <div className="text-orange-700 text-[9px] uppercase">Total Cost</div>
+              <div className="text-orange-700 text-[9px] uppercase">Total Cost (both rooms)</div>
               <div className="text-orange-400 text-[10px]">{cost.credits.toLocaleString()} CR</div>
               {Object.entries(cost.materials).map(([mat, qty]) => (
                 <div key={mat} className="text-orange-600 text-[9px]">{mat}: {qty}</div>
@@ -233,7 +233,46 @@ export default function CockpitScreen() {
             </div>
           </div>
         </div>
+      ) : (
+        <CabinInteriorMap config={config} room={room} decoration={activeDesign} selectedSlot={selectedSlot} onSelectSlot={handleSelectSlot} />
       )}
+    </div>
+  );
+}
+
+function CabinInteriorMap({ config, room, decoration, selectedSlot, onSelectSlot }) {
+  const slots = genCabinSlots(config, room);
+  const hasWindow = room === 0;
+  const roomKey = room === 0 ? 'parts' : 'room1Parts';
+
+  return (
+    <div className="w-full h-full flex flex-col items-center justify-center p-4 overflow-auto">
+      <div className="text-orange-400 text-xs mb-2">{room === 0 ? 'LIVING QUARTERS' : 'CUSTOMIZATION ROOM'} — TOP DOWN VIEW</div>
+      <div className="relative border-2 border-orange-700 bg-black/50" style={{ width: 'min(90%, 450px)', aspectRatio: `${config.width} / ${config.depth}` }}>
+        <div className="absolute top-0 inset-x-0 h-1 bg-orange-800" />
+        {hasWindow && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-cyan-500" />}
+        <div className="absolute bottom-0 inset-x-0 h-1 bg-orange-800" />
+        {room === 0 && <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-20 h-2 border border-orange-700 bg-orange-950/50" />}
+        <div className="absolute left-0 inset-y-0 w-1 bg-orange-800" />
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-10 bg-green-600" />
+        <div className="absolute right-0 inset-y-0 w-1 bg-orange-800" />
+        <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-10" style={{ background: (room === 0 && config.rooms > 1) ? '#ffaa00' : '#ff4444' }} />
+        {slots.map(slot => {
+          const xPct = ((slot.pos[0] + config.width / 2) / config.width) * 100;
+          const zPct = ((slot.pos[2] + config.depth / 2) / config.depth) * 100;
+          const hasPart = decoration?.[roomKey]?.[slot.id]?.partId;
+          return (
+            <button
+              key={slot.id}
+              onClick={() => onSelectSlot?.(slot.id)}
+              className={`absolute w-2.5 h-2.5 rounded-full border -translate-x-1/2 -translate-y-1/2 cursor-pointer ${selectedSlot === slot.id ? 'border-green-400 bg-green-600' : hasPart ? 'border-orange-400 bg-orange-600' : 'border-orange-800 bg-orange-950 hover:bg-orange-900'}`}
+              style={{ left: `${xPct}%`, top: `${zPct}%` }}
+              title={slot.label}
+            />
+          );
+        })}
+      </div>
+      <div className="text-orange-700 text-[9px] mt-2">TAP A SLOT TO SELECT IT FOR DECORATING</div>
     </div>
   );
 }
