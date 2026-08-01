@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useGameState, SHIP_MAP } from '@/lib/gameState';
 import BadgeDisplay from './BadgeDisplay';
 import { Beer, BedDouble, Leaf, Trophy, Compass, Telescope, Plus, Trash2, Ship as ShipIcon, Sparkles, DoorOpen, Wine, Anchor } from 'lucide-react';
+import CarrierInteriorView from './CarrierInteriorView';
 
 const ROOMS = [
   { id: 'bar', name: 'Bar', icon: Beer },
@@ -60,10 +61,20 @@ function generateRumor(systemName) {
   return t.replace('{system}', systemName).replace('{commodity}', RUMOR_COMMODITIES[Math.floor(Math.random() * RUMOR_COMMODITIES.length)]);
 }
 
+const CARRIER_ROOMS = [
+  { id: 'observation', name: 'Observation Lounge' },
+  { id: 'command', name: 'Command Deck' },
+  { id: 'quarters', name: 'Living Quarters' },
+  { id: 'bar', name: 'The Driftwood Tavern' },
+  { id: 'garden', name: 'Botanical Wing' },
+  { id: 'trophy', name: 'Hall of Records' },
+];
+
 export default function CarrierInterior({ onNavigate }) {
   const { state, updateCarrierInterior, buyAle, requestShipTransit } = useGameState();
   const [selectedCarrierId, setSelectedCarrierId] = useState(null);
-  const [room, setRoom] = useState('bar');
+  const [roomIndex, setRoomIndex] = useState(2);
+  const [activePanel, setActivePanel] = useState(null);
 
   const carriersHere = state.fleetCarriers.filter(c => c.systemSeed === state.currentSystem.seed);
 
@@ -87,42 +98,70 @@ export default function CarrierInterior({ onNavigate }) {
 
   const carrier = state.fleetCarriers.find(c => c.id === selectedCarrierId) || carriersHere[0];
   const interior = carrier.interior || { roomItems: [], savedPlants: [], barTab: 0 };
+  const room = CARRIER_ROOMS[roomIndex];
+
+  const handleNavigateDir = (dir) => {
+    if (dir === 'left' && roomIndex > 0) setRoomIndex(roomIndex - 1);
+    if (dir === 'right' && roomIndex < CARRIER_ROOMS.length - 1) setRoomIndex(roomIndex + 1);
+  };
+
+  const handleInteract = (action) => {
+    if (action === 'decorate') { onNavigate?.('cabin'); return; }
+    setActivePanel(action);
+  };
+
+  const leftRoomName = roomIndex > 0 ? CARRIER_ROOMS[roomIndex - 1].name : null;
+  const rightRoomName = roomIndex < CARRIER_ROOMS.length - 1 ? CARRIER_ROOMS[roomIndex + 1].name : null;
 
   return (
-    <div className="w-full h-full overflow-y-auto p-3 sm:p-4 space-y-4">
-      {/* Header */}
-      <div className="border border-orange-700 p-3 flex items-center justify-between flex-wrap gap-2">
-        <div className="flex items-center gap-2">
-          <Anchor className="w-5 h-5 text-orange-500" />
-          <h2 className="text-orange-300 font-bold uppercase text-sm">{carrier.name} — Interior</h2>
-        </div>
-        {carriersHere.length > 1 && (
+    <div className="w-full h-full relative overflow-hidden">
+      {carriersHere.length > 1 && (
+        <div className="absolute top-1 left-1/2 -translate-x-1/2 z-20">
           <select value={selectedCarrierId || ''} onChange={e => setSelectedCarrierId(e.target.value)} className="bg-black border border-orange-900 text-orange-300 px-2 py-1 text-xs">
             {carriersHere.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
-        )}
+        </div>
+      )}
+
+      <CarrierInteriorView
+        roomType={room.id}
+        roomIndex={roomIndex}
+        totalRooms={CARRIER_ROOMS.length}
+        roomName={room.name}
+        leftRoomName={leftRoomName}
+        rightRoomName={rightRoomName}
+        onNavigate={handleNavigateDir}
+        onInteract={handleInteract}
+      />
+
+      {/* Minimap */}
+      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-0.5 z-20">
+        {CARRIER_ROOMS.map((r, i) => (
+          <button key={r.id} onClick={() => setRoomIndex(i)} className={`px-1.5 py-0.5 text-[8px] border whitespace-nowrap ${i === roomIndex ? 'border-orange-500 bg-orange-950/40 text-orange-300' : 'border-orange-900 text-orange-700 hover:text-orange-500'}`} title={r.name}>
+            {r.name.split(' ')[0]}
+          </button>
+        ))}
       </div>
 
-      {/* Room selector */}
-      <div className="flex gap-1 flex-wrap">
-        {ROOMS.map(r => {
-          const Icon = r.icon;
-          return (
-            <button key={r.id} onClick={() => setRoom(r.id)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs border transition-all ${room === r.id ? 'border-orange-500 bg-orange-950/40 text-orange-300' : 'border-orange-900 text-orange-700 hover:border-orange-700'}`}>
-              <Icon className="w-3.5 h-3.5" /> {r.name}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Room content */}
-      {room === 'bar' && <BarRoom carrier={carrier} interior={interior} buyAle={buyAle} systemName={state.currentSystem.name} />}
-      {room === 'quarters' && <QuartersRoom carrier={carrier} interior={interior} updateInterior={updateCarrierInterior} savedBadges={state.savedBadges || []} onNavigate={onNavigate} />}
-      {room === 'garden' && <GardenRoom carrier={carrier} interior={interior} updateInterior={updateCarrierInterior} surfaceDiscoveries={state.surfaceDiscoveries || {}} systemName={state.currentSystem.name} getSystemData={state.currentSystemData} />}
-      {room === 'trophy' && <TrophyRoom state={state} />}
-      {room === 'command' && <CommandDeck carrier={carrier} state={state} requestShipTransit={requestShipTransit} isSandbox={state.saveMode === 'sandbox'} />}
-      {room === 'observation' && <ObservationRoom state={state} />}
+      {/* Overlay panel for room interactions */}
+      {activePanel && (
+        <div className="absolute inset-0 z-30 bg-black/80 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="w-full max-w-lg max-h-[80vh] overflow-y-auto border border-orange-700 bg-black p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-orange-300 text-sm font-bold uppercase">{room.name}</h3>
+              <button onClick={() => setActivePanel(null)} className="text-orange-600 hover:text-orange-400 text-xs">✕ CLOSE</button>
+            </div>
+            {activePanel === 'drinks' && <BarRoom carrier={carrier} interior={interior} buyAle={buyAle} systemName={state.currentSystem.name} />}
+            {activePanel === 'flora' && <GardenRoom carrier={carrier} interior={interior} updateInterior={updateCarrierInterior} surfaceDiscoveries={state.surfaceDiscoveries || {}} systemName={state.currentSystem.name} getSystemData={state.currentSystemData} />}
+            {activePanel === 'records' && <TrophyRoom state={state} />}
+            {activePanel === 'transit' && <CommandDeck carrier={carrier} state={state} requestShipTransit={requestShipTransit} isSandbox={state.saveMode === 'sandbox'} />}
+            {activePanel === 'stargaze' && <ObservationRoom state={state} />}
+            {activePanel === 'decorate' && (
+              <QuartersRoom carrier={carrier} interior={interior} updateInterior={updateCarrierInterior} savedBadges={state.savedBadges || []} onNavigate={onNavigate} />
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
