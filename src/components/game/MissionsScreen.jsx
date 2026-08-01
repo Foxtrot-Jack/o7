@@ -96,8 +96,10 @@ export default function MissionsScreen() {
       const qty = randInt(rng, 1, 20);
       const rewardMultiplier = randFloat(rng, 0.8, 2.5);
       const isSurfaceScan = type === MISSION_TYPES.SURFACE_SCAN;
+      const isCourier = type === MISSION_TYPES.COURIER;
+      const noCargo = isSurfaceScan || isCourier;
       const scanReward = Math.round(template.rewardBase * randFloat(rng, 0.8, 2.0) / 10) * 10;
-      const reward = isSurfaceScan ? scanReward : Math.round(template.rewardBase * qty * rewardMultiplier / 10) * 10;
+      const reward = isSurfaceScan ? scanReward : isCourier ? Math.round(template.rewardBase * rewardMultiplier / 10) * 10 : Math.round(template.rewardBase * qty * rewardMultiplier / 10) * 10;
 
       // Pick a destination system — local for mining/salvage/exploration, nearby for delivery/courier/passenger/surface_scan
       const isLocal = [MISSION_TYPES.MINING, MISSION_TYPES.SALVAGE, MISSION_TYPES.EXPLORATION].includes(type);
@@ -114,9 +116,9 @@ export default function MissionsScreen() {
         type,
         name: template.name,
         description: desc,
-        commodity: isSurfaceScan ? null : commodity.id,
-        commodityName: isSurfaceScan ? null : commodity.name,
-        qty: isSurfaceScan ? 0 : qty,
+        commodity: noCargo ? null : commodity.id,
+        commodityName: noCargo ? null : commodity.name,
+        qty: noCargo ? 0 : qty,
         reward,
         deadline: Date.now() + randInt(rng, 1, 7) * 24 * 60 * 60 * 1000,
         reputation: randInt(rng, 1, 5),
@@ -239,7 +241,8 @@ export default function MissionsScreen() {
           const cargoItem = mission.commodity ? state.ship.cargo.find(c => c.commodity === mission.commodity) : null;
           const hasCargo = cargoItem && cargoItem.qty >= mission.qty;
           const hasSurfaceMap = mission.type === MISSION_TYPES.SURFACE_SCAN && Object.values(state.surfaceMaps || {}).some(m => m.systemSeed === mission.destinationSystem?.seed);
-          const canComplete = mission.type === MISSION_TYPES.EXPLORATION || (mission.type === MISSION_TYPES.SURFACE_SCAN ? hasSurfaceMap : hasCargo);
+          const isDataMission = mission.type === MISSION_TYPES.COURIER || mission.type === MISSION_TYPES.EXPLORATION;
+          const canComplete = isDataMission || (mission.type === MISSION_TYPES.SURFACE_SCAN ? hasSurfaceMap : hasCargo);
 
           return (
             <div key={mission.id} className="border border-green-900 p-3 text-xs">
@@ -252,6 +255,11 @@ export default function MissionsScreen() {
                     {mission.commodity && (
                       <div className="text-orange-700 text-[10px] mt-1">
                         PROGRESS: {cargoItem?.qty || 0}/{mission.qty}T
+                      </div>
+                    )}
+                    {mission.type === MISSION_TYPES.COURIER && (
+                      <div className="text-cyan-700 text-[10px] mt-1">
+                        ✓ DATA PACKAGE SECURED — DELIVER TO COMPLETE
                       </div>
                     )}
                     {mission.type === MISSION_TYPES.SURFACE_SCAN && (
