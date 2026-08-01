@@ -75,8 +75,8 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
     rendererRef.current = renderer;
     cameraRef.current = camera;
 
-    // Reference grid — horizontal (coplanar with orbits)
-    const gridHelper = new THREE.GridHelper(200, 20, 0x1a0a00, 0x110800);
+    // Reference grid — horizontal (coplanar with orbits), uniform color to hide center cross
+    const gridHelper = new THREE.GridHelper(200, 20, 0x110800, 0x110800);
     scene.add(gridHelper);
 
     const animate = () => {
