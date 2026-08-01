@@ -1,6 +1,6 @@
 // Navigation bar — dropdown-grouped access to all screens
 import React, { useState, useRef, useEffect } from 'react';
-import { Compass, Store, Package, ClipboardList, Pickaxe, Telescope, Home, Map, Rocket, Layers, Anchor, Trophy, Settings, Wrench, MapPin, TrendingUp, User, Hammer, BookOpen, Briefcase, ChevronDown, Lock, Sparkles, Medal, Palette, DoorOpen, ArrowLeftRight, FlaskConical, Users, Crown, Target, Skull, Newspaper, Crosshair, Swords, AlertTriangle, Gem, UserCheck, Building, ScrollText, Plane, Activity, Leaf, Route, Radio, ListChecks, Award, Save, Brain, LayoutDashboard, Zap, Network, Eye, Fish, Calendar } from 'lucide-react';
+import { Compass, Store, Package, ClipboardList, Pickaxe, Telescope, Home, Map, Rocket, Layers, Anchor, Trophy, Settings, Wrench, MapPin, TrendingUp, User, Hammer, BookOpen, Briefcase, ChevronDown, Lock, Sparkles, Medal, Palette, DoorOpen, ArrowLeftRight, FlaskConical, Users, Crown, Target, Skull, Newspaper, Crosshair, Swords, AlertTriangle, Gem, UserCheck, Building, ScrollText, Plane, Activity, Leaf, Route, Radio, ListChecks, Award, Save, Brain, LayoutDashboard, Zap, Network, Eye, Fish, Calendar, Gamepad2 } from 'lucide-react';
 import { useGameState } from '@/lib/gameState';
 import { soundEngine } from '@/lib/soundEngine';
 
@@ -98,6 +98,7 @@ const NAV_GROUPS = [
       { id: 'codex', label: 'Codex', icon: BookOpen },
       { id: 'discoveries', label: 'Discoveries', icon: BookOpen },
       { id: 'cheats', label: 'Cheats', icon: Sparkles },
+      { id: 'controllerconfig', label: 'Controller Config', icon: Gamepad2 },
       { id: 'settings', label: 'Settings', icon: Settings },
     ],
   },

@@ -1,5 +1,5 @@
 // Main Game Page — orchestrates all screens with persistent navigation
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { GameStateProvider, useGameState } from '@/lib/gameState';
 import CRTFrame from '@/components/game/CRTFrame';
 import SaveSelect from '@/components/game/SaveSelect';
@@ -73,12 +73,25 @@ import GardenScreen from '@/components/game/GardenScreen';
 import GeneticsLabScreen from '@/components/game/GeneticsLabScreen';
 import StationCreator from '@/components/game/StationCreator';
 import GameErrorBoundary from '@/components/game/GameErrorBoundary';
+import ControllerConfigScreen from '@/components/game/ControllerConfigScreen';
+import { inputSystem } from '@/lib/inputSystem';
 import { soundEngine } from '@/lib/soundEngine';
 import { SCREEN_CONTEXTS } from '@/lib/soundPresets';
 
 function GameContent() {
   const { state } = useGameState();
   const [screen, setScreen] = useState('system');
+
+  // Refs for input system — avoids stale closures in the useEffect[] subscription
+  const screenRef = useRef(screen);
+  screenRef.current = screen;
+  const locationRef = useRef(state.currentLocation);
+  locationRef.current = state.currentLocation;
+  const carriersRef = useRef(state.fleetCarriers || []);
+  carriersRef.current = state.fleetCarriers || [];
+  const cheatsRef = useRef(state.cheats);
+  cheatsRef.current = state.cheats;
+  const screenHistoryRef = useRef([]);
 
   // Sync sound settings to the audio engine
   useEffect(() => {
@@ -112,11 +125,65 @@ function GameContent() {
     }
   }, [state.activeEncounter]);
 
-  const handleNavigate = (target) => {
-    setScreen(target);
-  };
+  // Physical input system — keyboard + gamepad navigation and screen hotkeys
+  useEffect(() => {
+    const STATION_ONLY = ['station', 'market', 'outfitting', 'materialtrader', 'synthesis', 'crew', 'blackmarket', 'engineering', 'bountyboard', 'passengers', 'multicrew', 'cartography', 'maintenance'];
+    const CARRIER_REQUIRED = ['carriercreator'];
 
-  const handleNavigateDirect = (target) => {
+    const focusElement = (direction) => {
+      const content = document.querySelector('[data-game-content]');
+      if (!content) return;
+      const focusable = content.querySelectorAll('button, a, input, select, textarea, [tabindex]:not([tabindex="-1"])');
+      const elements = Array.from(focusable).filter(el => !el.disabled && el.offsetParent !== null);
+      if (elements.length === 0) return;
+      const active = document.activeElement;
+      const currentIndex = elements.indexOf(active);
+      const nextIndex = currentIndex < 0 ? 0 : (currentIndex + direction + elements.length) % elements.length;
+      elements[nextIndex].focus();
+      elements[nextIndex].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    };
+
+    const clickFocused = () => {
+      const active = document.activeElement;
+      if (active && (active.tagName === 'BUTTON' || active.tagName === 'A' || active.tagName === 'INPUT')) {
+        active.click();
+      }
+    };
+
+    const navigateToScreen = (screenId) => {
+      const loc = locationRef.current;
+      if (STATION_ONLY.includes(screenId) && loc !== 'station') { soundEngine.play('error'); return; }
+      if (CARRIER_REQUIRED.includes(screenId) && (carriersRef.current || []).length === 0) { soundEngine.play('error'); return; }
+      if (screenId === 'cheats' && !cheatsRef.current?.unlocked) return;
+      soundEngine.play('click');
+      screenHistoryRef.current.push(screenRef.current);
+      setScreen(screenId);
+    };
+
+    const unsubscribe = inputSystem.subscribe((action, eventType) => {
+      if (eventType !== 'down') return;
+      if (screenRef.current === 'controllerconfig') return; // don't process hotkeys while rebinding
+
+      if (action === 'nav_up' || action === 'nav_left') {
+        focusElement(-1);
+      } else if (action === 'nav_down' || action === 'nav_right') {
+        focusElement(1);
+      } else if (action === 'nav_select') {
+        clickFocused();
+      } else if (action === 'nav_back') {
+        const history = screenHistoryRef.current;
+        if (history.length > 0) setScreen(history.pop());
+        else setScreen('system');
+      } else if (action.startsWith('screen_')) {
+        navigateToScreen(action.replace('screen_', ''));
+      }
+    });
+
+    return unsubscribe;
+  }, []);
+
+  const handleNavigate = (target) => {
+    screenHistoryRef.current.push(screen);
     setScreen(target);
   };
 
@@ -254,6 +321,8 @@ function GameContent() {
         return <GeneticsLabScreen />;
       case 'stationcreator':
         return <StationCreator />;
+      case 'controllerconfig':
+        return <ControllerConfigScreen />;
       default:
         return <SystemOrrery />;
     }
@@ -268,10 +337,10 @@ function GameContent() {
           <StatusHeader />
           <NavBar
             currentScreen={screen}
-            onNavigate={handleNavigateDirect}
+            onNavigate={handleNavigate}
             location={state.currentLocation}
           />
-          <div className={`flex-1 ${isFullScreen ? 'overflow-hidden' : 'overflow-auto'}`}>
+          <div data-game-content className={`flex-1 ${isFullScreen ? 'overflow-hidden' : 'overflow-auto'}`}>
             {renderScreen()}
           </div>
           {state.activeEncounter && <EncounterScreen />}
