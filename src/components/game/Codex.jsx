@@ -167,7 +167,9 @@ You cannot initiate new travel while a transit is in progress.`,
       },
       {
         title: 'Stations',
-        body: `Every generated system contains at least one station, shown as an orbiting wireframe model. Tap a station to see its details, then DOCK to access station services (Market, Shipyard, Outfitting, Refuel, Repair).
+        body: `Populated systems (population > 0) are guaranteed to have at least one station, shown as an orbiting wireframe model. Tap a station to see its details, then DOCK to access station services (Market, Shipyard, Outfitting, Refuel, Repair).
+
+Uninhabited systems (population 0) may have zero stations — these are frontier systems awaiting colonization. If you jump to an uninhabited system with no station, you cannot dock, refuel, or trade there. Plan your fuel accordingly, or colonize a landable body to begin settlement (see Colonization).
 
 Stations are either ORBITAL (floating in space around a planet) or SURFACE (on a planet's surface). Both types function identically once docked.
 

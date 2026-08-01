@@ -348,7 +348,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
         };
           // Regenerate system data for the current system (not persisted since it's large)
           if (merged.currentSystem) {
-            merged.currentSystemData = generateSystem(merged.currentSystem.seed, merged.currentSystem.starClass);
+            merged.currentSystemData = generateSystem(merged.currentSystem.seed, merged.currentSystem.starClass, merged.currentSystem.population);
           }
           return merged;
         });
@@ -356,7 +356,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
         // No save — generate initial system data
         setState(prev => ({
           ...prev,
-          currentSystemData: generateSystem(prev.currentSystem.seed, prev.currentSystem.starClass),
+          currentSystemData: generateSystem(prev.currentSystem.seed, prev.currentSystem.starClass, prev.currentSystem.population),
         }));
       }
     } catch (e) {
@@ -394,14 +394,14 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
         stateRef.current.currentSystemData.seed === system.seed) {
       return stateRef.current.currentSystemData;
     }
-    const data = generateSystem(system.seed, system.starClass);
+    const data = generateSystem(system.seed, system.starClass, system.population);
     return data;
   }, []);
 
   // Set current system and generate its data
   const setCurrentSystem = useCallback((system) => {
     soundEngine.play('jump');
-    const systemData = generateSystem(system.seed, system.starClass);
+    const systemData = generateSystem(system.seed, system.starClass, system.population);
     setState(prev => {
       const dist = distance3D(prev.currentSystem, system);
       const isNeutron = system.starClass?.class === 'NS';
@@ -1616,7 +1616,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
       if (!currentGate) return prev;
       const destGate = (prev.warpGates || []).find(g => g.id === gateId);
       if (!destGate) return prev;
-      const systemData = generateSystem(destGate.system.seed, destGate.system.starClass);
+      const systemData = generateSystem(destGate.system.seed, destGate.system.starClass, destGate.system.population);
       const dist = distance3D(prev.currentSystem, destGate.system);
       return {
         ...prev,

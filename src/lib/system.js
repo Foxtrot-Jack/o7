@@ -99,7 +99,7 @@ export function generateSurfaceSignals(bodyId, planetType) {
 }
 
 // Generate a complete system from a seed
-export function generateSystem(starSeed, parentStarClass) {
+export function generateSystem(starSeed, parentStarClass, population = 0) {
   if (starSeed === SOL_SEED) {
     return generateSolSystem();
   }
@@ -217,8 +217,8 @@ export function generateSystem(starSeed, parentStarClass) {
   // Cap at 150 bodies
   const finalBodies = bodies.slice(0, 150);
 
-  // Generate stations
-  const stations = generateStations(rng, starSeed, finalBodies);
+  // Generate stations (population determines whether stations are guaranteed)
+  const stations = generateStations(rng, starSeed, finalBodies, population);
 
   // Generate faction
   const faction = generateFactionName(starSeed);
@@ -455,7 +455,7 @@ function generateValuableMaterials(rng) {
   return materials;
 }
 
-function generateStations(rng, seed, bodies) {
+function generateStations(rng, seed, bodies, population = 0) {
   const stations = [];
   // Find landable planets and habitable worlds for stations
   let suitableBodies = bodies.filter(b =>
@@ -468,27 +468,34 @@ function generateStations(rng, seed, bodies) {
     suitableBodies = bodies.filter(b => b.type === BODY_TYPES.PLANET);
   }
 
-  // Guarantee at least one station per system — if no planets exist, orbit the primary star
+  // No planets at all — only populated systems get a star-orbiting station fallback.
+  // Uninhabited systems with no planets simply have no stations (players colonize later).
   if (suitableBodies.length === 0) {
-    const primaryStar = bodies.find(b => b.type === BODY_TYPES.STAR);
-    if (primaryStar) {
-      stations.push({
-        id: 'station_0',
-        name: generateStationName(seed, 0),
-        parentId: primaryStar.id,
-        parentName: primaryStar.name,
-        type: 'coriolis',
-        isOrbital: true,
-        stationOrbitRadius: randFloat(rng, 5, 15),
-        distanceFromStar: 0,
-        economy: pickWeighted(rng, ECONOMY_TYPES.map(e => ({ value: e, weight: 1 }))),
-        services: { market: true, refuel: true, repair: true, rearm: false, shipyard: false, outfitting: false, missions: true, exploration: true, cartographics: true, contact: false },
-      });
+    if (population > 0) {
+      const primaryStar = bodies.find(b => b.type === BODY_TYPES.STAR);
+      if (primaryStar) {
+        stations.push({
+          id: 'station_0',
+          name: generateStationName(seed, 0),
+          parentId: primaryStar.id,
+          parentName: primaryStar.name,
+          type: 'coriolis',
+          isOrbital: true,
+          stationOrbitRadius: randFloat(rng, 5, 15),
+          distanceFromStar: 0,
+          economy: pickWeighted(rng, ECONOMY_TYPES.map(e => ({ value: e, weight: 1 }))),
+          services: { market: true, refuel: true, repair: true, rearm: false, shipyard: false, outfitting: false, missions: true, exploration: true, cartographics: true, contact: false },
+        });
+      }
     }
     return stations;
   }
 
-  const stationCount = Math.min(suitableBodies.length, Math.max(1, randInt(rng, 1, 4)));
+  // Populated systems always have at least one station.
+  // Uninhabited systems may have zero stations — players colonize them later.
+  const stationCount = population > 0
+    ? Math.min(suitableBodies.length, Math.max(1, randInt(rng, 1, 4)))
+    : Math.min(suitableBodies.length, randInt(rng, 0, 2));
 
   for (let i = 0; i < stationCount; i++) {
     const body = suitableBodies[i];
