@@ -367,7 +367,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     }, 500);
     return () => clearTimeout(timer);
   }, [state, storageKey]);
-```jsx
+
   // ---------------------------------------------------------------------------
   // Periodic autosave (every 120s) + lifecycle-event safety flushes.
   // The 500ms debounced save above covers normal play, but in a WebView
