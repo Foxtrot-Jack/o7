@@ -97,7 +97,9 @@
 .crt-container,
 .crt-container * {
   font-family: var(--crt-font, 'Courier New', 'Lucida Console', monospace) !important;
-  text-shadow: 0 0 2px rgba(255, 136, 0, 0.4), 0 0 6px rgba(255, 136, 0, 0.15);
+  text-shadow: 0 0 1px rgba(255, 136, 0, 0.35);
+  line-height: 1.35;
+  letter-spacing: 0.015em;
 }
 
 /* Custom scrollbar — orange on black */
@@ -124,6 +126,8 @@
   user-select: none;
   -webkit-user-select: none;
   -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .crt-container input,

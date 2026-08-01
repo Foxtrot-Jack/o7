@@ -37,7 +37,7 @@ export default function CRTFrame({ children, enabled = true, brightness = 100, t
       <style>{`
         ${rootStyle}
         @keyframes crtFlicker { 0% { opacity: 0.9; } 50% { opacity: 1; } 100% { opacity: 0.95; } }
-        .crt-container { font-family: 'Courier New', monospace; text-shadow: 0 0 2px ${t.shadow}, 0 0 8px ${t.shadowDim}; }
+        .crt-container { font-family: 'Courier New', monospace; text-shadow: 0 0 1px ${t.shadow}; }
         .crt-container * { text-shadow: inherit; }
         .crt-container::before { content: ''; position: absolute; inset: 0; z-index: 30; pointer-events: none; background: linear-gradient(180deg, ${t.gradient} 0%, transparent 50%, ${t.gradient} 100%); }
       `}</style>
