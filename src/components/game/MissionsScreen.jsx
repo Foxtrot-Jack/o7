@@ -40,7 +40,7 @@ const MISSION_TEMPLATES = {
   [MISSION_TYPES.EXPLORATION]: {
     name: 'Exploration Contract',
     icon: Telescope,
-    desc: 'Scan {qty} celestial bodies in nearby systems.',
+    desc: 'Scan {qty} celestial bodies and deliver the survey data.',
     rewardBase: 20000,
   },
   [MISSION_TYPES.COLONIZATION_SUPPLY]: {
@@ -150,7 +150,13 @@ export default function MissionsScreen() {
         alert('REQUIRES SURFACE SCAN DATA FROM TARGET SYSTEM');
         return;
       }
-    } else if (mission.commodity && mission.type !== MISSION_TYPES.EXPLORATION && mission.type !== MISSION_TYPES.PASSENGER) {
+    } else if (mission.type === MISSION_TYPES.EXPLORATION) {
+      const scanCount = Object.keys(state.scannedBodies || {}).length;
+      if (scanCount < mission.qty) {
+        alert(`REQUIRES ${mission.qty} SCANNED BODIES (HAVE ${scanCount})`);
+        return;
+      }
+    } else if (mission.commodity && mission.type !== MISSION_TYPES.PASSENGER) {
       const cargoItem = (state.ship?.cargo || []).find(c => c.commodity === mission.commodity);
       if (!cargoItem || cargoItem.qty < mission.qty) {
         alert(`REQUIRES ${mission.qty}T OF ${mission.commodityName.toUpperCase()}`);
@@ -247,9 +253,10 @@ export default function MissionsScreen() {
           const cargoItem = mission.commodity ? state.ship.cargo.find(c => c.commodity === mission.commodity) : null;
           const hasCargo = cargoItem && cargoItem.qty >= mission.qty;
           const hasSurfaceMap = mission.type === MISSION_TYPES.SURFACE_SCAN && Object.values(state.surfaceMaps || {}).some(m => m.systemSeed === mission.destinationSystem?.seed);
-          const isDataMission = mission.type === MISSION_TYPES.COURIER || mission.type === MISSION_TYPES.EXPLORATION || mission.type === MISSION_TYPES.PASSENGER;
+          const isDataMission = mission.type === MISSION_TYPES.COURIER || mission.type === MISSION_TYPES.PASSENGER;
           const isAtDestination = !mission.destinationSystem || state.currentSystem.seed === mission.destinationSystem.seed;
-          const canComplete = (isDataMission && isAtDestination) || (mission.type === MISSION_TYPES.SURFACE_SCAN ? hasSurfaceMap : (hasCargo && isAtDestination));
+          const hasScans = mission.type === MISSION_TYPES.EXPLORATION ? Object.keys(state.scannedBodies || {}).length >= (mission.qty || 1) : false;
+          const canComplete = (isDataMission && isAtDestination) || (mission.type === MISSION_TYPES.EXPLORATION ? (hasScans && isAtDestination) : (mission.type === MISSION_TYPES.SURFACE_SCAN ? hasSurfaceMap : (hasCargo && isAtDestination)));
 
           return (
             <div key={mission.id} className="border border-green-900 p-3 text-xs">
@@ -259,7 +266,7 @@ export default function MissionsScreen() {
                   <div>
                     <div className="text-green-300 font-bold">{mission.name}</div>
                     <div className="text-orange-600 mt-0.5">{mission.description}</div>
-                    {mission.commodity && (
+                    {mission.commodity && mission.type !== MISSION_TYPES.PASSENGER && mission.type !== MISSION_TYPES.EXPLORATION && (
                       <div className="text-orange-700 text-[10px] mt-1">
                         PROGRESS: {cargoItem?.qty || 0}/{mission.qty}T
                       </div>
@@ -267,6 +274,11 @@ export default function MissionsScreen() {
                     {mission.type === MISSION_TYPES.COURIER && (
                       <div className="text-cyan-700 text-[10px] mt-1">
                         ✓ DATA PACKAGE SECURED — DELIVER TO COMPLETE
+                      </div>
+                    )}
+                    {mission.type === MISSION_TYPES.EXPLORATION && (
+                      <div className="text-orange-700 text-[10px] mt-1">
+                        SCANS: {Object.keys(state.scannedBodies || {}).length}/{mission.qty}
                       </div>
                     )}
                     {mission.type === MISSION_TYPES.SURFACE_SCAN && (
