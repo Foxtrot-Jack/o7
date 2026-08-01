@@ -2,6 +2,7 @@
 // Uses React context for app-wide access
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { STARTING_SYSTEM, distance3D, generateStarsInRange, SOL_SYSTEM } from './galaxy';
+import { GATE_CREDIT_COST, GATE_MATERIAL_COST } from './warpGates';
 import { SOL_CHEATS } from './solSystem';
 import { generateSystem } from './system';
 import { COMMODITIES, COMMODITY_MAP, COMMODITY_CATEGORIES } from './commodities';
@@ -191,6 +192,8 @@ function createInitialState() {
     playerTitle: null,
     notebook: '',
     surfaceMaps: {},
+    warpGates: [],
+    eventCooldownUntil: 0,
     createdAt: Date.now(),
   };
 }
@@ -279,6 +282,8 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
           playerTitle: parsed.playerTitle || null,
           notebook: parsed.notebook || '',
           surfaceMaps: parsed.surfaceMaps || {},
+          warpGates: parsed.warpGates || [],
+          eventCooldownUntil: parsed.eventCooldownUntil || 0,
           saveMode: saveSlot,
           lightYearsTraveled: parsed.lightYearsTraveled || 0,
           lifetimeEarnings: parsed.lifetimeEarnings || 0,
@@ -1470,6 +1475,73 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     });
   }, []);
 
+  // ===== WARP GATES =====
+  const buildWarpGate = useCallback((name) => {
+    setState(prev => {
+      if (!prev.fleetCarriers || prev.fleetCarriers.length === 0) return prev;
+      const carrierInSystem = prev.fleetCarriers.some(c => c.systemSeed === prev.currentSystem.seed);
+      if (!carrierInSystem) return prev;
+      if (prev.credits < GATE_CREDIT_COST) return prev;
+      for (const [mat, qty] of Object.entries(GATE_MATERIAL_COST)) {
+        if ((prev.materials[mat] || 0) < qty) return prev;
+      }
+      if ((prev.warpGates || []).some(g => g.systemSeed === prev.currentSystem.seed)) return prev;
+      const newMaterials = { ...prev.materials };
+      for (const [mat, qty] of Object.entries(GATE_MATERIAL_COST)) {
+        newMaterials[mat] -= qty;
+      }
+      const gate = {
+        id: `gate_${Date.now()}`,
+        name: name || `Gate ${String.fromCharCode(65 + (prev.warpGates || []).length)}`,
+        systemSeed: prev.currentSystem.seed,
+        systemName: prev.currentSystem.name,
+        system: { ...prev.currentSystem },
+        builtAt: Date.now(),
+      };
+      const milestones = { ...prev.achievements?.milestones };
+      if (!milestones.first_warp_gate) milestones.first_warp_gate = { system: prev.currentSystem.name, date: Date.now() };
+      return {
+        ...prev,
+        credits: prev.credits - GATE_CREDIT_COST,
+        materials: newMaterials,
+        warpGates: [...(prev.warpGates || []), gate],
+        achievements: { ...prev.achievements, milestones },
+      };
+    });
+  }, []);
+
+  const warpJump = useCallback((gateId) => {
+    setState(prev => {
+      const currentGate = (prev.warpGates || []).find(g => g.systemSeed === prev.currentSystem.seed);
+      if (!currentGate) return prev;
+      const destGate = (prev.warpGates || []).find(g => g.id === gateId);
+      if (!destGate) return prev;
+      const systemData = generateSystem(destGate.system.seed, destGate.system.starClass);
+      const dist = distance3D(prev.currentSystem, destGate.system);
+      return {
+        ...prev,
+        currentSystem: destGate.system,
+        currentSystemData: systemData,
+        currentLocation: 'system',
+        currentStationId: null,
+        totalJumps: prev.totalJumps + 1,
+        lightYearsTraveled: (prev.lightYearsTraveled || 0) + dist,
+        flightLog: [...(prev.flightLog || []), { seed: destGate.system.seed, name: destGate.system.name, x: destGate.system.x, y: destGate.system.y, z: destGate.system.z }].slice(-50),
+        discoveredSystems: {
+          ...prev.discoveredSystems,
+          [destGate.system.seed]: prev.discoveredSystems[destGate.system.seed] || {
+            name: destGate.system.name,
+            firstDiscovered: true,
+            bodyCount: systemData.bodyCount,
+            scanValue: 0,
+            originCoords: { x: destGate.system.x, y: destGate.system.y, z: destGate.system.z },
+          },
+        },
+        activeEncounter: null,
+      };
+    });
+  }, []);
+
   const isSandbox = state.saveMode === 'sandbox';
 
   // ===== COMMUNITY GOALS =====
@@ -1937,6 +2009,8 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     updateNotebook,
     lockSurfaceMap,
     unlockSurfaceMaps,
+    buildWarpGate,
+    warpJump,
   };
 
   return (

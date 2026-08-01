@@ -64,6 +64,7 @@ import MarketAnalysisScreen from '@/components/game/MarketAnalysisScreen';
 import CarrierCommandScreen from '@/components/game/CarrierCommandScreen';
 import TimeEventScreen from '@/components/game/TimeEventScreen';
 import PlayerTitlesScreen from '@/components/game/PlayerTitlesScreen';
+import WarpGateScreen from '@/components/game/WarpGateScreen';
 
 function GameContent() {
   const { state } = useGameState();
@@ -195,6 +196,8 @@ function GameContent() {
         return <TimeEventScreen />;
       case 'titles':
         return <PlayerTitlesScreen />;
+      case 'warpgates':
+        return <WarpGateScreen />;
       default:
         return <SystemOrrery />;
     }

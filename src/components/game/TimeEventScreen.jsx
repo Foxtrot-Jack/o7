@@ -1,27 +1,35 @@
 // Time-Based Events — rare cosmic phenomena
 import React, { useState } from 'react';
 import { useGameState } from '@/lib/gameState';
-import { generateTimeEvent, getTimeRemaining, EVENT_TYPES } from '@/lib/timeEvents';
+import { generateTimeEvent, getTimeRemaining, EVENT_TYPES, getEventCooldown } from '@/lib/timeEvents';
 import { Zap, Clock, Plus, Gift, CheckCircle, AlertTriangle } from 'lucide-react';
 
 export default function TimeEventScreen() {
   const { state, update, addCredits } = useGameState();
   const events = state.timeEvents || [];
   const isSandbox = state.saveMode === 'sandbox';
+  const cooldownUntil = state.eventCooldownUntil || 0;
+  const now = Date.now();
+  const onCooldown = !isSandbox && now < cooldownUntil;
+  const cooldownRemaining = onCooldown ? cooldownUntil - now : 0;
 
   const handleGenerate = () => {
+    if (onCooldown) return;
     const event = generateTimeEvent();
     update(prev => ({ ...prev, timeEvents: [...(prev.timeEvents || []), event] }));
   };
 
   const handleParticipate = (eventId) => {
+    if (onCooldown) return;
+    const event = events.find(e => e.id === eventId);
+    if (!event || event.completed) return;
+    addCredits(event.reward);
     update(prev => ({
       ...prev,
-      timeEvents: prev.timeEvents.map(e => {
-        if (e.id !== eventId || e.completed) return e;
-        addCredits(e.reward);
-        return { ...e, completed: true, claimed: true };
-      }),
+      timeEvents: prev.timeEvents.map(e =>
+        e.id === eventId ? { ...e, completed: true, claimed: true } : e
+      ),
+      eventCooldownUntil: isSandbox ? 0 : Date.now() + getEventCooldown(event.reward),
     }));
   };
 
@@ -42,12 +50,20 @@ export default function TimeEventScreen() {
         <div className="text-[10px] text-orange-600 mt-1">Rare, time-limited phenomena. Each event offers unique rewards but expires after its duration. Participate before the deadline to claim rewards.</div>
       </div>
 
+      {onCooldown && (
+        <div className="border border-yellow-900 bg-yellow-950/10 p-2 text-center text-[10px] text-yellow-600 flex items-center justify-center gap-1">
+          <Clock className="w-3 h-3" />
+          COOLDOWN ACTIVE — {Math.ceil(cooldownRemaining / 60000)}m remaining
+        </div>
+      )}
+
       <div className="flex gap-2">
         <button
           onClick={handleGenerate}
-          className="flex-1 py-2 border border-orange-500 text-orange-300 hover:bg-orange-950/50 text-xs font-bold flex items-center justify-center gap-1"
+          disabled={onCooldown}
+          className="flex-1 py-2 border border-orange-500 text-orange-300 hover:bg-orange-950/50 text-xs font-bold flex items-center justify-center gap-1 disabled:opacity-30"
         >
-          <Plus className="w-3.5 h-3.5" /> SCAN FOR EVENTS
+          <Plus className="w-3.5 h-3.5" /> {onCooldown ? 'COOLDOWN...' : 'SCAN FOR EVENTS'}
         </button>
         {events.length > 0 && (
           <button onClick={handleClear} className="px-3 py-2 border border-orange-800 text-orange-500 hover:bg-orange-950/30 text-[10px] font-bold">

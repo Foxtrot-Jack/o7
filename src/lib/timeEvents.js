@@ -74,3 +74,8 @@ export function maybeGenerateEvent() {
   if (Math.random() < 0.3) return generateTimeEvent();
   return null;
 }
+
+// Cooldown proportional to payout — at least 30 min, scales with reward
+export function getEventCooldown(reward) {
+  return Math.max(30 * 60 * 1000, Math.floor(reward * 0.5));
+}

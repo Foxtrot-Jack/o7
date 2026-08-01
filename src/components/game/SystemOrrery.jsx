@@ -29,6 +29,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
   const npcShipsRef = useRef([]);
   const orbitAnchorRef = useRef(null);
   const lastTimeRef = useRef(0);
+  const gridRef = useRef(null);
 
   const { state, getSystemData, scanBody, dockAtStation, fssScanSystem, mapBody, landOnBody, refuel } = useGameState();
   const [selectedBody, setSelectedBody] = useState(null);
@@ -76,8 +77,10 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
     cameraRef.current = camera;
 
     // Reference grid — horizontal (coplanar with orbits), uniform color to hide center cross
+    // Sized dynamically in the build effect to cover the full system view
     const gridHelper = new THREE.GridHelper(200, 20, 0x110800, 0x110800);
     scene.add(gridHelper);
+    gridRef.current = gridHelper;
 
     const animate = () => {
       animationIdRef.current = requestAnimationFrame(animate);
@@ -479,8 +482,20 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
       });
     }
 
-    // Auto-fit camera to system
+    // Auto-fit grid to cover full system view
+    if (gridRef.current) {
+      scene.remove(gridRef.current);
+      gridRef.current.geometry.dispose();
+      gridRef.current.material.dispose();
+    }
     const maxOrbit = Math.max(...allBodies.map(b => b.orbitRadius || 0), 20);
+    const gridSize = Math.max(400, maxOrbit * 6);
+    const gridDivisions = Math.min(80, Math.max(20, Math.floor(gridSize / 25)));
+    const newGrid = new THREE.GridHelper(gridSize, gridDivisions, 0x110800, 0x110800);
+    scene.add(newGrid);
+    gridRef.current = newGrid;
+
+    // Auto-fit camera to system
     rotState.current.targetDistance = maxOrbit * 2.5;
   }, [systemData]);
 
