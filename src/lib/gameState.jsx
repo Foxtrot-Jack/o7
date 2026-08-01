@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { STARTING_SYSTEM, distance3D, generateStarsInRange, SOL_SYSTEM } from './galaxy';
 import { GATE_CREDIT_COST, GATE_MATERIAL_COST } from './warpGates';
+import { computeCockpitCost } from './cockpitParts';
 import { SOL_CHEATS } from './solSystem';
 import { generateSystem } from './system';
 import { COMMODITIES, COMMODITY_MAP, COMMODITY_CATEGORIES } from './commodities';
@@ -87,6 +88,7 @@ function createInitialState() {
       modules: getDefaultModules('sidewinder'),
       integrity: 100,
       moduleWear: 0,
+      cockpitDecoration: { parts: {} },
     },
     currentSystem: STARTING_SYSTEM,
     currentLocation: 'station', // 'system' | 'station'
@@ -214,6 +216,7 @@ function createSandboxState() {
       modules: getDefaultModules('anaconda'),
       integrity: 100,
       moduleWear: 0,
+      cockpitDecoration: { parts: {} },
     },
   };
 }
@@ -284,6 +287,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
           surfaceMaps: parsed.surfaceMaps || {},
           warpGates: parsed.warpGates || [],
           eventCooldownUntil: parsed.eventCooldownUntil || 0,
+          ship: { ...prev.ship, ...(parsed.ship || {}), cockpitDecoration: parsed.ship?.cockpitDecoration || { parts: {} } },
           saveMode: saveSlot,
           lightYearsTraveled: parsed.lightYearsTraveled || 0,
           lifetimeEarnings: parsed.lifetimeEarnings || 0,
@@ -485,8 +489,9 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
         cargo: prev.ship.cargo,
         fuel: prev.ship.fuel,
         modules: prev.ship.modules || getDefaultModules(prev.ship.type),
-      };
-      const newMods = getDefaultModules(shipType.id);
+        cockpitDecoration: prev.ship.cockpitDecoration || { parts: {} },
+        };
+        const newMods = getDefaultModules(shipType.id);
       const newStats = computeShipStats(shipType.id, newMods);
       return {
         ...prev,
@@ -500,6 +505,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
           fuelCapacity: newStats.fuelCapacity,
           cargoCapacity: newStats.cargoCapacity,
           modules: newMods,
+          cockpitDecoration: { parts: {} },
         },
         ownedShips: [...prev.ownedShips, oldShip],
         achievements: {
@@ -536,8 +542,9 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
         cargo: prev.ship.cargo,
         fuel: prev.ship.fuel,
         modules: prev.ship.modules || getDefaultModules(prev.ship.type),
-      };
-      const storedMods = stored.modules || getDefaultModules(stored.typeId);
+        cockpitDecoration: prev.ship.cockpitDecoration || { parts: {} },
+        };
+        const storedMods = stored.modules || getDefaultModules(stored.typeId);
       const storedStats = computeShipStats(stored.typeId, storedMods);
       return {
         ...prev,
@@ -549,6 +556,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
           fuelCapacity: storedStats.fuelCapacity,
           cargoCapacity: storedStats.cargoCapacity,
           modules: storedMods,
+          cockpitDecoration: stored.cockpitDecoration || { parts: {} },
         },
         ownedShips: [...prev.ownedShips.filter(s => s.id !== shipId), oldShip],
       };
@@ -605,6 +613,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
         lastIncomeCollection: Date.now(),
         interior: { roomItems: [], savedPlants: [], barTab: 0 },
         design: null,
+        cockpitDecoration: { parts: {} },
       };
       return {
         ...prev,
@@ -1178,8 +1187,9 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
         cargo: prev.ship.cargo,
         fuel: prev.ship.fuel,
         modules: prev.ship.modules || getDefaultModules(prev.ship.type),
-      };
-      const stats = computeCustomShipStats(custom);
+        cockpitDecoration: prev.ship.cockpitDecoration || { parts: {} },
+        };
+        const stats = computeCustomShipStats(custom);
       return {
         ...prev,
         ship: {
@@ -1191,6 +1201,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
           fuelCapacity: stats.fuelCapacity,
           cargoCapacity: stats.cargoCapacity,
           modules: getDefaultModules('sidewinder'),
+          cockpitDecoration: { parts: {} },
         },
         ownedShips: [...prev.ownedShips, oldShip],
       };
@@ -1542,6 +1553,41 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     });
   }, []);
 
+  // ===== COCKPIT DECORATION =====
+  const saveCockpitDecoration = useCallback((decoration, target, targetId) => {
+    setState(prev => {
+      const { credits, materials } = computeCockpitCost(decoration);
+      let oldDecor = { parts: {} };
+      if (target === 'ship') oldDecor = prev.ship.cockpitDecoration || { parts: {} };
+      else if (target === 'carrier') oldDecor = prev.fleetCarriers.find(c => c.id === targetId)?.cockpitDecoration || { parts: {} };
+      else oldDecor = prev.ownedStations?.find(s => s.id === targetId)?.decoration || { parts: {} };
+      const oldCost = computeCockpitCost(oldDecor);
+      const creditDelta = credits - oldCost.credits;
+      const matDeltas = {};
+      for (const [mat, qty] of Object.entries(materials)) matDeltas[mat] = qty - (oldCost.materials[mat] || 0);
+      for (const [mat, qty] of Object.entries(oldCost.materials)) if (!(mat in matDeltas)) matDeltas[mat] = -qty;
+      const isSb = prev.saveMode === 'sandbox';
+      if (!isSb) {
+        if (creditDelta > 0 && prev.credits < creditDelta) return prev;
+        const newMats = { ...prev.materials };
+        for (const [mat, delta] of Object.entries(matDeltas)) {
+          if (delta > 0 && (newMats[mat] || 0) < delta) return prev;
+        }
+        for (const [mat, delta] of Object.entries(matDeltas)) newMats[mat] = (newMats[mat] || 0) - delta;
+        let updates = { credits: prev.credits - creditDelta, materials: newMats };
+        if (target === 'ship') updates.ship = { ...prev.ship, cockpitDecoration: decoration };
+        else if (target === 'carrier') updates.fleetCarriers = prev.fleetCarriers.map(c => c.id === targetId ? { ...c, cockpitDecoration: decoration } : c);
+        else updates.ownedStations = (prev.ownedStations || []).map(s => s.id === targetId ? { ...s, decoration } : s);
+        return { ...prev, ...updates };
+      }
+      let updates = {};
+      if (target === 'ship') updates.ship = { ...prev.ship, cockpitDecoration: decoration };
+      else if (target === 'carrier') updates.fleetCarriers = prev.fleetCarriers.map(c => c.id === targetId ? { ...c, cockpitDecoration: decoration } : c);
+      else updates.ownedStations = (prev.ownedStations || []).map(s => s.id === targetId ? { ...s, decoration } : s);
+      return { ...prev, ...updates };
+    });
+  }, []);
+
   const isSandbox = state.saveMode === 'sandbox';
 
   // ===== COMMUNITY GOALS =====
@@ -1828,6 +1874,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
         services: ['refuel', 'repair'],
         lastRevenueCollection: Date.now(),
         builtAt: Date.now(),
+        decoration: { parts: {} },
       };
       return {
         ...prev,
@@ -2011,6 +2058,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     unlockSurfaceMaps,
     buildWarpGate,
     warpJump,
+    saveCockpitDecoration,
   };
 
   return (

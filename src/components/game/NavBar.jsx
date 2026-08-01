@@ -1,6 +1,6 @@
 // Navigation bar — dropdown-grouped access to all screens
 import React, { useState, useRef, useEffect } from 'react';
-import { Compass, Store, Package, ClipboardList, Pickaxe, Telescope, Home, Map, Rocket, Layers, Anchor, Trophy, Settings, Wrench, MapPin, TrendingUp, User, Hammer, BookOpen, Briefcase, ChevronDown, Lock, Sparkles, Medal, Palette, DoorOpen, ArrowLeftRight, FlaskConical, Users, Crown, Target, Skull, Newspaper, Crosshair, Swords, AlertTriangle, Gem, UserCheck, Building, ScrollText, Plane, Activity, Leaf, Route, Radio, ListChecks, Award, Save, Brain, LayoutDashboard, Zap, Network } from 'lucide-react';
+import { Compass, Store, Package, ClipboardList, Pickaxe, Telescope, Home, Map, Rocket, Layers, Anchor, Trophy, Settings, Wrench, MapPin, TrendingUp, User, Hammer, BookOpen, Briefcase, ChevronDown, Lock, Sparkles, Medal, Palette, DoorOpen, ArrowLeftRight, FlaskConical, Users, Crown, Target, Skull, Newspaper, Crosshair, Swords, AlertTriangle, Gem, UserCheck, Building, ScrollText, Plane, Activity, Leaf, Route, Radio, ListChecks, Award, Save, Brain, LayoutDashboard, Zap, Network, Eye } from 'lucide-react';
 import { useGameState } from '@/lib/gameState';
 
 const NAV_GROUPS = [
@@ -51,6 +51,7 @@ const NAV_GROUPS = [
     id: 'fleet', label: 'Fleet', icon: Package, align: 'left',
     items: [
       { id: 'ship', label: 'Ship', icon: Package },
+      { id: 'cockpit', label: 'Cockpit', icon: Eye },
       { id: 'fleet', label: 'Fleet Manager', icon: Layers },
       { id: 'wingmates', label: 'Wingmates', icon: Users },
       { id: 'fighters', label: 'Fighter Hangar', icon: Plane },
