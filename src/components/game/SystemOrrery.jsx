@@ -103,8 +103,9 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
         }
       }
 
-      // Update orbital station positions
+      // Update orbital station positions (surface stations rotate with their parent planet)
       for (const sm of stationMeshesRef.current) {
+        if (sm.isSurface) continue;
         const orbitR = (sm.planetVisualRadius || 1) * 2.5;
         const angle = t * 0.5 / Math.sqrt(orbitR) + sm.phaseOffset;
         sm.model.position.x = Math.cos(angle) * orbitR;
@@ -423,6 +424,14 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
         } else {
           parentEntry.group.add(stationModel);
         }
+        stationMeshesRef.current.push({
+          station,
+          model: stationModel,
+          parentBody,
+          planetVisualRadius,
+          phaseOffset: 0,
+          isSurface: true,
+        });
       }
     }
 
