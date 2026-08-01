@@ -6,9 +6,9 @@ import { getCommodityById } from '@/lib/commodities';
 export default function StatusHeader() {
   const { state } = useGameState();
 
-  const cargoUsed = state.ship.cargo.reduce((sum, c) => sum + c.qty, 0);
+  const cargoUsed = (state.ship?.cargo || []).reduce((sum, c) => sum + c.qty, 0);
   const systemsVisited = Object.keys(state.discoveredSystems || {}).length;
-  const fuelPct = (state.ship.fuel / state.ship.fuelCapacity) * 100;
+  const fuelPct = state.ship?.fuelCapacity ? (state.ship.fuel / state.ship.fuelCapacity) * 100 : 0;
 
   const formatCredits = (n) => {
     if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
@@ -34,7 +34,7 @@ export default function StatusHeader() {
         </div>
         <div className="flex flex-col">
           <span className="text-orange-700 text-[10px] uppercase">System</span>
-          <span className="text-orange-400">{state.currentSystem.name}</span>
+          <span className="text-orange-400">{state.currentSystem?.name || '---'}</span>
         </div>
         <div className="flex flex-col">
           <span className="text-orange-700 text-[10px] uppercase">Location</span>
@@ -47,8 +47,8 @@ export default function StatusHeader() {
       <div className="flex items-center gap-4">
         <div className="flex flex-col">
           <span className="text-orange-700 text-[10px] uppercase">Security</span>
-          <span className={securityColor[state.currentSystem.security] + ' capitalize'}>
-            {state.currentSystem.security}
+          <span className={(securityColor[state.currentSystem?.security] || 'text-orange-500') + ' capitalize'}>
+            {state.currentSystem?.security || '---'}
           </span>
         </div>
         <div className="flex flex-col">
@@ -63,12 +63,12 @@ export default function StatusHeader() {
                 }}
               />
             </div>
-            <span className="text-orange-400">{state.ship.fuel.toFixed(1)}/{state.ship.fuelCapacity}</span>
+            <span className="text-orange-400">{(state.ship?.fuel ?? 0).toFixed(1)}/{state.ship?.fuelCapacity ?? 0}</span>
           </div>
         </div>
         <div className="flex flex-col">
           <span className="text-orange-700 text-[10px] uppercase">Cargo</span>
-          <span className="text-orange-400">{cargoUsed}/{state.ship.cargoCapacity} T</span>
+          <span className="text-orange-400">{cargoUsed}/{state.ship?.cargoCapacity ?? 0} T</span>
         </div>
         <div className="flex flex-col">
           <span className="text-orange-700 text-[10px] uppercase">Rank</span>
