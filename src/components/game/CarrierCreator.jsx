@@ -1,5 +1,5 @@
 // Carrier Creator — design custom fleet carriers with structural elements
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { useGameState, SHIP_MAP } from '@/lib/gameState';
 import { CARRIER_SLOTS, CARRIER_PART_MAP, getCarrierPartsForSlot, createEmptyCarrierDesign, computeCarrierStats } from '@/lib/carrierParts';
 import ShipBuilder3D from './ShipBuilder3D';
@@ -13,7 +13,23 @@ export default function CarrierCreator() {
   const [selectedSlot, setSelectedSlot] = useState('hull');
   const [carrierName, setCarrierName] = useState('Untitled Carrier');
 
-  const level = isSandbox ? 5 : (state.shipyard ? Math.min(5, Math.floor(state.shipyard.infrastructure / 20)) : 0);
+  const hasGuilded = (state.fleetCarriers || []).some(c => c.isGuilded);
+  const level = isSandbox || hasGuilded ? 5 : (state.shipyard ? Math.min(5, Math.floor(state.shipyard.infrastructure / 20)) : 0);
+  const allSlots = useMemo(() => {
+    const extras = (design.extraSlots || []).map(s => ({ id: s.id, label: s.id.replace('struct_extra_', 'Extra '), category: 'structural', pos: s.pos }));
+    return [...CARRIER_SLOTS, ...extras];
+  }, [design.extraSlots]);
+
+  const handleAddExtraSlot = useCallback(() => {
+    setDesign(prev => {
+      const newSlot = { id: `struct_extra_${Date.now()}`, pos: [(Math.random() - 0.5) * 4, (Math.random() - 0.5) * 3, (Math.random() - 0.5) * 4] };
+      return {
+        ...prev,
+        extraSlots: [...(prev.extraSlots || []), newSlot],
+        parts: { ...prev.parts, [newSlot.id]: { partId: null, scale: [1, 1, 1], position: [0, 0, 0], rotation: [0, 0, 0] } },
+      };
+    });
+  }, []);
 
   const handlePartSelect = useCallback((slotId, partId) => {
     setDesign(prev => ({ ...prev, parts: { ...prev.parts, [slotId]: { ...prev.parts[slotId], partId } } }));
@@ -63,6 +79,7 @@ export default function CarrierCreator() {
           onPartSelect={handlePartSelect} onScaleChange={handleScaleChange} onPositionChange={handlePositionChange}
           onRotationChange={handleRotationChange} onClearSlot={handleClearSlot}
           carrierName={carrierName} setCarrierName={setCarrierName} stats={stats} onSave={handleSave} level={level} isSandbox={isSandbox}
+          slots={allSlots} hasGuilded={hasGuilded} onAddExtraSlot={handleAddExtraSlot}
         />
       )}
 
@@ -79,8 +96,8 @@ export default function CarrierCreator() {
   );
 }
 
-function BuilderTab({ design, selectedSlot, onSelectSlot, onPartSelect, onScaleChange, onPositionChange, onRotationChange, onClearSlot, carrierName, setCarrierName, stats, onSave, level, isSandbox }) {
-  const slot = CARRIER_SLOTS.find(s => s.id === selectedSlot);
+function BuilderTab({ design, selectedSlot, onSelectSlot, onPartSelect, onScaleChange, onPositionChange, onRotationChange, onClearSlot, carrierName, setCarrierName, stats, onSave, level, isSandbox, slots, hasGuilded, onAddExtraSlot }) {
+  const slot = slots.find(s => s.id === selectedSlot);
   const availableParts = getCarrierPartsForSlot(selectedSlot, level);
   const currentPart = design.parts[selectedSlot]?.partId ? CARRIER_PART_MAP[design.parts[selectedSlot].partId] : null;
   const currentScale = design.parts[selectedSlot]?.scale || [1, 1, 1];
@@ -91,14 +108,14 @@ function BuilderTab({ design, selectedSlot, onSelectSlot, onPartSelect, onScaleC
     <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
       <div className="flex-1 min-h-[200px] border-b lg:border-b-0 lg:border-r border-orange-900/50">
         <ShipBuilder3D design={design} selectedSlot={selectedSlot} onSelectSlot={onSelectSlot}
-          slots={CARRIER_SLOTS} partMap={CARRIER_PART_MAP} initialDistance={12} />
+          slots={slots} partMap={CARRIER_PART_MAP} initialDistance={12} />
       </div>
 
       <div className="w-full lg:w-72 flex-shrink-0 overflow-y-auto p-3 space-y-3 max-h-[50vh] lg:max-h-none">
         <div>
           <div className="text-orange-700 text-[10px] uppercase mb-1">Mount Slots</div>
           <div className="grid grid-cols-2 gap-1 max-h-32 overflow-y-auto">
-            {CARRIER_SLOTS.map(s => (
+            {slots.map(s => (
               <button key={s.id} onClick={() => onSelectSlot(s.id)}
                 className={`px-2 py-1 border text-[10px] text-left ${selectedSlot === s.id ? 'border-orange-500 bg-orange-950/40 text-orange-300' : 'border-orange-900 text-orange-700'}`}>
                 {s.label}
@@ -175,8 +192,14 @@ function BuilderTab({ design, selectedSlot, onSelectSlot, onPartSelect, onScaleC
             <Save className="w-3.5 h-3.5" /> SAVE DESIGN
           </button>
         </div>
-        {isSandbox && <div className="text-cyan-600 text-[9px] text-center">SANDBOX: ALL PARTS UNLOCKED</div>}
-        {!isSandbox && level < 5 && <div className="text-orange-800 text-[9px] text-center">Shipyard Level: {level} — Upgrade for more parts</div>}
+        {hasGuilded && (
+          <>
+            <div className="text-yellow-500 text-[9px] text-center border border-yellow-800/50 py-1">★ GUILDED MODE: ALL PARTS UNLOCKED · UNLIMITED SLOTS</div>
+            <button onClick={onAddExtraSlot} className="w-full py-1.5 border border-yellow-700 text-yellow-400 hover:bg-yellow-950/30 text-[10px] font-bold">+ ADD STRUCTURAL SLOT</button>
+          </>
+        )}
+        {isSandbox && !hasGuilded && <div className="text-cyan-600 text-[9px] text-center">SANDBOX: ALL PARTS UNLOCKED</div>}
+        {!isSandbox && !hasGuilded && level < 5 && <div className="text-orange-800 text-[9px] text-center">Shipyard Level: {level} — Upgrade for more parts</div>}
       </div>
     </div>
   );

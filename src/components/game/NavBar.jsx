@@ -98,6 +98,7 @@ const NAV_GROUPS = [
       { id: 'codex', label: 'Codex', icon: BookOpen },
       { id: 'discoveries', label: 'Discoveries', icon: BookOpen },
       { id: 'cheats', label: 'Cheats', icon: Sparkles },
+      { id: 'canisstella', label: 'Canis Stella', icon: Building },
       { id: 'controllerconfig', label: 'Controller Config', icon: Gamepad2 },
       { id: 'settings', label: 'Settings', icon: Settings },
     ],

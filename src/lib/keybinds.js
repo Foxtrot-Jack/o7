@@ -107,6 +107,7 @@ export const KEYBIND_CATEGORIES = [
       { id: 'screen_profile', label: 'Profile', defaults: [] },
       { id: 'screen_settings', label: 'Settings', defaults: [] },
       { id: 'screen_controllerconfig', label: 'Controller Config', defaults: [] },
+      { id: 'screen_canisstella', label: 'Canis Stella', defaults: [] },
       { id: 'screen_cheats', label: 'Cheats', defaults: [] },
       { id: 'screen_achievements', label: 'Awards', defaults: [] },
       { id: 'screen_leaderboard', label: 'Leaderboard', defaults: [] },

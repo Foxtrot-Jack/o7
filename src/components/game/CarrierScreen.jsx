@@ -88,7 +88,7 @@ export default function CarrierScreen({ onNavigate }) {
             const ships = state.ownedShips.filter(s => s.storedAt?.carrierId === c.id);
             const isHere = c.systemSeed === state.currentSystem.seed;
             return (
-              <div key={c.id} className="border border-orange-900 p-3 space-y-3">
+              <div key={c.id} className={`border p-3 space-y-3 ${c.isGuilded ? 'border-yellow-600 bg-yellow-950/10' : 'border-orange-900'}`}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Anchor className="w-4 h-4 text-orange-500" />
@@ -99,7 +99,8 @@ export default function CarrierScreen({ onNavigate }) {
                       </div>
                     ) : (
                       <div className="flex items-center gap-1">
-                        <span className="text-orange-300 font-bold text-sm">{c.name}</span>
+                        <span className={`font-bold text-sm ${c.isGuilded ? 'text-yellow-300' : 'text-orange-300'}`}>{c.name}</span>
+                        {c.isGuilded && <span className="text-[9px] border border-yellow-600 text-yellow-500 px-1">★ GUILDED</span>}
                         <button onClick={() => { setEditingId(c.id); setNameInput(c.name); }} className="text-orange-600 hover:text-orange-400"><Edit2 className="w-3 h-3" /></button>
                       </div>
                     )}
@@ -110,7 +111,7 @@ export default function CarrierScreen({ onNavigate }) {
                 <div className="grid grid-cols-3 gap-2 text-xs">
                   <div className="border border-orange-950 p-1.5"><div className="text-orange-700 text-[10px] uppercase flex items-center gap-1"><Fuel className="w-2.5 h-2.5" /> Tritium</div><div className="text-orange-300">{c.tritium} / {c.tritiumCapacity}</div></div>
                   <div className="border border-orange-950 p-1.5"><div className="text-orange-700 text-[10px] uppercase flex items-center gap-1"><Banknote className="w-2.5 h-2.5" /> Bank</div><div className="text-orange-300">{(c.bankBalance || 0).toLocaleString()} CR</div></div>
-                  <div className="border border-orange-950 p-1.5"><div className="text-orange-700 text-[10px] uppercase">Ships</div><div className="text-orange-300">{ships.length}</div></div>
+                  <div className="border border-orange-950 p-1.5"><div className="text-orange-700 text-[10px] uppercase">Ships</div><div className="text-orange-300">{ships.length}{c.shipCapacity ? `/${c.shipCapacity}` : ''}</div></div>
                 </div>
 
                 {isHere && (

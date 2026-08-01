@@ -19,8 +19,10 @@ import { STATION_BUILD_COST, STATION_SERVICES, calculateStationRevenue } from '.
 import { FIGHTER_TYPES, getFighterHangarCapacity } from './fighters';
 import { ROOM_TYPES, MAX_CARRIER_ROOMS, getRoomCost, getStationRoomCost } from './cabinRooms';
 import { generateFish, generateFlora } from './specimens';
-import { ADDITIONAL_SHIPS } from './shipRoster';
+import { SHIP_TYPES } from './shipRoster';
 import { getHolidayFuelMultiplier } from './publicHolidays';
+import { useCanisStellaFunctions } from './canisStellaFunctions';
+import { CANIS_STELLA_RANKS, CEO_TITLE, MISSION_REP_REWARD } from './canisStella';
 
 const STORAGE_KEY = 'starfarer_save_v1';
 const STORAGE_KEY_SANDBOX = 'starfarer_sandbox_v1';
@@ -52,45 +54,8 @@ function validateShip(ship, defaultShip) {
   return v;
 }
 
-// Ship definitions
-export const SHIP_TYPES = [
-  { id: 'sidewinder', name: 'Sparrowhawk Mk-I', manufacturer: 'Drake-Voss', cargoCapacity: 4, fuelCapacity: 8, jumpRange: 8, cost: 0, multirole: true, class: 1 },
-  { id: 'hauler', name: 'Packmule', manufacturer: 'Orion Heavy', cargoCapacity: 22, fuelCapacity: 16, jumpRange: 10, cost: 52000, multirole: false, class: 1 },
-  { id: 'cobra', name: 'Drake Mk-III', manufacturer: 'Drake-Voss', cargoCapacity: 18, fuelCapacity: 16, jumpRange: 12, cost: 350000, multirole: true, class: 2 },
-  { id: 'type6', name: 'Caravan Mk-VI', manufacturer: 'Orion Heavy', cargoCapacity: 50, fuelCapacity: 32, jumpRange: 15, cost: 1000000, multirole: false, class: 2 },
-  { id: 'diamondback', name: 'Kingfisher Surveyor', manufacturer: 'Orion Heavy', cargoCapacity: 16, fuelCapacity: 32, jumpRange: 20, cost: 1900000, multirole: true, class: 2 },
-  { id: 'asp', name: 'Heron Surveyor', manufacturer: 'Orion Heavy', cargoCapacity: 28, fuelCapacity: 32, jumpRange: 18, cost: 6600000, multirole: true, class: 2 },
-  { id: 'type7', name: 'Caravan Mk-VII', manufacturer: 'Orion Heavy', cargoCapacity: 96, fuelCapacity: 32, jumpRange: 14, cost: 17000000, multirole: false, class: 3 },
-  { id: 'python', name: 'Albatross', manufacturer: 'Drake-Voss', cargoCapacity: 56, fuelCapacity: 32, jumpRange: 16, cost: 56000000, multirole: true, class: 3 },
-  { id: 'type9', name: 'Caravan Mk-IX', manufacturer: 'Orion Heavy', cargoCapacity: 220, fuelCapacity: 64, jumpRange: 10, cost: 78000000, multirole: false, class: 4 },
-  { id: 'anaconda', name: 'Roc', manufacturer: 'Drake-Voss', cargoCapacity: 114, fuelCapacity: 64, jumpRange: 18, cost: 146000000, multirole: true, class: 4 },
-  { id: 'eagle', name: 'Peregrine Mk-II', manufacturer: 'Sentinel Forge', cargoCapacity: 2, fuelCapacity: 8, jumpRange: 7, cost: 44800, multirole: true, class: 1 },
-  { id: 'adder', name: 'Osprey', manufacturer: 'Kepler Aeroworks', cargoCapacity: 6, fuelCapacity: 8, jumpRange: 10, cost: 87200, multirole: true, class: 1 },
-  { id: 'viper', name: 'Shrike Mk-III', manufacturer: 'Drake-Voss', cargoCapacity: 2, fuelCapacity: 8, jumpRange: 9, cost: 143000, multirole: false, class: 1 },
-  { id: 'cobramk4', name: 'Drake Mk-IV', manufacturer: 'Drake-Voss', cargoCapacity: 20, fuelCapacity: 16, jumpRange: 11, cost: 745000, multirole: true, class: 2 },
-  { id: 'dolphin', name: 'Narwhal', manufacturer: 'Meridian Luxe', cargoCapacity: 6, fuelCapacity: 16, jumpRange: 15, cost: 1500000, multirole: true, class: 2 },
-  { id: 'cobramk5', name: 'Drake Mk-V', manufacturer: 'Drake-Voss', cargoCapacity: 18, fuelCapacity: 16, jumpRange: 13, cost: 3900000, multirole: true, class: 2 },
-  { id: 'federal_dropship', name: 'Republic Trooper', manufacturer: 'Sentinel Forge', cargoCapacity: 6, fuelCapacity: 32, jumpRange: 12, cost: 4900000, multirole: false, class: 3 },
-  { id: 'vulture', name: 'Raven', manufacturer: 'Sentinel Forge', cargoCapacity: 2, fuelCapacity: 32, jumpRange: 11, cost: 5100000, multirole: false, class: 2 },
-  { id: 'imperial_courier', name: 'Dynast Herald', manufacturer: 'Solaris Dynasty', cargoCapacity: 8, fuelCapacity: 32, jumpRange: 13, cost: 5400000, multirole: true, class: 2 },
-  { id: 'mandalay', name: 'Wanderer', manufacturer: 'Kepler Aeroworks', cargoCapacity: 20, fuelCapacity: 32, jumpRange: 22, cost: 18500000, multirole: true, class: 2 },
-  { id: 'alliance_chieftain', name: 'Coalition Flagship', manufacturer: 'Orion Heavy', cargoCapacity: 2, fuelCapacity: 32, jumpRange: 13, cost: 19000000, multirole: false, class: 3 },
-  { id: 'federal_assault', name: 'Republic Vanguard', manufacturer: 'Sentinel Forge', cargoCapacity: 4, fuelCapacity: 32, jumpRange: 12, cost: 19800000, multirole: false, class: 3 },
-  { id: 'imperial_clipper', name: 'Dynast Schooner', manufacturer: 'Solaris Dynasty', cargoCapacity: 34, fuelCapacity: 32, jumpRange: 14, cost: 22300000, multirole: true, class: 3 },
-  { id: 'alliance_crusader', name: 'Coalition Paladin', manufacturer: 'Orion Heavy', cargoCapacity: 4, fuelCapacity: 32, jumpRange: 12, cost: 22800000, multirole: false, class: 3 },
-  { id: 'alliance_challenger', name: 'Coalition Titan', manufacturer: 'Orion Heavy', cargoCapacity: 6, fuelCapacity: 32, jumpRange: 13, cost: 30800000, multirole: false, class: 3 },
-  { id: 'type8', name: 'Caravan Mk-VIII', manufacturer: 'Orion Heavy', cargoCapacity: 76, fuelCapacity: 32, jumpRange: 15, cost: 36000000, multirole: false, class: 3 },
-  { id: 'krait_phantom', name: 'Harrier Wraith', manufacturer: 'Drake-Voss', cargoCapacity: 14, fuelCapacity: 32, jumpRange: 17, cost: 37300000, multirole: true, class: 2 },
-  { id: 'krait_mk2', name: 'Harrier Mk-II', manufacturer: 'Drake-Voss', cargoCapacity: 18, fuelCapacity: 32, jumpRange: 16, cost: 45300000, multirole: true, class: 2 },
-  { id: 'orca', name: 'Cachalot', manufacturer: 'Meridian Luxe', cargoCapacity: 8, fuelCapacity: 32, jumpRange: 15, cost: 48500000, multirole: false, class: 3 },
-  { id: 'mamba', name: 'Condor', manufacturer: 'Kepler Aeroworks', cargoCapacity: 2, fuelCapacity: 32, jumpRange: 12, cost: 56500000, multirole: false, class: 2 },
-  { id: 'python_mk2', name: 'Albatross Mk-II', manufacturer: 'Drake-Voss', cargoCapacity: 20, fuelCapacity: 32, jumpRange: 14, cost: 75000000, multirole: false, class: 3 },
-  { id: 'beluga', name: 'Leviathan Cruiser', manufacturer: 'Meridian Luxe', cargoCapacity: 12, fuelCapacity: 64, jumpRange: 14, cost: 85000000, multirole: false, class: 3 },
-  { id: 'type10', name: 'Bastion Mk-X', manufacturer: 'Orion Heavy', cargoCapacity: 128, fuelCapacity: 64, jumpRange: 9, cost: 125000000, multirole: false, class: 4 },
-  { id: 'federal_corvette', name: 'Republic Dreadnought', manufacturer: 'Sentinel Forge', cargoCapacity: 16, fuelCapacity: 64, jumpRange: 15, cost: 190000000, multirole: false, class: 4 },
-  { id: 'imperial_cutter', name: 'Dynast Sovereign', manufacturer: 'Solaris Dynasty', cargoCapacity: 120, fuelCapacity: 64, jumpRange: 16, cost: 210000000, multirole: true, class: 4 },
-  ...ADDITIONAL_SHIPS,
-];
+// Ship definitions — base roster moved to shipRoster.js
+export { SHIP_TYPES };
 
 export const SHIP_MAP = SHIP_TYPES.reduce((m, s) => { m[s.id] = s; return m; }, {});
 
@@ -239,6 +204,7 @@ function createInitialState() {
     surfaceMaps: {},
     warpGates: [],
     eventCooldownUntil: 0,
+    canisStella: { stance: 'neutral', reputation: 0, isCEO: false, ownFactionName: null },
     carrierRooms: {},
     carrierRoomGrid: {},
     carrierCurrentRoom: {},
@@ -719,6 +685,9 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     setState(prev => ({ ...prev, fleetCarriers: prev.fleetCarriers.map(c => c.id === carrierId ? { ...c, name } : c) }));
   }, []);
 
+  // Canis Stella faction functions (extracted hook)
+  const { joinCanisStella, opposeCanisStella, addCanisStellaRep, buyGuildedCarrier, claimGuildedCarrierAsCEO, startOwnFaction } = useCanisStellaFunctions(setState);
+
   // Scan a body — tracks achievements and first discoveries
   const scanBody = useCallback((body) => {
     setState(prev => {
@@ -879,7 +848,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     setState(prev => {
       const mission = prev.activeMissions.find(m => m.id === missionId);
       if (!mission) return prev;
-      return {
+      const newState = {
         ...prev,
         activeMissions: prev.activeMissions.filter(m => m.id !== missionId),
         credits: prev.credits + (mission.reward || 0),
@@ -889,6 +858,13 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
           trade: updateRank(prev.rank.trade, mission.reward || 0),
         },
       };
+      if (prev.canisStella?.stance === 'member') {
+        const newRep = (prev.canisStella.reputation || 0) + MISSION_REP_REWARD;
+        const nowCEO = newRep >= CANIS_STELLA_RANKS[CANIS_STELLA_RANKS.length - 1].threshold;
+        newState.canisStella = { ...prev.canisStella, reputation: newRep, isCEO: prev.canisStella.isCEO || nowCEO };
+        if (nowCEO && !prev.canisStella.isCEO) newState.playerTitle = CEO_TITLE;
+      }
+      return newState;
     });
   }, []);
 
@@ -2320,6 +2296,8 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     jumpCarrier,
     renameCarrier,
     decommissionCarrier,
+    joinCanisStella, opposeCanisStella, addCanisStellaRep,
+    buyGuildedCarrier, claimGuildedCarrierAsCEO, startOwnFaction,
     updateSettings,
     addBookmark,
     removeBookmark,

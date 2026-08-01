@@ -74,6 +74,7 @@ import GeneticsLabScreen from '@/components/game/GeneticsLabScreen';
 import StationCreator from '@/components/game/StationCreator';
 import GameErrorBoundary from '@/components/game/GameErrorBoundary';
 import ControllerConfigScreen from '@/components/game/ControllerConfigScreen';
+import CanisStellaScreen from '@/components/game/CanisStellaScreen';
 import { inputSystem } from '@/lib/inputSystem';
 import { soundEngine } from '@/lib/soundEngine';
 import { SCREEN_CONTEXTS } from '@/lib/soundPresets';
@@ -323,6 +324,8 @@ function GameContent() {
         return <StationCreator />;
       case 'controllerconfig':
         return <ControllerConfigScreen />;
+      case 'canisstella':
+        return <CanisStellaScreen />;
       default:
         return <SystemOrrery />;
     }
@@ -346,7 +349,7 @@ function GameContent() {
           {state.activeEncounter && <EncounterScreen />}
           {/* Footer status bar */}
           <div className="border-t border-orange-900/50 px-3 py-1 flex items-center justify-between text-[10px] text-orange-800 bg-black">
-            <span>DOGSTAR INTERSTELLAR v1.0 · {state.ship?.name || '---'}</span>
+            <span>o7 v1.0 · {state.ship?.name || '---'}</span>
             <span className="hidden sm:inline">GALAXY: 4,000,000,000+ SYSTEMS</span>
             <span>JUMPS: {state.totalJumps}</span>
           </div>

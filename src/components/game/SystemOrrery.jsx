@@ -548,7 +548,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
       const carrierModel = carrier.design
         ? buildCarrierModel(carrier.design, 0xff8800)
         : buildGenericCarrierModel(0xff8800);
-      carrierModel.scale.setScalar(0.5);
+      carrierModel.scale.setScalar(carrier.isGuilded ? 1.5 : 0.5);
       scene.add(carrierModel);
       carrierMeshesRef.current.push({
         model: carrierModel,

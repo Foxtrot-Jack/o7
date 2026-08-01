@@ -39,7 +39,7 @@ export default function SaveSelect({ onSelect }) {
     <div className="crt-container w-full h-screen bg-black flex items-center justify-center p-4">
       <div className="w-full max-w-2xl space-y-6">
         <div className="text-center">
-          <h1 className="text-orange-300 text-2xl font-bold uppercase tracking-widest">Dogstar Interstellar</h1>
+          <h1 className="text-orange-300 text-2xl font-bold uppercase tracking-widest">o7</h1>
           <p className="text-orange-700 text-xs mt-1">Select Commander Profile</p>
         </div>
         <SaveCard icon={Rocket} title="Commander" subtitle="Main save — progress is permanent" save={saves.normal} fmt={fmt} s={STYLES.orange} onSelect={() => onSelect('normal')} />
