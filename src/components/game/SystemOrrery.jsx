@@ -6,7 +6,9 @@ import { useGameState } from '@/lib/gameState';
 import { BODY_TYPES } from '@/lib/system';
 import { buildStationModel } from '@/lib/stationModelBuilder';
 import { buildShipModel } from '@/lib/shipModelBuilder';
-import { SHIP_MAP } from '@/lib/gameState';
+import { SHIP_MAP, getProbesRequired } from '@/lib/gameState';
+import CelestialBodyList from './CelestialBodyList';
+import { generateBodyDescription } from '@/lib/bodyDescriptions';
 
 export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate }) {
   const mountRef = useRef(null);
@@ -767,8 +769,8 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 border border-cyan-700 bg-black/95 p-4 text-center text-xs space-y-2 z-30">
           <div className="text-cyan-300 font-bold uppercase">FSS Discovery Scanner</div>
           <div className="text-cyan-600 text-[10px] max-w-48">Run a Full Spectrum System scan to discover all stellar bodies in this system.</div>
-          <button onClick={fssScanSystem} className="px-4 py-2 border border-cyan-500 text-cyan-300 hover:bg-cyan-950/30 text-xs font-bold">
-            RUN FSS SCAN
+          <button onClick={() => onNavigate('fss')} className="px-4 py-2 border border-cyan-500 text-cyan-300 hover:bg-cyan-950/30 text-xs font-bold">
+            OPEN FSS SCANNER
           </button>
         </div>
       )}
@@ -827,10 +829,10 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
             <div className="text-orange-600">FACTION: {systemData.faction}</div>
             <div className="text-orange-600">ECONOMY: {systemData.economy.name}</div>
             <div className="text-orange-600">BODIES: {systemData.bodyCount}</div>
-            {state.fssScannedSystems?.[state.currentSystem.seed] && (() => {
-              const scannable = systemData.bodies.filter(b => b.type !== BODY_TYPES.RING);
-              const scanned = scannable.filter(b => state.scannedBodies[b.id]).length;
-              return <div className="text-cyan-600">SCANNED: {scanned}/{scannable.length}</div>;
+            {(() => {
+              const scannable = systemData.bodies.filter(b => b.type === 'star' || b.type === 'planet' || b.type === 'moon' || b.type === 'belt');
+              const fssCount = scannable.filter(b => state.fssDiscoveredBodies?.[b.id]).length;
+              return <div className="text-cyan-600">FSS: {fssCount}/{scannable.length}</div>;
             })()}
             <div className="text-orange-600">STARS: {systemData.stars.length}</div>
             <div className="text-orange-800 text-[10px] mt-1">DRAG TO ROTATE · 2-FINGER PAN/PINCH · SCROLL TO ZOOM · TAP BODY</div>
@@ -847,37 +849,16 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
           <span className="text-orange-700 uppercase text-[10px]">Celestial Bodies</span>
           <button onClick={() => setBodiesCollapsed(true)} className="text-orange-700 hover:text-orange-400 text-[10px]">▶</button>
         </div>
-        {systemData.bodies.filter(b => b.type !== BODY_TYPES.RING).map((body) => (
-          <div key={body.id}>
-            <button
-              onClick={() => handleSelectBody(body)}
-              className={`w-full text-left px-1.5 py-1 border transition-all ${
-                selectedBody?.id === body.id
-                  ? 'border-orange-500 bg-orange-950/40 text-orange-300'
-                  : 'border-transparent text-orange-600 hover:border-orange-800'
-              }`}
-            >
-              <div className="flex items-center gap-1.5">
-                <div
-                  className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                  style={{ background: body.color || '#888' }}
-                />
-                <span className="truncate">{body.designation}</span>
-              </div>
-            </button>
-            {systemData.stations.filter(s => s.parentId === body.id).map(station => (
-              <button
-                key={station.id}
-                onClick={() => handleSelectStation(station)}
-                className={`w-full text-left pl-5 py-0.5 text-[10px] flex items-center gap-1 ${selectedStation?.id === station.id ? 'text-green-300' : 'text-green-600 hover:text-green-400'}`}
-              >
-                <span className="text-green-800">◦</span>
-                <span className="truncate">{station.name}</span>
-                <span className="text-green-900 text-[9px]">{station.isOrbital ? 'orb' : 'srf'}</span>
-              </button>
-            ))}
-          </div>
-        ))}
+        <CelestialBodyList
+          systemData={systemData}
+          selectedBody={selectedBody}
+          selectedStation={selectedStation}
+          onSelectBody={handleSelectBody}
+          onSelectStation={handleSelectStation}
+          fssDiscoveredBodies={state.fssDiscoveredBodies}
+          scannedBodies={state.scannedBodies}
+          probeProgress={state.probeProgress}
+        />
       </div>
       )}
 
@@ -1019,42 +1000,63 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
               </button>
             )
           )}
-          {selectedBody.landable && state.fssScannedSystems?.[state.currentSystem.seed] && (
-            <div className="border-t border-orange-900 pt-1 space-y-1">
-              {!state.mappedBodies?.[selectedBody.id] ? (
-                orbitingBodyId === selectedBody.id ? (
-                  <button onClick={() => mapBody(selectedBody.id)} className="w-full py-1.5 border border-cyan-500 text-cyan-300 hover:bg-cyan-950/30 text-[10px] font-bold">
-                    LAUNCH SURFACE PROBES
-                  </button>
-                ) : (
-                  <div className="text-orange-700 text-[10px] text-center py-1.5">⚠ MUST BE IN ORBIT TO LAUNCH PROBES</div>
-                )
-              ) : (
-                <>
-                  <div className="text-cyan-500 text-[10px]">✓ MAPPED — {selectedBody.surfaceSignals?.length || 0} SURFACE SIGNALS DETECTED</div>
-                  {selectedBody.surfaceSignals?.length > 0 && (
-                    <div className="flex flex-wrap gap-1">
-                      {selectedBody.surfaceSignals.slice(0, 6).map(s => (
-                        <span key={s.id} className={`text-[9px] border px-1 ${s.type === 'biological' ? 'border-green-800 text-green-500' : s.type === 'geological' ? 'border-orange-800 text-orange-500' : 'border-cyan-800 text-cyan-500'}`}>
-                          {s.name}
-                        </span>
-                      ))}
+          {selectedBody.landable && state.fssDiscoveredBodies?.[selectedBody.id] && (() => {
+            const probeState = state.probeProgress?.[selectedBody.id];
+            const required = probeState?.required || getProbesRequired(selectedBody);
+            const launched = probeState?.launched || 0;
+            const complete = probeState?.complete || state.mappedBodies?.[selectedBody.id]?.mapped;
+            const probePct = required > 0 ? Math.min(100, Math.round((launched / required) * 100)) : 0;
+            return (
+              <div className="border-t border-orange-900 pt-1 space-y-1">
+                {!complete ? (
+                  <>
+                    <div className="flex items-center justify-between text-[10px]">
+                      <span className="text-cyan-500 uppercase">Surface Scan</span>
+                      <span className="text-cyan-600">{launched}/{required} probes · {probePct}%</span>
                     </div>
-                  )}
-                  {orbitingBodyId === selectedBody.id ? (
-                    <button
-                      onClick={() => { landOnBody(selectedBody.id); if (onNavigate) onNavigate('survey'); }}
-                      className="w-full py-1.5 border border-green-500 text-green-300 hover:bg-green-950/30 text-[10px] font-bold"
-                    >
-                      LAND ON SURFACE
-                    </button>
-                  ) : (
-                    <div className="text-orange-700 text-[10px] text-center py-1.5">⚠ MUST BE IN ORBIT TO LAND</div>
-                  )}
-                </>
-              )}
-            </div>
-          )}
+                    <div className="w-full h-1.5 bg-black border border-cyan-950">
+                      <div className="h-full bg-cyan-600 transition-all" style={{ width: `${probePct}%` }} />
+                    </div>
+                    {orbitingBodyId === selectedBody.id ? (
+                      <button onClick={() => mapBody(selectedBody.id)} className="w-full py-1.5 border border-cyan-500 text-cyan-300 hover:bg-cyan-950/30 text-[10px] font-bold">
+                        🚀 LAUNCH PROBE ({required - launched} remaining)
+                      </button>
+                    ) : (
+                      <div className="text-orange-700 text-[10px] text-center py-1.5">⚠ MUST BE IN ORBIT TO LAUNCH PROBES</div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <div className="text-cyan-500 text-[10px] font-bold">✓ SURFACE SCAN COMPLETE — 100%</div>
+                    <div className="border border-orange-950 bg-black/50 p-2 max-h-32 overflow-y-auto">
+                      <div className="text-orange-700 text-[9px] uppercase mb-1">Planetary Survey Report</div>
+                      <div className="text-orange-500 text-[10px] leading-relaxed">{generateBodyDescription(selectedBody)}</div>
+                    </div>
+                    {selectedBody.surfaceSignals?.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        <span className="text-[9px] text-orange-700 uppercase">Signals:</span>
+                        {selectedBody.surfaceSignals.slice(0, 6).map(s => (
+                          <span key={s.id} className={`text-[9px] border px-1 ${s.type === 'biological' ? 'border-green-800 text-green-500' : s.type === 'geological' ? 'border-orange-800 text-orange-500' : 'border-cyan-800 text-cyan-500'}`}>
+                            {s.name}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {orbitingBodyId === selectedBody.id ? (
+                      <button
+                        onClick={() => { landOnBody(selectedBody.id); if (onNavigate) onNavigate('survey'); }}
+                        className="w-full py-1.5 border border-green-500 text-green-300 hover:bg-green-950/30 text-[10px] font-bold"
+                      >
+                        LAND ON SURFACE
+                      </button>
+                    ) : (
+                      <div className="text-orange-700 text-[10px] text-center py-1.5">⚠ MUST BE IN ORBIT TO LAND</div>
+                    )}
+                  </>
+                )}
+              </div>
+            );
+          })()}
         </div>
       )}
     </div>

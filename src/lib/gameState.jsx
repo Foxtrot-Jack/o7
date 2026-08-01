@@ -123,6 +123,8 @@ function createInitialState() {
     bookmarkedSystems: [],
     // FSS & Surface scanning
     fssScannedSystems: {},
+    fssDiscoveredBodies: {},
+    probeProgress: {},
     mappedBodies: {},
     surfaceDiscoveries: {},
     currentSurfaceBody: null,
@@ -242,6 +244,8 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
           records: parsed.records || {},
           bookmarkedSystems: parsed.bookmarkedSystems || [],
           fssScannedSystems: parsed.fssScannedSystems || {},
+          fssDiscoveredBodies: parsed.fssDiscoveredBodies || {},
+          probeProgress: parsed.probeProgress || {},
           mappedBodies: parsed.mappedBodies || {},
           surfaceDiscoveries: parsed.surfaceDiscoveries || {},
           flightLog: parsed.flightLog || [],
@@ -847,7 +851,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     setState(prev => ({ ...prev, bookmarkedSystems: prev.bookmarkedSystems.filter(s => s.seed !== seed) }));
   }, []);
 
-  // FSS scan — reveals all bodies in the system
+  // FSS scan — reveals all bodies in the system (legacy bulk scan)
   const fssScanSystem = useCallback(() => {
     setState(prev => ({
       ...prev,
@@ -862,19 +866,75 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     }));
   }, []);
 
-  // Map a body with surface probes
-  const mapBody = useCallback((bodyId) => {
-    setState(prev => ({
-      ...prev,
-      mappedBodies: { ...prev.mappedBodies, [bodyId]: { mapped: true, date: Date.now() } },
-      achievements: {
-        ...prev.achievements,
-        milestones: {
-          ...prev.achievements?.milestones,
-          ...(prev.achievements?.milestones?.first_mapping ? {} : { first_mapping: { date: Date.now() } }),
+  // Discover a single body via FSS — per-body, not bulk
+  const discoverBodyFSS = useCallback((bodyId) => {
+    let result = { alreadyDiscovered: false, systemComplete: false, reward: 0 };
+    setState(prev => {
+      if (prev.fssDiscoveredBodies?.[bodyId]) {
+        result.alreadyDiscovered = true;
+        return prev;
+      }
+      const newDiscovered = { ...(prev.fssDiscoveredBodies || {}), [bodyId]: true };
+      const systemData = prev.currentSystemData;
+      const scannable = (systemData?.bodies || []).filter(b =>
+        b.type === 'star' || b.type === 'planet' || b.type === 'moon' || b.type === 'belt'
+      );
+      const allDiscovered = scannable.length > 0 && scannable.every(b => newDiscovered[b.id]);
+      const updates = {
+        fssDiscoveredBodies: newDiscovered,
+        achievements: {
+          ...prev.achievements,
+          milestones: {
+            ...prev.achievements?.milestones,
+            ...(prev.achievements?.milestones?.first_fss_scan ? {} : { first_fss_scan: { date: Date.now() } }),
+          },
         },
-      },
-    }));
+      };
+      if (allDiscovered && !(prev.fssScannedSystems || {})[prev.currentSystem.seed]) {
+        updates.fssScannedSystems = { ...(prev.fssScannedSystems || {}), [prev.currentSystem.seed]: true };
+        const reward = 5000 + scannable.length * 500;
+        updates.credits = prev.credits + reward;
+        updates.lifetimeEarnings = (prev.lifetimeEarnings || 0) + reward;
+        result.systemComplete = true;
+        result.reward = reward;
+      }
+      return { ...prev, ...updates };
+    });
+    return result;
+  }, []);
+
+  // Launch a surface probe — progressive mapping (bigger bodies need more probes)
+  const mapBody = useCallback((bodyId) => {
+    setState(prev => {
+      const systemData = prev.currentSystemData;
+      if (!systemData) return prev;
+      const body = systemData.bodies.find(b => b.id === bodyId);
+      if (!body || !body.landable) return prev;
+      const required = getProbesRequired(body);
+      const existing = prev.probeProgress?.[bodyId] || { launched: 0, required, complete: false };
+      if (existing.complete) return prev;
+      const launched = existing.launched + 1;
+      const complete = launched >= required;
+      const newProbeProgress = {
+        ...(prev.probeProgress || {}),
+        [bodyId]: { launched, required, complete },
+      };
+      const updates = { probeProgress: newProbeProgress };
+      if (complete) {
+        updates.mappedBodies = {
+          ...(prev.mappedBodies || {}),
+          [bodyId]: { mapped: true, date: Date.now() },
+        };
+        updates.achievements = {
+          ...prev.achievements,
+          milestones: {
+            ...prev.achievements?.milestones,
+            ...(prev.achievements?.milestones?.first_mapping ? {} : { first_mapping: { date: Date.now() } }),
+          },
+        };
+      }
+      return { ...prev, ...updates };
+    });
   }, []);
 
   // Collect a surface discovery
@@ -1729,6 +1789,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     removeBookmark,
     fssScanSystem,
     mapBody,
+    discoverBodyFSS,
     collectSurfaceDiscovery,
     landOnBody,
     departSurface,
@@ -1824,6 +1885,15 @@ export function useGameState() {
   const ctx = useContext(GameStateContext);
   if (!ctx) throw new Error('useGameState must be used within GameStateProvider');
   return ctx;
+}
+
+export function getProbesRequired(body) {
+  if (!body || body.type === 'star' || body.type === 'belt' || body.type === 'asteroid' || body.type === 'ring') return 0;
+  const r = body.radius || 1;
+  if (body.planetType && (body.planetType.startsWith('gas_giant') || body.planetType.startsWith('helium'))) {
+    return Math.max(3, Math.min(8, Math.ceil(r / 3)));
+  }
+  return Math.max(1, Math.min(5, Math.ceil(r * 1.5)));
 }
 
 export function hasCarrierVendor(system) {
