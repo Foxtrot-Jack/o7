@@ -16,6 +16,13 @@ export default function FontSelector() {
 
   return (
     <div className="border border-orange-900 p-4 space-y-3">
+      {/* Higher-specificity class to override the crt-container !important font rule,
+          so each preview renders in its own typeface. */}
+      <style>{`
+        .font-selector .font-preview {
+          font-family: var(--preview-font, monospace) !important;
+        }
+      `}</style>
       <div className="flex items-center gap-2">
         <Type className="w-4 h-4 text-orange-500" />
         <h3 className="text-orange-400 text-sm font-bold uppercase">Font Family</h3>
@@ -23,7 +30,7 @@ export default function FontSelector() {
       <div className="text-orange-700 text-[10px]">
         Select a typeface for the entire interface. System fonts load instantly; Google Fonts require a network connection.
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+      <div className="font-selector grid grid-cols-1 sm:grid-cols-2 gap-2">
         {FONT_LIST.map(f => (
           <button
             key={f.id}
@@ -31,10 +38,10 @@ export default function FontSelector() {
             className={`border p-2 text-left transition-all ${current === f.id ? 'border-orange-500 bg-orange-950/30' : 'border-orange-900 hover:border-orange-700'}`}
           >
             <div className="flex items-center justify-between mb-1">
-              <span style={{ fontFamily: f.family }} className="text-orange-400 text-sm font-bold">{f.name}</span>
-              <span className="text-orange-700 text-[9px] uppercase">{f.type}</span>
+              <span className="font-preview text-orange-400 text-sm font-bold" style={{ '--preview-font': f.family }}>{f.name}</span>
+              <span className="font-preview text-orange-700 text-[9px] uppercase" style={{ '--preview-font': f.family }}>{f.type}</span>
             </div>
-            <div style={{ fontFamily: f.family }} className="text-orange-300 text-xs truncate">
+            <div className="font-preview text-orange-300 text-xs truncate" style={{ '--preview-font': f.family }}>
               The quick brown fox 0123
             </div>
           </button>
