@@ -112,7 +112,7 @@ export default function CockpitView({ target = 'ship', targetId = null, decorati
     const wh = config.windowHeight / 2;
     const z = -config.depth;
     const frameMat = new THREE.LineBasicMaterial({ color: 0x4a2a00 });
-    const panelMat = new THREE.MeshBasicMaterial({ color: 0x1a0d00, wireframe: true, transparent: true, opacity: 0.5 });
+    const panelMat = new THREE.MeshBasicMaterial({ color: 0x1a0d00, transparent: true, opacity: 0.85 });
 
     // Window frame outline + struts
     const pts = [
@@ -209,7 +209,7 @@ export default function CockpitView({ target = 'ship', targetId = null, decorati
     frame.add(new THREE.LineSegments(edgeGeom, edgeMat));
 
     // Seat — headrest and base in foreground
-    const seatMat = new THREE.MeshBasicMaterial({ color: 0x2a1500, wireframe: true });
+    const seatMat = new THREE.MeshBasicMaterial({ color: 0x2a1500 });
     const headGeom = new THREE.BoxGeometry(0.6, 0.35, 0.12);
     const headrest = new THREE.Mesh(headGeom, seatMat);
     headrest.position.set(0, -wh - 0.12, 0.75);
@@ -220,7 +220,7 @@ export default function CockpitView({ target = 'ship', targetId = null, decorati
     frame.add(seatBase);
 
     // Control sticks on dashboard
-    const stickMat = new THREE.MeshBasicMaterial({ color: 0x4a2a00, wireframe: true });
+    const stickMat = new THREE.MeshBasicMaterial({ color: 0x4a2a00 });
     const stickGeom = new THREE.CylinderGeometry(0.03, 0.05, 0.18, 6);
     const stickL = new THREE.Mesh(stickGeom, stickMat);
     stickL.position.set(-0.4, -wh + 0.04, z + 0.25);
