@@ -73,7 +73,7 @@ export default function StatusHeader() {
         </div>
         <div className="flex flex-col">
           <span className="text-orange-700 text-[10px] uppercase">Rank</span>
-          <span className="text-orange-400">{state.rank.exploration.name}</span>
+          <span className="text-orange-400">{state.rank?.exploration?.name || '---'}</span>
         </div>
         <div className="flex flex-col">
           <span className="text-orange-700 text-[10px] uppercase">Explored</span>
