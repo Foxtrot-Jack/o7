@@ -170,6 +170,66 @@ export function generateSectorStars(sx, sy, sz) {
   return stars;
 }
 
+// Cached bridge stars connecting remote landmarks to the populated network.
+// Ensures players can always chain-jump to landmark systems even through
+// low-density gaps between spiral arms or at the galactic rim.
+let _cachedBridges = null;
+function generateLandmarkBridges() {
+  if (_cachedBridges) return _cachedBridges;
+  const bridges = [];
+
+  for (const landmark of LANDMARK_SYSTEMS) {
+    // Skip landmarks already inside a populated bubble
+    let inBubble = false;
+    for (const bubble of BUBBLE_CENTERS) {
+      if (distance3D({ x: landmark.x, y: landmark.y, z: landmark.z }, { x: bubble.x, y: bubble.y, z: bubble.z }) <= bubble.radius + 100) {
+        inBubble = true;
+        break;
+      }
+    }
+    if (inBubble) continue;
+
+    // Find the nearest populated bubble to chain toward
+    let nearestBubble = BUBBLE_CENTERS[0];
+    let nearestDist = Infinity;
+    for (const bubble of BUBBLE_CENTERS) {
+      const d = distance3D({ x: landmark.x, y: landmark.y, z: landmark.z }, { x: bubble.x, y: bubble.y, z: bubble.z });
+      if (d < nearestDist) { nearestDist = d; nearestBubble = bubble; }
+    }
+
+    // Generate stars at regular intervals along the path to the bubble
+    const dx = nearestBubble.x - landmark.x;
+    const dy = nearestBubble.y - landmark.y;
+    const dz = nearestBubble.z - landmark.z;
+    const totalDist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+    const stepSize = 25; // well within 80 LY jump range
+    const numSteps = Math.floor(totalDist / stepSize);
+
+    for (let i = 1; i < numSteps; i++) {
+      const t = i / numSteps;
+      const seed = hashSeed(`bridge:${landmark.id}:${i}`);
+      const rng = makeRng(seed);
+      const jx = landmark.x + dx * t + (rng() - 0.5) * 15;
+      const jy = landmark.y + dy * t + (rng() - 0.5) * 15;
+      const jz = landmark.z + dz * t + (rng() - 0.5) * 8;
+      bridges.push({
+        id: `bridge:${landmark.id}:${i}`,
+        seed,
+        x: jx, y: jy, z: jz,
+        name: generateSystemName(seed),
+        starClass: STAR_CLASSES[5 + Math.floor(rng() * 3)], // K/M/L — common frontier stars
+        security: 'low',
+        population: 0,
+        visited: false,
+        isBridge: true,
+      });
+    }
+  }
+
+  _cachedBridges = bridges;
+  return bridges;
+}
+
 // Generate stars in a radius around a point (for the galaxy map)
 export function generateStarsInRange(centerX, centerY, centerZ, radius) {
   const allStars = [];
@@ -206,6 +266,18 @@ export function generateStarsInRange(centerX, centerY, centerZ, radius) {
     );
     if (dist <= radius) {
       allStars.push({ ...landmark });
+    }
+  }
+
+  // Inject bridge stars connecting remote landmarks to populated space
+  const bridges = generateLandmarkBridges();
+  for (const bridge of bridges) {
+    const dist = distance3D(
+      { x: bridge.x, y: bridge.y, z: bridge.z },
+      { x: centerX, y: centerY, z: centerZ }
+    );
+    if (dist <= radius) {
+      allStars.push(bridge);
     }
   }
 
