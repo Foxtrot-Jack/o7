@@ -343,7 +343,7 @@ function GameContent() {
             onNavigate={handleNavigate}
             location={state.currentLocation}
           />
-          <div data-game-content className={`flex-1 ${isFullScreen ? 'overflow-hidden' : 'overflow-auto'}`}>
+          <div data-game-content className={`flex-1 relative z-0 ${isFullScreen ? 'overflow-hidden' : 'overflow-auto'}`}>
             {renderScreen()}
           </div>
           {state.activeEncounter && <EncounterScreen />}

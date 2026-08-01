@@ -262,7 +262,7 @@ export default function NavBar({ currentScreen, onNavigate, location }) {
   };
 
   return (
-    <nav ref={navRef} className="relative z-50 flex items-center gap-1 px-2 py-1.5 border-b border-orange-900/50 bg-black overflow-x-auto">
+    <nav ref={navRef} className="relative z-[100] flex items-center gap-1 px-2 py-1.5 border-b border-orange-900/50 bg-black">
       {NAV_GROUPS.map((group) => {
         const Icon = group.icon;
         const allItems = getAllItems(group);
@@ -292,7 +292,7 @@ export default function NavBar({ currentScreen, onNavigate, location }) {
             </button>
 
             {isOpen && !groupDisabled && (
-              <div className={`absolute top-full ${group.align === 'right' ? 'right-0' : 'left-0'} mt-0.5 min-w-[160px] max-h-[70vh] overflow-y-auto border border-orange-800 bg-black z-50 shadow-lg shadow-black`}>
+              <div className={`absolute top-full ${group.align === 'right' ? 'right-0' : 'left-0'} mt-0.5 min-w-[160px] max-h-[70vh] overflow-y-auto border border-orange-800 bg-black z-[100] shadow-lg shadow-black`}>
                 {/* Flat items (no folders) */}
                 {group.items && group.items.map(item => renderItem(item))}
 
