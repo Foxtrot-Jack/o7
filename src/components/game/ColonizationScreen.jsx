@@ -380,11 +380,11 @@ export default function ColonizationScreen() {
             <button onClick={() => setDeliverColony(null)} className="text-orange-700 hover:text-orange-400 text-xs">✕</button>
           </div>
           <div className="text-orange-700 text-[10px]">Deliver cargo to boost infrastructure and happiness. Higher infrastructure = more income. Max 10T per delivery.</div>
-          {state.ship.cargo.length === 0 ? (
+          {(state.ship?.cargo || []).length === 0 ? (
             <div className="text-orange-700 text-xs text-center py-2">No cargo in hold. Purchase goods at a station market.</div>
           ) : (
             <div className="space-y-1 max-h-48 overflow-y-auto">
-              {state.ship.cargo.map(item => {
+              {(state.ship?.cargo || []).map(item => {
                 const comm = COMMODITY_MAP[item.commodity];
                 const effect = comm ? DELIVERY_EFFECTS[comm.category] : null;
                 return (

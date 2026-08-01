@@ -22,7 +22,7 @@ export default function StationScreen({ onNavigate }) {
   }
 
   const isSandbox = state.saveMode === 'sandbox';
-  const fuelNeeded = state.ship.fuelCapacity - state.ship.fuel;
+  const fuelNeeded = (state.ship?.fuelCapacity ?? 0) - (state.ship?.fuel ?? 0);
   const refuelCost = isSandbox ? 0 : Math.ceil(refuelAmount * 50);
   const fullRefuelCost = isSandbox ? 0 : Math.ceil(fuelNeeded * 50);
   const outfittingLevelIndex = Math.max(0, Math.min(4, getOutfittingLevel(state.currentSystem, systemData, isSandbox) - 1));
@@ -64,12 +64,12 @@ export default function StationScreen({ onNavigate }) {
             <p className="text-orange-600 text-sm">{stationTypeNames[station.type]}</p>
             <p className="text-orange-700 text-xs mt-1">ORBITING: {station.parentName}</p>
             <p className="text-orange-700 text-xs">ECONOMY: {station.economy.name}</p>
-            <p className="text-orange-700 text-xs">DISTANCE FROM STAR: {station.distanceFromStar.toFixed(1)} LS</p>
+            <p className="text-orange-700 text-xs">DISTANCE FROM STAR: {(station.distanceFromStar ?? 0).toFixed(1)} LS</p>
           </div>
           <div className="text-right">
             <p className="text-orange-700 text-xs uppercase">System</p>
-            <p className="text-orange-400 text-sm">{state.currentSystem.name}</p>
-            <p className="text-orange-700 text-xs capitalize">{state.currentSystem.security} Security</p>
+            <p className="text-orange-400 text-sm">{state.currentSystem?.name || '---'}</p>
+            <p className="text-orange-700 text-xs capitalize">{state.currentSystem?.security || 'unknown'} Security</p>
           </div>
         </div>
       </div>
@@ -108,7 +108,7 @@ export default function StationScreen({ onNavigate }) {
         <div className="text-xs space-y-1">
           <div className="text-orange-600">TECH LEVEL: <span className="text-orange-300">{outfittingLevel.name} ({outfittingLevelIndex + 1}/5)</span></div>
           <div className="text-orange-700 text-[10px]">{outfittingLevel.desc}</div>
-          <div className="text-orange-600 mt-1">SHIPYARD STOCK: <span className="text-orange-300">{state.currentSystem.population > 1000000000 ? 'Full Catalogue' : state.currentSystem.population > 1000000 ? 'Standard Range' : state.currentSystem.population > 0 ? 'Limited Selection' : 'Basic Vessels Only'}</span></div>
+          <div className="text-orange-600 mt-1">SHIPYARD STOCK: <span className="text-orange-300">{(state.currentSystem?.population || 0) > 1000000000 ? 'Full Catalogue' : (state.currentSystem?.population || 0) > 1000000 ? 'Standard Range' : (state.currentSystem?.population || 0) > 0 ? 'Limited Selection' : 'Basic Vessels Only'}</span></div>
         </div>
       </div>
 
@@ -120,7 +120,7 @@ export default function StationScreen({ onNavigate }) {
             <h3 className="text-orange-400 text-sm font-bold uppercase">Refueling Service</h3>
           </div>
           <div className="flex items-center gap-3 text-xs">
-            <div className="text-orange-600">FUEL: <span className="text-orange-300">{state.ship.fuel.toFixed(1)}/{state.ship.fuelCapacity}</span></div>
+            <div className="text-orange-600">FUEL: <span className="text-orange-300">{(state.ship?.fuel ?? 0).toFixed(1)}/{state.ship?.fuelCapacity ?? 0}</span></div>
             <div className="text-orange-600">COST: <span className="text-orange-300">50 CR/T</span></div>
           </div>
           <div className="flex items-center gap-2 mt-2">
@@ -158,7 +158,7 @@ export default function StationScreen({ onNavigate }) {
 
       {/* Repair panel */}
       {station.services.repair && (() => {
-        const integrity = state.ship.integrity ?? 100;
+        const integrity = state.ship?.integrity ?? 100;
         const damage = 100 - integrity;
         const repairCost = isSandbox ? 0 : Math.ceil(damage * 10000);
         const intColor = integrity > 70 ? 'text-green-500' : integrity > 30 ? 'text-yellow-500' : 'text-red-500';

@@ -7,7 +7,7 @@ import { Package, Fuel, Ship as ShipIcon, Map, Trash2, ShoppingBag, Wrench } fro
 export default function ShipPanel({ onNavigate }) {
   const { state, buyShip, addCredits, removeCargo, refuel } = useGameState();
   const [tab, setTab] = useState('overview');
-  const currentShip = SHIP_MAP[state.ship.type];
+  const currentShip = SHIP_MAP[state.ship?.type] || SHIP_MAP['sidewinder'];
 
   const tabs = [
     { id: 'overview', label: 'Overview', icon: ShipIcon },
@@ -23,7 +23,7 @@ export default function ShipPanel({ onNavigate }) {
       <div className="border-b border-orange-900 p-3 flex items-center gap-3">
         <ShipIcon className="w-5 h-5 text-orange-500" />
         <div>
-          <h2 className="text-orange-300 font-bold text-sm">{state.ship.name}</h2>
+          <h2 className="text-orange-300 font-bold text-sm">{state.ship?.name || 'Unknown Vessel'}</h2>
           <p className="text-orange-700 text-xs">{currentShip?.manufacturer} · Class {currentShip?.class}</p>
         </div>
       </div>
@@ -50,11 +50,11 @@ export default function ShipPanel({ onNavigate }) {
       </div>
 
       <div className="flex-1 overflow-y-auto p-4">
-        {tab === 'overview' && <ShipOverview ship={state.ship} shipType={currentShip} />}
-        {tab === 'cargo' && <CargoHold cargo={state.ship.cargo} onJettison={(id, qty) => removeCargo(id, qty)} />}
+        {tab === 'overview' && <ShipOverview ship={state.ship || {}} shipType={currentShip} />}
+        {tab === 'cargo' && <CargoHold cargo={state.ship?.cargo || []} onJettison={(id, qty) => removeCargo(id, qty)} />}
         {tab === 'shipyard' && (
           <Shipyard
-            currentShip={state.ship.type}
+            currentShip={state.ship?.type}
             credits={state.credits}
             isDocked={state.currentLocation === 'station'}
             onBuy={(id) => buyShip(id)}

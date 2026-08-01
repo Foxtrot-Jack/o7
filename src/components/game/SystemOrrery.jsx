@@ -701,8 +701,8 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
   }, []);
 
   const getShipSpeed = () => {
-    const shipType = SHIP_MAP[state.ship.type];
-    const shipClass = shipType?.class || (state.ship.type === 'custom' ? 2 : 1);
+    const shipType = SHIP_MAP[state.ship?.type];
+    const shipClass = shipType?.class || (state.ship?.type === 'custom' ? 2 : 1);
     return Math.max(4, 12 - shipClass * 2);
   };
 
@@ -727,7 +727,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
     };
     setTravelInfo({ target: station.name, type: 'Docking', progress: 0 });
     setSelectedStation(null);
-  }, [dockAtStation, state.ship.type]);
+  }, [dockAtStation, state.ship?.type]);
 
   const handleTravelToBody = useCallback((body) => {
     const entry = bodyMeshesRef.current.find(bm => bm.body.id === body.id);
@@ -744,7 +744,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
       onComplete: null,
     };
     setTravelInfo({ target: body.name || body.designation, type: 'In Transit', progress: 0 });
-  }, [state.ship.type]);
+  }, [state.ship?.type]);
 
   const handleScan = useCallback(() => {
     if (!selectedBody) return;
@@ -762,9 +762,9 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
       <div ref={mountRef} className="w-full h-full" style={{ touchAction: 'none' }} />
 
       {/* FSS scan prompt */}
-      {state.currentLocation !== 'station' && !state.fssScannedSystems?.[state.currentSystem.seed] && !selectedBody && fssDismissedSeed !== state.currentSystem.seed && (
+      {state.currentLocation !== 'station' && !state.fssScannedSystems?.[state.currentSystem?.seed] && !selectedBody && fssDismissedSeed !== state.currentSystem?.seed && (
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 border border-cyan-700 bg-black/95 p-4 text-center text-xs space-y-2 z-30">
-          <button onClick={() => setFssDismissedSeed(state.currentSystem.seed)} className="absolute top-1 right-1 text-cyan-700 hover:text-cyan-400 text-[10px]">✕</button>
+          <button onClick={() => setFssDismissedSeed(state.currentSystem?.seed)} className="absolute top-1 right-1 text-cyan-700 hover:text-cyan-400 text-[10px]">✕</button>
           <div className="text-cyan-300 font-bold uppercase">FSS Discovery Scanner</div>
           <div className="text-cyan-600 text-[10px] max-w-48">Run a Full Spectrum System scan to discover all stellar bodies in this system.</div>
           <button onClick={() => onNavigate('fss')} className="px-4 py-2 border border-cyan-500 text-cyan-300 hover:bg-cyan-950/30 text-xs font-bold">
@@ -775,9 +775,9 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
 
       {/* Fuel scoop indicator */}
       {state.currentLocation !== 'station' && (() => {
-        const modules = state.ship.modules || {};
+        const modules = state.ship?.modules || {};
         const hasScoop = Object.values(modules).some(id => typeof id === 'string' && id.startsWith('fsc_'));
-        if (hasScoop && state.ship.fuel < state.ship.fuelCapacity) {
+        if (hasScoop && (state.ship?.fuel ?? 0) < (state.ship?.fuelCapacity ?? 0)) {
           return (
             <div className="absolute top-14 right-44 sm:right-56 border border-cyan-700 bg-black/95 px-3 py-1 text-[10px] text-cyan-500 z-30">
               ⚡ FUEL SCOOP READY
@@ -821,7 +821,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
 
       {/* System info - top left */}
       <div className="absolute top-2 left-2 text-xs space-y-0.5 pointer-events-none">
-        <div className="text-orange-300 font-bold">{state.currentSystem.name}</div>
+        <div className="text-orange-300 font-bold">{state.currentSystem?.name || '---'}</div>
         {!state.settings?.miniScreen && (
           <>
             <div className="text-orange-600">FACTION: {systemData.faction}</div>
@@ -866,7 +866,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
           <div className="text-green-500 font-bold uppercase text-[10px] border-b border-green-900 pb-1">
             Available Stations — Request Docking
           </div>
-          {state.activeMissions?.some(m => m.destinationSystem?.seed === state.currentSystem.seed) && (
+          {state.activeMissions?.some(m => m.destinationSystem?.seed === state.currentSystem?.seed) && (
             <div className="flex items-center gap-1.5 text-yellow-400 text-[10px] border border-yellow-900 bg-yellow-950/20 px-2 py-1">
               <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse" />
               ◉ MISSION TARGET SYSTEM

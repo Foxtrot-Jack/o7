@@ -28,10 +28,10 @@ export default function OutfittingScreen() {
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [engineeringSlot, setEngineeringSlot] = useState(null);
 
-  const shipType = SHIP_MAP[state.ship.type];
-  const slots = SHIP_SLOTS[state.ship.type];
-  const modules = state.ship.modules || getDefaultModules(state.ship.type);
-  const stats = useMemo(() => computeShipStats(state.ship.type, modules), [state.ship.type, modules]);
+  const shipType = SHIP_MAP[state.ship?.type];
+  const slots = SHIP_SLOTS[state.ship?.type];
+  const modules = state.ship?.modules || getDefaultModules(state.ship?.type);
+  const stats = useMemo(() => computeShipStats(state.ship?.type, modules), [state.ship?.type, modules]);
   const isDocked = state.currentLocation === 'station';
 
   if (!slots) {
@@ -51,8 +51,8 @@ export default function OutfittingScreen() {
       return;
     }
     if (!isSb && netCost !== 0) addCredits(-netCost);
-    const newModules = { ...(state.ship.modules || modules), [slotKey]: moduleId };
-    const newStats = computeShipStats(state.ship.type, newModules);
+    const newModules = { ...(state.ship?.modules || modules), [slotKey]: moduleId };
+    const newStats = computeShipStats(state.ship?.type, newModules);
     update(prev => ({
       ...prev,
       ship: { ...prev.ship, modules: newModules, cargoCapacity: newStats.cargoCapacity, fuelCapacity: newStats.fuelCapacity },
@@ -68,7 +68,7 @@ export default function OutfittingScreen() {
     if (!isSb && refund > 0) addCredits(refund);
     const newModules = { ...modules };
     delete newModules[slotKey];
-    const newStats = computeShipStats(state.ship.type, newModules);
+    const newStats = computeShipStats(state.ship?.type, newModules);
     update(prev => ({
       ...prev,
       ship: { ...prev.ship, modules: newModules, cargoCapacity: newStats.cargoCapacity, fuelCapacity: newStats.fuelCapacity },
@@ -77,7 +77,7 @@ export default function OutfittingScreen() {
   };
 
   const applyEngineering = (slotKey, blueprintId, level) => {
-    const newModules = { ...(state.ship.modules || modules) };
+    const newModules = { ...(state.ship?.modules || modules) };
     if (!newModules.__engineering) newModules.__engineering = {};
     newModules.__engineering = { ...newModules.__engineering, [slotKey]: { blueprint: blueprintId, level } };
     update(prev => ({
@@ -92,7 +92,7 @@ export default function OutfittingScreen() {
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Wrench className="w-5 h-5 text-orange-500" />
-            <h2 className="text-orange-300 font-bold uppercase">Outfitting — {state.ship.name}</h2>
+            <h2 className="text-orange-300 font-bold uppercase">Outfitting — {state.ship?.name || 'Ship'}</h2>
           </div>
           <span className="text-orange-400 text-xs">{state.credits.toLocaleString()} CR</span>
         </div>

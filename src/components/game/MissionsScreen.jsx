@@ -145,7 +145,7 @@ export default function MissionsScreen() {
         return;
       }
     } else if (mission.commodity && mission.type !== MISSION_TYPES.EXPLORATION) {
-      const cargoItem = state.ship.cargo.find(c => c.commodity === mission.commodity);
+      const cargoItem = (state.ship?.cargo || []).find(c => c.commodity === mission.commodity);
       if (!cargoItem || cargoItem.qty < mission.qty) {
         alert(`REQUIRES ${mission.qty}T OF ${mission.commodityName.toUpperCase()}`);
         return;

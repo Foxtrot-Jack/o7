@@ -78,8 +78,8 @@ export default function MarketScreen() {
     });
   }, [station, systemData, state.totalJumps]);
 
-  const cargoUsed = state.ship.cargo.reduce((sum, c) => sum + c.qty, 0);
-  const cargoFree = state.ship.cargoCapacity - cargoUsed;
+  const cargoUsed = (state.ship?.cargo || []).reduce((sum, c) => sum + c.qty, 0);
+  const cargoFree = (state.ship?.cargoCapacity ?? 0) - cargoUsed;
 
   const handleBuy = (commodityId) => {
     const amount = tradeAmounts[commodityId] || 1;
@@ -100,7 +100,7 @@ export default function MarketScreen() {
     const amount = tradeAmounts[commodityId] || 1;
     const item = market.find(m => m.id === commodityId);
     if (!item) return;
-    const cargoItem = state.ship.cargo.find(c => c.commodity === commodityId);
+    const cargoItem = (state.ship?.cargo || []).find(c => c.commodity === commodityId);
     if (!cargoItem || amount > cargoItem.qty) { alert('INSUFFICIENT CARGO'); return; }
 
     const revenue = item.sellPrice * amount;
@@ -141,7 +141,7 @@ export default function MarketScreen() {
         </div>
         <div className="flex items-center gap-4">
           <span className="text-orange-600">CREDITS: <span className="text-orange-300">{state.credits.toLocaleString()} CR</span></span>
-          <span className="text-orange-600">CARGO: <span className="text-orange-300">{cargoUsed}/{state.ship.cargoCapacity} T</span></span>
+          <span className="text-orange-600">CARGO: <span className="text-orange-300">{cargoUsed}/{state.ship?.cargoCapacity ?? 0} T</span></span>
           <span className="text-orange-600">ECONOMY: <span className="text-orange-300">{station.economy.name}</span></span>
           <span className="text-orange-600">CYCLE: <span className="text-orange-300">{state.totalJumps}</span></span>
         </div>
@@ -183,7 +183,7 @@ export default function MarketScreen() {
           </thead>
           <tbody>
             {filteredMarket.map(item => {
-              const cargoItem = state.ship.cargo.find(c => c.commodity === item.id);
+              const cargoItem = (state.ship?.cargo || []).find(c => c.commodity === item.id);
               const cargoQty = cargoItem?.qty || 0;
               const supplyInfo = getLevelLabel(item.supply);
               const demandInfo = getLevelLabel(item.demand);
@@ -247,13 +247,13 @@ export default function MarketScreen() {
       </div>
 
       {/* Current cargo summary */}
-      {state.ship.cargo.length > 0 && (
+      {(state.ship?.cargo || []).length > 0 && (
         <div className="border-t border-orange-900 p-2">
           <div className="text-orange-700 text-[10px] uppercase mb-1 flex items-center gap-1">
             <Package className="w-3 h-3" /> Cargo Hold
           </div>
           <div className="flex flex-wrap gap-2">
-            {state.ship.cargo.map(c => {
+            {(state.ship?.cargo || []).map(c => {
               const comm = COMMODITY_MAP[c.commodity];
               return (
                 <div key={c.commodity} className="text-[10px] text-orange-500 border border-orange-900 px-2 py-0.5">

@@ -73,8 +73,8 @@ export default function MiningScreen() {
       // If it's a tradeable commodity, also add to cargo
       const comm = COMMODITY_MAP[prospect.materialId];
       if (comm && comm.category === 'Raw') {
-        const cargoUsed = state.ship.cargo.reduce((s, c) => s + c.qty, 0);
-        if (cargoUsed < state.ship.cargoCapacity) {
+        const cargoUsed = (state.ship?.cargo || []).reduce((s, c) => s + c.qty, 0);
+        if (cargoUsed < (state.ship?.cargoCapacity ?? 0)) {
           addCargo(prospect.materialId, Math.max(1, Math.floor(yieldQty)));
         }
       }
