@@ -17,6 +17,7 @@ export default function FSSScannerScreen() {
   const [tuneProgress, setTuneProgress] = useState(0);
   const [autoTuning, setAutoTuning] = useState(false);
   const [showCompletion, setShowCompletion] = useState(false);
+  const [tunerFreq, setTunerFreq] = useState(50);
   const intervalRef = useRef(null);
   const autoStopRef = useRef(false);
 
@@ -33,6 +34,23 @@ export default function FSSScannerScreen() {
   const progress = useMemo(() => getScanProgress(signals, discoveredIds), [signals, discoveredIds]);
   const isComplete = progress.found === progress.total && progress.total > 0;
   const alreadyComplete = state.fssScannedSystems?.[state.currentSystem?.seed];
+
+  // Find nearest undiscovered signal within lock threshold
+  const dialedSignal = useMemo(() => {
+    if (tuning || autoTuning) return null;
+    let nearest = null;
+    let nearestDist = Infinity;
+    for (const signal of signals) {
+      if (discoveredIds.has(signal.bodyId)) continue;
+      const dist = Math.abs(signal.frequency - tunerFreq);
+      if (dist < nearestDist) {
+        nearestDist = dist;
+        nearest = signal;
+      }
+    }
+    if (nearest && nearestDist <= 2.5) return nearest;
+    return null;
+  }, [signals, tunerFreq, discoveredIds, tuning, autoTuning]);
 
   useEffect(() => {
     return () => {
@@ -255,6 +273,14 @@ export default function FSSScannerScreen() {
             </>
           )}
 
+          {/* Tuner cursor */}
+          {!tuning && (
+            <div
+              className="absolute top-0 bottom-0 w-0.5 bg-orange-400/60"
+              style={{ left: `${tunerFreq}%` }}
+            />
+          )}
+
           {/* Empty state */}
           {signals.length === 0 && (
             <div className="absolute inset-0 flex items-center justify-center text-orange-800 text-[10px]">
@@ -268,7 +294,40 @@ export default function FSSScannerScreen() {
             ? `Resolving signal at ${tuning.frequency.toFixed(1)} Hz...`
             : autoTuning
               ? 'Auto-tuning in progress...'
-              : 'Tap a signal peak to tune and resolve the body.'}
+              : 'Slide to scrub the spectrum, lock onto a signal, then scan.'}
+        </div>
+
+        {/* Tuner slider + scan button */}
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between text-[9px]">
+            <span className="text-orange-700 uppercase">Freq Tuner</span>
+            <span className={dialedSignal ? 'text-cyan-400 font-bold' : 'text-orange-700'}>
+              {tunerFreq.toFixed(1)} Hz
+            </span>
+          </div>
+          <input
+            type="range"
+            min="0"
+            max="100"
+            step="0.5"
+            value={tunerFreq}
+            onChange={(e) => setTunerFreq(parseFloat(e.target.value))}
+            className="w-full"
+            disabled={tuning || autoTuning}
+          />
+          <button
+            onClick={() => dialedSignal && handleTune(dialedSignal)}
+            disabled={!dialedSignal || tuning || autoTuning}
+            className={`w-full py-2 border text-[10px] font-bold transition-all ${
+              dialedSignal && !tuning && !autoTuning
+                ? 'border-cyan-500 text-cyan-300 hover:bg-cyan-950/30 animate-pulse'
+                : 'border-orange-900 text-orange-800'
+            }`}
+          >
+            {dialedSignal
+              ? '◉ SIGNAL LOCKED — INITIATE SCAN'
+              : '... SEARCHING FOR SIGNAL ...'}
+          </button>
         </div>
       </div>
 

@@ -14,7 +14,7 @@ const POI_ICONS = {
 };
 
 export default function SRVRover({ onNavigate }) {
-  const { state, getSystemData, addMaterial, addCredits, departSurface } = useGameState();
+  const { state, getSystemData, addMaterial, addCredits } = useGameState();
   const [scanning, setScanning] = useState(null);
   const [collected, setCollected] = useState({});
   const [driving, setDriving] = useState(false);
@@ -45,7 +45,7 @@ export default function SRVRover({ onNavigate }) {
         <Rocket className="w-8 h-8 mx-auto mb-2 opacity-50" />
         <p>No Planetary Vehicle Hangar installed.</p>
         <p className="text-orange-700 text-xs mt-1">Install an SRV hangar at an Outfitting bay to deploy a surface rover.</p>
-        <button onClick={() => onNavigate && onNavigate('system')} className="mt-3 px-4 py-2 border border-orange-500 text-orange-300 hover:bg-orange-950/50 text-xs font-bold">RETURN TO ORBIT</button>
+        <button onClick={() => onNavigate && onNavigate('survey')} className="mt-3 px-4 py-2 border border-orange-500 text-orange-300 hover:bg-orange-950/50 text-xs font-bold">◀ BACK TO SURVEY</button>
       </div>
     );
   }
@@ -142,10 +142,10 @@ export default function SRVRover({ onNavigate }) {
       </div>
 
       <button
-        onClick={() => { departSurface(); if (onNavigate) onNavigate('system'); }}
+        onClick={() => { if (onNavigate) onNavigate('survey'); }}
         className="w-full py-2.5 border border-orange-500 text-orange-300 hover:bg-orange-950/50 text-xs font-bold"
       >
-        ↑ RECALL SRV — DEPART FROM SURFACE
+        ↑ RECALL SRV
       </button>
     </div>
   );
