@@ -38,7 +38,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
   const lastTimeRef = useRef(0);
   const gridRef = useRef(null);
 
-  const { state, getSystemData, scanBody, dockAtStation, fssScanSystem, mapBody, landOnBody, refuel } = useGameState();
+  const { state, getSystemData, scanBody, dockAtStation, fssScanSystem, mapBody, landOnBody, refuel, addCargo, addMaterial } = useGameState();
   const [selectedBody, setSelectedBody] = useState(null);
   const [hoveredBody, setHoveredBody] = useState(null);
   const [bodiesCollapsed, setBodiesCollapsed] = useState(state.settings?.miniScreen || false);
@@ -47,6 +47,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
   const [orbitingBodyId, setOrbitingBodyId] = useState(null);
   const [fssDismissedSeed, setFssDismissedSeed] = useState(null);
   const [scoopActive, setScoopActive] = useState(false);
+  const [miningHotspotId, setMiningHotspotId] = useState(null);
 
   // Player-owned colonies and stations in this system — shown in the body list
   const playerStructures = useMemo(() => {
@@ -864,6 +865,19 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
     scanBody(selectedBody);
   }, [selectedBody, scanBody]);
 
+  const handleMineHotspot = useCallback((hs) => {
+    const cargoUsed = (state.ship?.cargo || []).reduce((s, c) => s + c.qty, 0);
+    const cargoCapacity = state.ship?.cargoCapacity ?? 0;
+    if (cargoUsed >= cargoCapacity) return;
+    setMiningHotspotId(hs.id);
+    setTimeout(() => {
+      const yieldQty = Math.max(1, Math.round((1 + Math.random() * 3) * 10) / 10);
+      addMaterial(hs.materialId, yieldQty);
+      addCargo(hs.materialId, Math.floor(yieldQty));
+      setMiningHotspotId(null);
+    }, 1500);
+  }, [state.ship, addCargo, addMaterial]);
+
   const isScanned = selectedBody && state.scannedBodies[selectedBody.id];
 
   // ---- FUEL SCOOPING ----
@@ -1126,12 +1140,29 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
               <>
                 <div>TYPE: <span className="text-orange-300 capitalize">{selectedBody.ringType || 'rocky'} Ring</span></div>
                 <div>HOTSPOTS: <span className="text-orange-300">{selectedBody.hotspots?.length || 0}</span></div>
-                {selectedBody.hotspots?.map(hs => (
-                  <div key={hs.id} className="text-amber-500 flex items-center gap-1">
-                    <span>💎</span>
-                    <span>{COMMODITY_MAP[hs.materialId]?.name || hs.materialId} — Hotspot</span>
-                  </div>
-                ))}
+                {selectedBody.hotspots?.map(hs => {
+                  const inOrbit = orbitingBodyId === selectedBody.parent;
+                  const matName = COMMODITY_MAP[hs.materialId]?.name || hs.materialId;
+                  const isMining = miningHotspotId === hs.id;
+                  return (
+                    <button
+                      key={hs.id}
+                      onClick={() => handleMineHotspot(hs)}
+                      disabled={!inOrbit || isMining}
+                      className={`w-full flex items-center gap-1 py-0.5 px-1 text-[10px] border transition-all ${
+                        inOrbit
+                          ? 'border-amber-700 text-amber-400 hover:bg-amber-950/30 disabled:opacity-50'
+                          : 'border-transparent text-amber-600'
+                      }`}
+                    >
+                      <span>💎</span>
+                      <span className="flex-1 text-left">{matName} — Hotspot</span>
+                      {inOrbit && (
+                        <span className="text-amber-700">{isMining ? '...' : '[MINE]'}</span>
+                      )}
+                    </button>
+                  );
+                })}
               </>
             )}
           </div>

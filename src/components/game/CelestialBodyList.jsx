@@ -221,15 +221,14 @@ function BodyNode({ node, depth, stations, selectedBody, selectedStation, onSele
           ))}
           {/* Ring mining hotspots — revealed when parent planet is scanned */}
           {ringHotspots.map(hs => (
-            <button
+            <div
               key={hs.id}
-              onClick={() => onSelectBody(body)}
-              className="w-full text-left flex items-center gap-1 py-0.5 text-[10px] border border-transparent text-amber-600 hover:text-amber-400 hover:border-amber-900"
+              className="w-full text-left flex items-center gap-1 py-0.5 text-[10px] text-amber-600"
               style={{ paddingLeft: indent + 16 }}
             >
               <span className="text-amber-800">💎</span>
               <span className="truncate">{COMMODITY_MAP[hs.materialId]?.name || hs.materialId} — Hotspot</span>
-            </button>
+            </div>
           ))}
         </div>
       )}
