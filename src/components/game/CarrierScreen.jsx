@@ -2,13 +2,14 @@
 import React, { useState } from 'react';
 import { useGameState, SHIP_MAP } from '@/lib/gameState';
 import { generateStarsInRange, distance3D } from '@/lib/galaxy';
+import { generateSystem } from '@/lib/system';
 import { Rocket, Fuel, Banknote, Plus, Edit2, Check, Anchor, Trash2 } from 'lucide-react';
 
 const CARRIER_COST = 5000000000;
 const MAX_CARRIERS = 5;
 
 export default function CarrierScreen({ onNavigate }) {
-  const { state, buyFleetCarrier, jumpCarrier, renameCarrier, decommissionCarrier } = useGameState();
+  const { state, update, buyFleetCarrier, jumpCarrier, renameCarrier, decommissionCarrier } = useGameState();
   const [showBuy, setShowBuy] = useState(false);
   const [carrierName, setCarrierName] = useState('');
   const [editingId, setEditingId] = useState(null);
@@ -29,15 +30,21 @@ export default function CarrierScreen({ onNavigate }) {
     setEditingId(null);
   };
 
-  const startJump = (carrier) => {
+  const startJump = (carrier, mode = 'full') => {
     const cs = carrier.system || state.currentSystem;
+    if (mode === 'micro') {
+      const sysData = generateSystem(cs.seed, cs.starClass, cs.population);
+      const stations = (sysData.stations || []).map(s => ({ ...s, isStation: true }));
+      setJumpState({ carrierId: carrier.id, targets: stations, mode: 'micro' });
+      return;
+    }
     const stars = generateStarsInRange(cs.x, cs.y, cs.z, 500);
     const targets = stars
       .map(s => ({ ...s, distance: distance3D({ x: cs.x, y: cs.y, z: cs.z }, { x: s.x, y: s.y, z: s.z }) }))
       .filter(s => s.distance > 1 && s.distance <= 500)
       .sort((a, b) => a.distance - b.distance)
       .slice(0, 20);
-    setJumpState({ carrierId: carrier.id, targets });
+    setJumpState({ carrierId: carrier.id, targets, mode: 'full' });
   };
 
   return (
@@ -128,12 +135,20 @@ export default function CarrierScreen({ onNavigate }) {
                     <div className="space-y-2">
                       <div className="flex gap-1">
                         <button onClick={() => startJump(c, 'full')} className={`flex-1 py-1 border text-[10px] ${jumpState.mode === 'micro' ? 'border-orange-900 text-orange-700' : 'border-cyan-600 text-cyan-400'}`}>FULL 500 LY</button>
-                        <button onClick={() => startJump(c, 'micro')} className={`flex-1 py-1 border text-[10px] ${jumpState.mode === 'micro' ? 'border-cyan-600 text-cyan-400' : 'border-orange-900 text-orange-700'}`}>MICRO 50 LY</button>
+                        <button onClick={() => startJump(c, 'micro')} className={`flex-1 py-1 border text-[10px] ${jumpState.mode === 'micro' ? 'border-cyan-600 text-cyan-400' : 'border-orange-900 text-orange-700'}`}>MICRO IN-SYS</button>
                       </div>
-                      <div className="text-orange-400 text-xs font-bold">Select Jump Destination ({jumpState.mode === 'micro' ? '50' : '500'} LY max)</div>
+                      <div className="text-orange-400 text-xs font-bold">{jumpState.mode === 'micro' ? 'Select Station to Reposition (1 T tritium)' : 'Select Jump Destination (500 LY max)'}</div>
                       <div className="max-h-40 overflow-y-auto space-y-1">
-                        {jumpState.targets.length === 0 && <div className="text-orange-700 text-[10px] text-center py-2">No systems in range</div>}
+                        {jumpState.targets.length === 0 && <div className="text-orange-700 text-[10px] text-center py-2">{jumpState.mode === 'micro' ? 'No stations in this system' : 'No systems in range'}</div>}
                         {jumpState.targets.map(sys => {
+                          if (jumpState.mode === 'micro') {
+                            const isCurrent = c.dockStationId === sys.id;
+                            return (
+                              <button key={sys.id} onClick={() => { update(prev => ({ ...prev, fleetCarriers: prev.fleetCarriers.map(fc => fc.id === c.id ? { ...fc, dockStationId: sys.id, dockStationName: sys.name, tritium: Math.max(0, fc.tritium - 1) } : fc) })); setJumpState(null); }} disabled={!isSandbox && c.tritium < 1 || isCurrent} className="w-full flex justify-between border border-orange-900 p-1.5 text-xs hover:border-orange-700 disabled:opacity-30">
+                                <span className="text-orange-400">{sys.name}{isCurrent ? ' ◆' : ''}</span><span className="text-orange-600">{sys.isOrbital ? 'Orbital' : 'Surface'} · 1T</span>
+                              </button>
+                            );
+                          }
                           const tc = Math.ceil(sys.distance / 10);
                           return (
                             <button key={sys.seed} onClick={() => { jumpCarrier(c.id, sys); setJumpState(null); }} disabled={!isSandbox && c.tritium < tc} className="w-full flex justify-between border border-orange-900 p-1.5 text-xs hover:border-orange-700 disabled:opacity-30">
@@ -147,7 +162,7 @@ export default function CarrierScreen({ onNavigate }) {
                   ) : (
                     <div className="flex gap-1">
                       <button onClick={() => startJump(c, 'full')} disabled={!isSandbox && c.tritium < 5} className="flex-1 py-1.5 border border-orange-500 text-orange-300 hover:bg-orange-950/50 text-[10px] font-bold disabled:opacity-30">JUMP 500 LY</button>
-                      <button onClick={() => startJump(c, 'micro')} disabled={!isSandbox && c.tritium < 1} className="flex-1 py-1.5 border border-cyan-600 text-cyan-400 hover:bg-cyan-950/30 text-[10px] font-bold disabled:opacity-30">MICRO 50 LY</button>
+                      <button onClick={() => startJump(c, 'micro')} disabled={!isSandbox && c.tritium < 1} className="flex-1 py-1.5 border border-cyan-600 text-cyan-400 hover:bg-cyan-950/30 text-[10px] font-bold disabled:opacity-30">MICRO IN-SYS</button>
                     </div>
                   )}
                 </div>
