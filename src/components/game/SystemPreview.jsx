@@ -3,7 +3,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import * as THREE from 'three';
 import { generateSystem, BODY_TYPES } from '@/lib/system';
 
-export default function SystemPreview({ star }) {
+export default function SystemPreview({ star, fullScreen = false }) {
   const mountRef = useRef(null);
   const sceneRef = useRef(null);
   const rendererRef = useRef(null);
@@ -24,7 +24,7 @@ export default function SystemPreview({ star }) {
     setStarCount(systemData.stars.length);
 
     const width = mountRef.current.clientWidth;
-    const height = 160;
+    const height = fullScreen ? Math.max(200, mountRef.current.clientHeight || window.innerHeight - 60) : 160;
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x000000);
@@ -148,7 +148,7 @@ export default function SystemPreview({ star }) {
         <span>System Preview</span>
         <span>{starCount > 1 ? `${starCount} stars · ` : ''}{bodyCount ?? '?'} bodies</span>
       </div>
-      <div ref={mountRef} className="w-full" style={{ height: '160px', touchAction: 'none' }} />
+      <div ref={mountRef} className="w-full" style={{ height: fullScreen ? 'calc(100vh - 60px)' : '160px', touchAction: 'none' }} />
     </div>
   );
 }

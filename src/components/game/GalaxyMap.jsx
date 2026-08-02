@@ -42,6 +42,7 @@ export default function GalaxyMap({ onJumpToSystem }) {
   const [overviewBrightness, setOverviewBrightness] = useState(80);
   const [showGrid, setShowGrid] = useState(false);
   const [showLegend, setShowLegend] = useState(false);
+  const [showOrrery, setShowOrrery] = useState(false);
   const [routeResult, setRouteResult] = useState(null);
   const [plottingRoute, setPlottingRoute] = useState(false);
   const brightnessRef = useRef({ star: 100, trail: 40, overview: 80 });
@@ -932,7 +933,19 @@ export default function GalaxyMap({ onJumpToSystem }) {
             <div>POPULATION: <span className="text-orange-300">{selectedStar.population > 0 ? selectedStar.population.toLocaleString() : 'Uninhabited'}</span></div>
             <div>REGION: <span className="text-orange-300">{getRegionName(selectedStar.x, selectedStar.y, selectedStar.z)}</span></div>
           </div>
-          <SystemPreview star={selectedStar} />
+          {/* Orrery preview — requires prior visit */}
+          {(() => {
+            const visited = !!state.discoveredSystems?.[selectedStar.seed];
+            return (
+              <button
+                onClick={() => visited && setShowOrrery(true)}
+                disabled={!visited}
+                className={`w-full py-1.5 border text-[10px] font-bold ${visited ? 'border-cyan-500 text-cyan-300 hover:bg-cyan-950/30' : 'border-orange-900 text-orange-800 cursor-not-allowed opacity-50'}`}
+              >
+                {visited ? '⊕ VIEW SYSTEM ORRERY' : '⊕ ORRERY — SYSTEM NOT VISITED'}
+              </button>
+            );
+          })()}
           {/* Route plotting */}
           {plottingRoute ? (
             <div className="border border-cyan-900 bg-black/50 p-2 text-center text-cyan-500 text-[10px] animate-pulse">PLOTTING ROUTE...</div>
@@ -985,6 +998,19 @@ export default function GalaxyMap({ onJumpToSystem }) {
           >
             {fuelCheat ? `⚡ JUMP TO ${selectedStar.name.toUpperCase()}` : fuelCost > state.ship.fuel ? 'INSUFFICIENT FUEL' : `ENGAGE FSD — JUMP TO ${selectedStar.name.toUpperCase()}`}
           </button>
+        </div>
+      )}
+
+      {/* Full-screen orrery preview */}
+      {showOrrery && selectedStar && (
+        <div className="fixed inset-0 z-50 bg-black flex flex-col">
+          <div className="flex items-center justify-between border-b border-orange-700 bg-black/90 px-3 py-2">
+            <span className="text-orange-300 font-bold text-sm">{selectedStar.name} — System Orrery</span>
+            <button onClick={() => setShowOrrery(false)} className="px-3 py-1 border border-orange-500 text-orange-300 hover:bg-orange-950/50 text-xs font-bold">← BACK TO GALAXY</button>
+          </div>
+          <div className="flex-1 overflow-hidden">
+            <SystemPreview star={selectedStar} fullScreen />
+          </div>
         </div>
       )}
     </div>
