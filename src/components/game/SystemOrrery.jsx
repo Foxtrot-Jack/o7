@@ -1128,33 +1128,27 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
               </>
             )}
           </div>
-          {/* Mining panel — only shown when orbiting a minable body */}
+          {/* Mining panel — space mining only (rings & asteroid belts) */}
           {(() => {
             const isMinable = selectedBody.type === BODY_TYPES.RING ||
-              selectedBody.type === BODY_TYPES.BELT ||
-              (selectedBody.type === BODY_TYPES.PLANET && selectedBody.landable);
+              selectedBody.type === BODY_TYPES.BELT;
             if (!isMinable || !selectedBody.materials || selectedBody.materials.length === 0) return null;
             const isRing = selectedBody.type === BODY_TYPES.RING;
             const inOrbit = isRing
               ? orbitingBodyId === selectedBody.parent
               : orbitingBodyId === selectedBody.id;
             if (!inOrbit) return null;
-            // Landable planets require probe scan completion before revealing mining sites
-            const needsProbes = selectedBody.type === BODY_TYPES.PLANET && selectedBody.landable;
-            const isMapped = state.mappedBodies?.[selectedBody.id]?.mapped || state.probeProgress?.[selectedBody.id]?.complete;
-            if (needsProbes && !isMapped) {
-              return (
-                <div className="border-t border-orange-900 pt-1 space-y-1">
-                  <div className="text-orange-700 text-[10px] uppercase">Mining</div>
-                  <div className="text-cyan-700 text-[10px] text-center py-1">⚠ SURFACE SCAN REQUIRED — Launch probes to reveal mining sites</div>
-                </div>
-              );
-            }
             const miningBody = isRing
               ? { ...selectedBody, _parentName: systemData.bodies.find(b => b.id === selectedBody.parent)?.designation }
               : selectedBody;
             return <MiningPanel body={miningBody} />;
           })()}
+          {/* Surface deposits — require SRV (land first) */}
+          {selectedBody.type === BODY_TYPES.PLANET && selectedBody.landable && selectedBody.materials?.length > 0 && orbitingBodyId === selectedBody.id && (
+            <div className="border-t border-orange-900 pt-1">
+              <div className="text-cyan-700 text-[10px] text-center py-1">⚠ SURFACE DEPOSITS — LAND AND DEPLOY SRV TO MINE</div>
+            </div>
+          )}
           <div className="flex items-center gap-2 pt-1">
             {isScanned ? (
               <span className="text-green-500 text-[10px]">✓ SCANNED — VALUE: {selectedBody.scanValue?.toLocaleString()} CR</span>

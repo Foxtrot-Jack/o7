@@ -34,7 +34,6 @@ export default function MiningScreen({ onNavigate }) {
       const isMinableType =
         b.type === BODY_TYPES.BELT ||
         b.type === BODY_TYPES.ASTEROID ||
-        (b.type === BODY_TYPES.PLANET && b.landable) ||
         b.type === BODY_TYPES.RING;
       return isMinableType;
     });
