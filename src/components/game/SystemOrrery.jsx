@@ -1124,20 +1124,38 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
               </>
             )}
           </div>
-          {selectedBody.materials && selectedBody.materials.length > 0 && (isScanned || selectedBody.type === BODY_TYPES.RING || selectedBody.type === BODY_TYPES.BELT) && (
-            <div className="border-t border-orange-900 pt-1">
-              <div className="text-orange-700 text-[10px] uppercase mb-1">
-                {selectedBody.type === BODY_TYPES.RING ? 'Ring Mining Locations' : selectedBody.type === BODY_TYPES.BELT ? 'Asteroid Materials' : 'Surface Materials'}
+          {/* Mining info & button — only shown when orbiting this body */}
+          {(() => {
+            const isMinable = selectedBody.type === BODY_TYPES.RING ||
+              selectedBody.type === BODY_TYPES.BELT ||
+              (selectedBody.type === BODY_TYPES.PLANET && selectedBody.landable);
+            if (!isMinable || !selectedBody.materials || selectedBody.materials.length === 0) return null;
+            const isRing = selectedBody.type === BODY_TYPES.RING;
+            const inOrbit = isRing
+              ? orbitingBodyId === selectedBody.parent
+              : orbitingBodyId === selectedBody.id;
+            if (!inOrbit) return null;
+            return (
+              <div className="border-t border-orange-900 pt-1 space-y-1">
+                <div className="text-orange-700 text-[10px] uppercase mb-1">
+                  {selectedBody.type === BODY_TYPES.RING ? 'Ring Mining Locations' : selectedBody.type === BODY_TYPES.BELT ? 'Asteroid Materials' : 'Surface Materials'}
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {selectedBody.materials.slice(0, 8).map(m => (
+                    <span key={m.id} className="text-[10px] text-orange-500 border border-orange-900 px-1">
+                      {m.id} ({m.concentration.toFixed(1)}%)
+                    </span>
+                  ))}
+                </div>
+                <button
+                  onClick={() => onNavigate('mining')}
+                  className="w-full py-1.5 border border-orange-500 text-orange-300 hover:bg-orange-950/50 text-[10px] font-bold"
+                >
+                  ⛏ MINE — {selectedBody.materials.length} DEPOSITS
+                </button>
               </div>
-              <div className="flex flex-wrap gap-1">
-                {selectedBody.materials.slice(0, 8).map(m => (
-                  <span key={m.id} className="text-[10px] text-orange-500 border border-orange-900 px-1">
-                    {m.id} ({m.concentration.toFixed(1)}%)
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
+            );
+          })()}
           <div className="flex items-center gap-2 pt-1">
             {isScanned ? (
               <span className="text-green-500 text-[10px]">✓ SCANNED — VALUE: {selectedBody.scanValue?.toLocaleString()} CR</span>
@@ -1166,26 +1184,6 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
                 className="w-full py-1.5 border border-cyan-500 text-cyan-300 hover:bg-cyan-950/30 text-[10px] font-bold disabled:opacity-50"
               >
                 {travelInfo ? `TRAVELING — ${Math.round(travelInfo.progress * 100)}%` : '⚡ TRAVEL TO BODY'}
-              </button>
-            );
-          })()}
-          {/* Mining button for minable bodies with materials */}
-          {(() => {
-            const isMinable = selectedBody.type === BODY_TYPES.RING ||
-              selectedBody.type === BODY_TYPES.BELT ||
-              (selectedBody.type === BODY_TYPES.PLANET && selectedBody.landable);
-            if (!isMinable || !selectedBody.materials || selectedBody.materials.length === 0) return null;
-            const isRing = selectedBody.type === BODY_TYPES.RING;
-            const inOrbit = isRing
-              ? orbitingBodyId === selectedBody.parent
-              : orbitingBodyId === selectedBody.id;
-            if (!inOrbit) return null;
-            return (
-              <button
-                onClick={() => onNavigate('mining')}
-                className="w-full py-1.5 border border-orange-500 text-orange-300 hover:bg-orange-950/50 text-[10px] font-bold"
-              >
-                ⛏ MINE — {selectedBody.materials.length} DEPOSITS
               </button>
             );
           })()}
