@@ -5,6 +5,9 @@ import { generateStarsInRange, distance3D, getStarColor, GALACTIC_RADIUS, genera
 import { getRegionName } from '@/lib/regions';
 import { useGameState } from '@/lib/gameState';
 import { getHolidayFuelMultiplier } from '@/lib/publicHolidays';
+import { computeShipStats, getDefaultModules } from '@/lib/shipOutfitting';
+import { calculateRoute } from '@/lib/routeCalculator';
+import SystemPreview from './SystemPreview';
 
 export default function GalaxyMap({ onJumpToSystem }) {
   const mountRef = useRef(null);
@@ -25,7 +28,7 @@ export default function GalaxyMap({ onJumpToSystem }) {
   const raycasterRef = useRef(new THREE.Raycaster());
   const animationIdRef = useRef(null);
 
-  const { state, setCurrentSystem, addBookmark, removeBookmark } = useGameState();
+  const { state, setCurrentSystem, addBookmark, removeBookmark, plotRoute } = useGameState();
   const [selectedStar, setSelectedStar] = useState(null);
   const [stars, setStars] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -39,6 +42,8 @@ export default function GalaxyMap({ onJumpToSystem }) {
   const [overviewBrightness, setOverviewBrightness] = useState(80);
   const [showGrid, setShowGrid] = useState(false);
   const [showLegend, setShowLegend] = useState(false);
+  const [routeResult, setRouteResult] = useState(null);
+  const [plottingRoute, setPlottingRoute] = useState(false);
   const brightnessRef = useRef({ star: 100, trail: 40, overview: 80 });
   brightnessRef.current = { star: starBrightness, trail: trailBrightness, overview: overviewBrightness };
   const [galaxyViewMode, setGalaxyViewMode] = useState(false);
@@ -725,6 +730,21 @@ export default function GalaxyMap({ onJumpToSystem }) {
     : null;
 
   const fuelCost = selectedStar ? Math.ceil(parseFloat(jumpDistance) * (state.fsdBoost ? 0.25 : 0.5) * getHolidayFuelMultiplier()) : null;
+
+  const handlePlotRoute = useCallback(() => {
+    if (!selectedStar) return;
+    setPlottingRoute(true);
+    setRouteResult(null);
+    setTimeout(() => {
+      const modules = state.ship.modules || getDefaultModules(state.ship.type);
+      const stats = computeShipStats(state.ship.type, modules);
+      const jumpRange = Math.max(5, stats.jumpRange);
+      const route = calculateRoute(state.currentSystem, selectedStar, jumpRange, true);
+      setRouteResult(route);
+      setPlottingRoute(false);
+      if (plotRoute && route.length > 0) plotRoute(route);
+    }, 50);
+  }, [selectedStar, state.currentSystem, state.ship, plotRoute]);
   const fuelCheat = state.cheats?.unlocked && (state.cheats?.active?.instant_jumps || state.cheats?.active?.infinite_fuel);
   const galaxyFlip = state.cheats?.unlocked && state.cheats?.active?.galaxy_flip;
 
@@ -912,6 +932,38 @@ export default function GalaxyMap({ onJumpToSystem }) {
             <div>POPULATION: <span className="text-orange-300">{selectedStar.population > 0 ? selectedStar.population.toLocaleString() : 'Uninhabited'}</span></div>
             <div>REGION: <span className="text-orange-300">{getRegionName(selectedStar.x, selectedStar.y, selectedStar.z)}</span></div>
           </div>
+          <SystemPreview star={selectedStar} />
+          {/* Route plotting */}
+          {plottingRoute ? (
+            <div className="border border-cyan-900 bg-black/50 p-2 text-center text-cyan-500 text-[10px] animate-pulse">PLOTTING ROUTE...</div>
+          ) : routeResult ? (
+            <div className="border border-cyan-800 bg-black/50 p-2 text-[10px] space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-cyan-400 font-bold uppercase">Route Saved</span>
+                <button onClick={() => setRouteResult(null)} className="text-cyan-700 hover:text-cyan-400">✕</button>
+              </div>
+              <div className="grid grid-cols-3 gap-1 text-center">
+                <div><div className="text-orange-700">JUMPS</div><div className="text-orange-300">{routeResult.length}</div></div>
+                <div><div className="text-orange-700">DIST</div><div className="text-orange-300">{routeResult.reduce((s, j) => s + j.jumpDist, 0).toFixed(1)} LY</div></div>
+                <div><div className="text-orange-700">FUEL</div><div className="text-orange-300">{Math.ceil(routeResult.reduce((s, j) => s + j.jumpDist, 0) * 0.5)} T</div></div>
+              </div>
+              {routeResult.length > 0 && (
+                <div className="max-h-20 overflow-y-auto space-y-0.5">
+                  {routeResult.slice(0, 5).map((j, i) => (
+                    <div key={i} className="flex justify-between text-orange-600">
+                      <span>{i + 1}. {j.name}{j.fromNeutron ? ' ⚡' : ''}</span>
+                      <span>{j.jumpDist.toFixed(1)} LY</span>
+                    </div>
+                  ))}
+                  {routeResult.length > 5 && <div className="text-orange-800 text-center">+{routeResult.length - 5} more</div>}
+                </div>
+              )}
+            </div>
+          ) : (
+            <button onClick={handlePlotRoute} className="w-full py-1.5 border border-cyan-700 text-cyan-400 hover:bg-cyan-950/30 text-[10px] font-bold">
+              ⚭ PLOT ROUTE TO {selectedStar.name.toUpperCase()}
+            </button>
+          )}
           <button
             onClick={() => {
               const isBookmarked = state.bookmarkedSystems?.find(s => s.seed === selectedStar.seed);

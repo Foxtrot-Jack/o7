@@ -4,12 +4,8 @@ import React, { useState, useMemo } from 'react';
 import { useGameState, SHIP_MAP } from '@/lib/gameState';
 import { generateStarsInRange, distance3D, SOL_SYSTEM, COLONIA_SYSTEM, FAR_REACH_SYSTEM } from '@/lib/galaxy';
 import { computeShipStats, getDefaultModules } from '@/lib/shipOutfitting';
+import { calculateRoute } from '@/lib/routeCalculator';
 import { Route, Search, Zap, Navigation, AlertTriangle, Star, MapPin } from 'lucide-react';
-
-const CORRIDOR_WIDTH = 25;
-const SEGMENT_SIZE = 25;
-const MAX_SEGMENTS = 1000;
-const MAX_JUMPS = 2000;
 
 export default function RoutePlotter() {
   const { state, setCurrentSystem } = useGameState();
@@ -64,8 +60,7 @@ export default function RoutePlotter() {
   };
 
   const plotRoute = (start, end, range, neutron) => {
-    const corridorStars = generateCorridorStars(start, end);
-    const jumps = computeGreedyRoute(start, end, corridorStars, range, neutron);
+    const jumps = calculateRoute(start, end, range, neutron);
     setRoute(jumps);
   };
 
@@ -219,51 +214,4 @@ export default function RoutePlotter() {
       )}
     </div>
   );
-}
-
-function generateCorridorStars(start, end) {
-  const allStars = [];
-  const seen = new Set();
-  const totalDist = distance3D(start, end);
-  const numSegments = Math.min(Math.ceil(totalDist / SEGMENT_SIZE), MAX_SEGMENTS);
-  for (let i = 0; i <= numSegments; i++) {
-    const t = i / numSegments;
-    const cx = start.x + (end.x - start.x) * t;
-    const cy = start.y + (end.y - start.y) * t;
-    const cz = start.z + (end.z - start.z) * t;
-    const stars = generateStarsInRange(cx, cy, cz, CORRIDOR_WIDTH);
-    for (const star of stars) {
-      if (!seen.has(star.seed)) { seen.add(star.seed); allStars.push(star); }
-    }
-  }
-  return allStars;
-}
-
-function computeGreedyRoute(start, end, allStars, jumpRange, useNeutron) {
-  const route = [];
-  let pos = { ...start };
-  const dest = { x: end.x, y: end.y, z: end.z };
-  for (let i = 0; i < MAX_JUMPS; i++) {
-    const isNeutron = pos.starClass?.class === 'NS';
-    const effectiveRange = isNeutron && useNeutron ? jumpRange * 4 : jumpRange;
-    let best = null;
-    let bestRemaining = distance3D(pos, dest);
-    // Check if we can jump directly to destination
-    if (bestRemaining <= effectiveRange) {
-      route.push({ name: end.name, starClass: end.starClass, jumpDist: bestRemaining, fromNeutron: isNeutron && useNeutron });
-      return route;
-    }
-    // Find closest star to destination within range
-    for (const star of allStars) {
-      const jumpDist = distance3D(pos, star);
-      if (jumpDist > effectiveRange || jumpDist < 0.5) continue;
-      const remaining = distance3D(star, dest);
-      if (remaining < bestRemaining) { bestRemaining = remaining; best = star; }
-    }
-    if (!best) return route; // Stuck — no reachable star closer to destination
-    const jumpDist = distance3D(pos, best);
-    route.push({ name: best.name, starClass: best.starClass, x: best.x, y: best.y, z: best.z, jumpDist, fromNeutron: isNeutron && useNeutron });
-    pos = best;
-  }
-  return route;
 }

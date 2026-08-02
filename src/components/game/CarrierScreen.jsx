@@ -115,28 +115,42 @@ export default function CarrierScreen({ onNavigate }) {
                 </div>
 
                 {isHere && (
-                  <div className="border-t border-orange-900 pt-2 space-y-2">
+                  <div className="border-t border-orange-900 pt-2">
                     <button onClick={() => onNavigate('carrierinterior')} className="w-full py-1.5 border border-green-500 text-green-300 hover:bg-green-950/30 text-xs font-bold">ENTER INTERIOR</button>
-                    {jumpState && jumpState.carrierId === c.id ? (
-                      <div className="space-y-2">
-                        <div className="text-orange-400 text-xs font-bold">Select Jump Destination (500 LY max)</div>
-                        <div className="max-h-40 overflow-y-auto space-y-1">
-                          {jumpState.targets.map(sys => {
-                            const tc = Math.ceil(sys.distance / 10);
-                            return (
-                              <button key={sys.seed} onClick={() => { jumpCarrier(c.id, sys); setJumpState(null); }} disabled={!isSandbox && c.tritium < tc} className="w-full flex justify-between border border-orange-900 p-1.5 text-xs hover:border-orange-700 disabled:opacity-30">
-                                <span className="text-orange-400">{sys.name}</span><span className="text-orange-600">{sys.distance.toFixed(0)} LY · {tc}T</span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                        <button onClick={() => setJumpState(null)} className="w-full py-1 border border-orange-900 text-orange-700 text-xs">CANCEL</button>
-                      </div>
-                    ) : (
-                      <button onClick={() => startJump(c)} disabled={!isSandbox && c.tritium < 50} className="w-full py-1.5 border border-orange-500 text-orange-300 hover:bg-orange-950/50 text-xs font-bold disabled:opacity-30">{!isSandbox && c.tritium < 50 ? 'INSUFFICIENT TRITIUM' : 'JUMP CARRIER'}</button>
-                    )}
                   </div>
                 )}
+                {/* Jump section — available remotely (carrier need not be in current system) */}
+                <div className="border-t border-orange-900 pt-2 space-y-2">
+                  {!isHere && (
+                    <div className="text-orange-700 text-[10px] text-center">REMOTE JUMP — Carrier in {c.systemName || 'another system'}</div>
+                  )}
+                  {jumpState && jumpState.carrierId === c.id ? (
+                    <div className="space-y-2">
+                      <div className="flex gap-1">
+                        <button onClick={() => startJump(c, 'full')} className={`flex-1 py-1 border text-[10px] ${jumpState.mode === 'micro' ? 'border-orange-900 text-orange-700' : 'border-cyan-600 text-cyan-400'}`}>FULL 500 LY</button>
+                        <button onClick={() => startJump(c, 'micro')} className={`flex-1 py-1 border text-[10px] ${jumpState.mode === 'micro' ? 'border-cyan-600 text-cyan-400' : 'border-orange-900 text-orange-700'}`}>MICRO 50 LY</button>
+                      </div>
+                      <div className="text-orange-400 text-xs font-bold">Select Jump Destination ({jumpState.mode === 'micro' ? '50' : '500'} LY max)</div>
+                      <div className="max-h-40 overflow-y-auto space-y-1">
+                        {jumpState.targets.length === 0 && <div className="text-orange-700 text-[10px] text-center py-2">No systems in range</div>}
+                        {jumpState.targets.map(sys => {
+                          const tc = Math.ceil(sys.distance / 10);
+                          return (
+                            <button key={sys.seed} onClick={() => { jumpCarrier(c.id, sys); setJumpState(null); }} disabled={!isSandbox && c.tritium < tc} className="w-full flex justify-between border border-orange-900 p-1.5 text-xs hover:border-orange-700 disabled:opacity-30">
+                              <span className="text-orange-400">{sys.name}</span><span className="text-orange-600">{sys.distance.toFixed(0)} LY · {tc}T</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <button onClick={() => setJumpState(null)} className="w-full py-1 border border-orange-900 text-orange-700 text-xs">CANCEL</button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-1">
+                      <button onClick={() => startJump(c, 'full')} disabled={!isSandbox && c.tritium < 5} className="flex-1 py-1.5 border border-orange-500 text-orange-300 hover:bg-orange-950/50 text-[10px] font-bold disabled:opacity-30">JUMP 500 LY</button>
+                      <button onClick={() => startJump(c, 'micro')} disabled={!isSandbox && c.tritium < 1} className="flex-1 py-1.5 border border-cyan-600 text-cyan-400 hover:bg-cyan-950/30 text-[10px] font-bold disabled:opacity-30">MICRO 50 LY</button>
+                    </div>
+                  )}
+                </div>
 
                 {ships.length > 0 && (
                   <div className="border-t border-orange-900 pt-2">
