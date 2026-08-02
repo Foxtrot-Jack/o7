@@ -6,9 +6,9 @@ import {
   getDefaultModules, getModulePrice, ENGINEERING_BLUEPRINTS,
   HARDPOINT_ENGINEERING, HARDPOINT_SIZES, SLOT_LABELS,
 } from '@/lib/shipOutfitting';
-import { Wrench, X, Zap, Shield, Package, Gauge, Weight, Crosshair, Settings } from 'lucide-react';
+import { Wrench, X, Zap, Shield, Package, Gauge, Weight, Crosshair, Settings, Users } from 'lucide-react';
 
-const STAT_KEYS = ['cargo','shield','power','range','damage','thrust','oxygen','scanRange','distro','scoopRate','fuel','hull','limpets','repair','srvs','fighters','bins','shieldBoost','moduleProtection'];
+const STAT_KEYS = ['cargo','shield','power','range','damage','thrust','oxygen','scanRange','distro','scoopRate','fuel','hull','limpets','repair','srvs','fighters','bins','shieldBoost','moduleProtection','passengerCapacity'];
 
 function getModStat(mod) {
   if (!mod) return { value: '—', unit: '' };
@@ -96,13 +96,14 @@ export default function OutfittingScreen() {
           </div>
           <span className="text-orange-400 text-xs">{state.credits.toLocaleString()} CR</span>
         </div>
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+        <div className="grid grid-cols-3 sm:grid-cols-7 gap-2">
           <StatPill icon={Package} label="Cargo" value={`${stats.cargoCapacity}T`} />
           <StatPill icon={Gauge} label="Jump Range" value={`${stats.jumpRange} LY`} />
           <StatPill icon={Shield} label="Shield" value={`${stats.shield} MJ`} />
           <StatPill icon={Zap} label="Power" value={`${stats.power} MW`} />
           <StatPill icon={Weight} label="Mass" value={`${stats.mass}T`} />
           <StatPill icon={Crosshair} label="DPS" value={stats.totalDamage} />
+          <StatPill icon={Users} label="Berths" value={stats.passengerCapacity || 0} />
         </div>
         {!isDocked && <div className="text-orange-700 text-[10px] mt-2">⚠ Dock at a station to modify your loadout.</div>}
       </div>

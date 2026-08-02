@@ -96,6 +96,20 @@ function generateModules() {
     m[`ref_${size}d`] = { id: `ref_${size}d`, name: `Refinery ${size}D`, category: 'optional', type: 'refinery', size, class: 'D', mass: size * 3, bins: size * 2, statLabel: 'Bins' };
   }
 
+  // Passenger cabins — economy, business, first, luxury
+  for (const size of [2,3,4,5,6]) {
+    m[`pc_${size}e`] = { id: `pc_${size}e`, name: `Economy Passenger Cabin ${size}E`, category: 'optional', type: 'passenger_cabin', size, class: 'E', mass: size * 1.5, cabinClass: 'economy', passengerCapacity: size * 2, statLabel: 'Berths' };
+  }
+  for (const size of [3,4,5,6]) {
+    m[`pc_${size}d`] = { id: `pc_${size}d`, name: `Business Passenger Cabin ${size}D`, category: 'optional', type: 'passenger_cabin', size, class: 'D', mass: size * 2, cabinClass: 'business', passengerCapacity: size, statLabel: 'Berths' };
+  }
+  for (const size of [4,5,6]) {
+    m[`pc_${size}c`] = { id: `pc_${size}c`, name: `First Class Cabin ${size}C`, category: 'optional', type: 'passenger_cabin', size, class: 'C', mass: size * 2.5, cabinClass: 'first', passengerCapacity: Math.ceil(size / 2), statLabel: 'Berths' };
+  }
+  for (const size of [5,6]) {
+    m[`pc_${size}b`] = { id: `pc_${size}b`, name: `Luxury Cabin ${size}B`, category: 'optional', type: 'passenger_cabin', size, class: 'B', mass: size * 3, cabinClass: 'luxury', passengerCapacity: Math.max(1, Math.floor(size / 3)), statLabel: 'Berths' };
+  }
+
   // Detailed surface scanner
   m['dss_1e'] = { id: 'dss_1e', name: 'Detailed Surface Scanner 1E', category: 'optional', type: 'surface_scanner', size: 1, class: 'E', mass: 2, statLabel: 'Scan Bonus' };
 
@@ -255,6 +269,8 @@ export function computeShipStats(shipTypeId, modules) {
   let mass = 10; // hull mass
   let totalDamage = 0;
   let fuelCapacity = 8;
+  let passengerCapacity = 0;
+  let cabinClasses = {};
 
   // Core modules
   for (const [key, maxSize] of Object.entries(slots.core)) {
@@ -279,6 +295,10 @@ export function computeShipStats(shipTypeId, modules) {
     if (mod.type === 'shield_generator') shield += mod.shield || 0;
     if (mod.type === 'hull_reinforcement') mass += mod.hull ? 0 : 0;
     if (mod.type === 'fuel_tank') fuelCapacity += mod.fuel || 0;
+    if (mod.type === 'passenger_cabin') {
+      passengerCapacity += mod.passengerCapacity || 0;
+      if (mod.cabinClass) cabinClasses[mod.cabinClass] = (cabinClasses[mod.cabinClass] || 0) + (mod.passengerCapacity || 0);
+    }
     powerDraw += (mod.mass || 0) * 0.2;
   });
 
@@ -331,6 +351,8 @@ export function computeShipStats(shipTypeId, modules) {
     mass: Math.round(mass * 10) / 10,
     totalDamage: Math.round(totalDamage),
     fuelCapacity,
+    passengerCapacity,
+    cabinClasses,
   };
 }
 

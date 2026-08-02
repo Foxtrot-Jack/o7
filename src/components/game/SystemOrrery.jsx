@@ -1,6 +1,6 @@
 // 3D System Orrery — wireframe planetary bodies orbiting in real-time
 // Classic Elite-style orrery with rotation and pinch zoom
-import React, { useRef, useEffect, useState, useCallback } from 'react';
+import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import * as THREE from 'three';
 import { useGameState } from '@/lib/gameState';
 import { BODY_TYPES } from '@/lib/system';
@@ -43,6 +43,32 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
   const [travelInfo, setTravelInfo] = useState(null);
   const [orbitingBodyId, setOrbitingBodyId] = useState(null);
   const [fssDismissedSeed, setFssDismissedSeed] = useState(null);
+
+  // Player-owned colonies and stations in this system — shown in the body list
+  const playerStructures = useMemo(() => {
+    if (!state.currentSystem) return [];
+    const seed = state.currentSystem.seed;
+    const structures = [];
+    for (const colony of state.colonies || []) {
+      if (colony.systemSeed === seed) {
+        structures.push({ id: colony.id, name: colony.name, kind: 'colony', parentBodyId: colony.bodyId || null, data: colony });
+      }
+    }
+    for (const station of state.ownedStations || []) {
+      if (station.systemSeed === seed) {
+        structures.push({ id: station.id, name: station.name, kind: 'station', parentBodyId: null, data: station });
+      }
+    }
+    return structures;
+  }, [state.currentSystem, state.colonies, state.ownedStations]);
+
+  const handleSelectPlayerStructure = useCallback((structure) => {
+    setSelectedStation({ id: structure.id, name: structure.name, parentId: structure.parentBodyId, isOrbital: structure.kind === 'station' });
+    setSelectedBody(null);
+    if (onNavigate && structure.kind === 'colony') {
+      // Could navigate to colony screen, but for now just select
+    }
+  }, [onNavigate]);
 
   // Ref mirror of state so the animation loop (useEffect[]) always reads
   // the latest values instead of a stale first-render closure.
@@ -932,6 +958,8 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
           fssDiscoveredBodies={state.fssDiscoveredBodies}
           scannedBodies={state.scannedBodies}
           probeProgress={state.probeProgress}
+          playerStructures={playerStructures}
+          onSelectPlayerStructure={handleSelectPlayerStructure}
         />
       </div>
       )}

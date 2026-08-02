@@ -8,6 +8,16 @@ import { generateSolSystem } from './solSystem';
 
 const ALL_STAR_CLASSES_LOCAL = [...STAR_CLASSES, ...SPECIAL_STARS];
 
+// Materials obtainable from mining — used by mining missions to ensure
+// the target commodity is actually mineable from asteroid belts/planets.
+export const MINING_MATERIAL_IDS = [
+  'iron', 'silicon', 'carbon', 'water', 'nickel', 'phosphorus', 'sulphur',
+  'chromium', 'manganese', 'zinc', 'germanium', 'tin', 'tungsten', 'mercury',
+  'platinum', 'palladium', 'iridium', 'painite', 'pristine_diamond',
+  'low_temp_diamond', 'tritium', 'bromellite', 'void_opals', 'alexandrite',
+  'core_minerals',
+];
+
 // Body types
 export const BODY_TYPES = {
   STAR: 'star',

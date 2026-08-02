@@ -2,9 +2,10 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { useGameState, MISSION_TYPES, SHIP_MAP } from '@/lib/gameState';
 import { makeRng, randInt, randFloat, pick, pickWeighted } from '@/lib/prng';
-import { COMMODITIES } from '@/lib/commodities';
+import { COMMODITIES, COMMODITY_MAP } from '@/lib/commodities';
 import { computeCustomShipStats } from '@/lib/shipParts';
 import { generateStarsInRange, distance3D } from '@/lib/galaxy';
+import { MINING_MATERIAL_IDS } from '@/lib/system';
 import { ClipboardList, CheckCircle, Clock, MapPin, Package, Pickaxe, Telescope, Users, Wrench, Map } from 'lucide-react';
 
 const MISSION_TEMPLATES = {
@@ -101,7 +102,10 @@ export default function MissionsScreen() {
       ]);
 
       const template = MISSION_TEMPLATES[type];
-      const commodity = pick(rng, COMMODITIES);
+      // Mining missions target only mineable materials; others use any commodity
+      const commodity = type === MISSION_TYPES.MINING
+        ? (COMMODITY_MAP[pick(rng, MINING_MATERIAL_IDS)] || pick(rng, COMMODITIES))
+        : pick(rng, COMMODITIES);
       const qty = randInt(rng, 1, 20);
       const rewardMultiplier = randFloat(rng, 0.8, 2.5);
       const isSurfaceScan = type === MISSION_TYPES.SURFACE_SCAN;

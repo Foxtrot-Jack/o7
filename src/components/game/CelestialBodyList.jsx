@@ -20,6 +20,8 @@ export default function CelestialBodyList({
   fssDiscoveredBodies,
   scannedBodies,
   probeProgress,
+  playerStructures = [],
+  onSelectPlayerStructure,
 }) {
   const tree = useMemo(() => buildBodyTree(systemData.bodies), [systemData]);
 
@@ -38,8 +40,31 @@ export default function CelestialBodyList({
           fssDiscoveredBodies={fssDiscoveredBodies}
           scannedBodies={scannedBodies}
           probeProgress={probeProgress}
+          playerStructures={playerStructures}
+          onSelectPlayerStructure={onSelectPlayerStructure}
         />
       ))}
+      {/* Player-owned structures in this system (colonies, stations) */}
+      {playerStructures.length > 0 && (
+        <div className="mt-1 pt-1 border-t border-purple-900/50">
+          <div className="text-purple-600 uppercase text-[9px] mb-0.5">Your Assets</div>
+          {playerStructures.map(structure => (
+            <button
+              key={structure.id}
+              onClick={() => onSelectPlayerStructure?.(structure)}
+              className={`w-full text-left flex items-center gap-1 px-1 py-0.5 text-[10px] border transition-all ${
+                selectedStation?.id === structure.id
+                  ? 'border-purple-500 bg-purple-950/30 text-purple-300'
+                  : 'border-transparent text-purple-500 hover:text-purple-300'
+              }`}
+            >
+              <span className="text-purple-700">{structure.kind === 'colony' ? '⌂' : '⊕'}</span>
+              <span className="truncate flex-1">{structure.name}</span>
+              <span className="text-purple-900 text-[8px]">{structure.kind === 'colony' ? 'col' : 'stn'}</span>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -63,7 +88,7 @@ function buildNode(body, byParent) {
   return { body, children };
 }
 
-function BodyNode({ node, depth, stations, selectedBody, selectedStation, onSelectBody, onSelectStation, fssDiscoveredBodies, scannedBodies, probeProgress }) {
+function BodyNode({ node, depth, stations, selectedBody, selectedStation, onSelectBody, onSelectStation, fssDiscoveredBodies, scannedBodies, probeProgress, playerStructures, onSelectPlayerStructure }) {
   const { body, children } = node;
   // Belts default to collapsed (they contain many asteroids)
   const [collapsed, setCollapsed] = useState(body.type === BODY_TYPES.BELT);
@@ -137,6 +162,23 @@ function BodyNode({ node, depth, stations, selectedBody, selectedStation, onSele
               <span className="text-green-900 text-[8px]">{station.isOrbital ? 'orb' : 'srf'}</span>
             </button>
           ))}
+          {/* Player structures attached to this body */}
+          {(playerStructures || []).filter(s => s.parentBodyId === body.id).map(structure => (
+            <button
+              key={structure.id}
+              onClick={() => onSelectPlayerStructure?.(structure)}
+              className={`w-full text-left flex items-center gap-1 py-0.5 text-[10px] border transition-all ${
+                selectedStation?.id === structure.id
+                  ? 'border-purple-500 bg-purple-950/30 text-purple-300'
+                  : 'border-transparent text-purple-500 hover:text-purple-300'
+              }`}
+              style={{ paddingLeft: indent + 16 }}
+            >
+              <span className="text-purple-700">{structure.kind === 'colony' ? '⌂' : '⊕'}</span>
+              <span className="truncate">{structure.name}</span>
+              <span className="text-purple-900 text-[8px]">{structure.kind === 'colony' ? 'col' : 'stn'}</span>
+            </button>
+          ))}
           {/* Child bodies */}
           {children.map(child => (
             <BodyNode
@@ -151,6 +193,8 @@ function BodyNode({ node, depth, stations, selectedBody, selectedStation, onSele
               fssDiscoveredBodies={fssDiscoveredBodies}
               scannedBodies={scannedBodies}
               probeProgress={probeProgress}
+              playerStructures={playerStructures}
+              onSelectPlayerStructure={onSelectPlayerStructure}
             />
           ))}
         </div>

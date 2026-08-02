@@ -1,8 +1,11 @@
 // Passenger Lounge — accept and complete passenger transport missions
 import React, { useState, useMemo } from 'react';
 import { useGameState, SHIP_MAP } from '@/lib/gameState';
-import { generatePassengerMissions, getPassengerCapacity, isPassengerMissionReady, PASSENGER_TYPES } from '@/lib/passengers';
+import { generatePassengerMissions, getPassengerCapacity, getCabinClasses, hasRequiredCabin, isPassengerMissionReady, PASSENGER_TYPES } from '@/lib/passengers';
 import { Users, MapPin, Clock, CheckCircle, Coins, UserCheck } from 'lucide-react';
+
+const CABIN_LABELS = { economy: 'Economy', business: 'Business', first: 'First Class', luxury: 'Luxury' };
+const CABIN_COLORS = { economy: 'text-orange-400', business: 'text-cyan-400', first: 'text-purple-400', luxury: 'text-yellow-400' };
 
 export default function PassengerScreen() {
   const { state, addPassengerMission, completePassengerMission } = useGameState();
@@ -10,22 +13,24 @@ export default function PassengerScreen() {
 
   const shipType = SHIP_MAP[state.ship.type];
   const shipClass = shipType?.class || (state.ship.type === 'custom' ? 2 : 1);
-  const capacity = getPassengerCapacity(shipClass);
+  const modules = state.ship?.modules || {};
+  const capacity = getPassengerCapacity(null, modules);
+  const cabinClasses = getCabinClasses(modules);
   const activeMissions = state.passengerMissions || [];
   const usedCapacity = activeMissions.reduce((sum, m) => sum + m.passengers, 0);
   const freeCapacity = capacity - usedCapacity;
 
   const availableMissions = useMemo(() => {
     if (capacity === 0) return [];
-    return generatePassengerMissions(state.currentSystem?.seed, shipClass, 6);
-  }, [state.currentSystem?.seed, shipClass, refreshKey]);
+    return generatePassengerMissions(state.currentSystem?.seed, modules, 6);
+  }, [state.currentSystem?.seed, modules, refreshKey]);
 
   if (capacity === 0) {
     return (
       <div className="p-4 text-center text-orange-500">
         <Users className="w-8 h-8 mx-auto mb-2 opacity-50" />
         <p>No passenger cabin capacity.</p>
-        <p className="text-orange-700 text-xs mt-1">Your ship (Class {shipClass}) cannot fit passenger cabins. Upgrade to a Class 2+ ship.</p>
+        <p className="text-orange-700 text-xs mt-1">Install a Passenger Cabin module in Outfitting to accept transport missions.</p>
       </div>
     );
   }
@@ -45,6 +50,13 @@ export default function PassengerScreen() {
         </div>
         <div className="text-[10px] text-orange-600 mt-1">
           Cabin Capacity: {usedCapacity}/{capacity} · Free: {freeCapacity} · {state.currentLocation === 'station' ? 'At station — can complete missions' : 'In transit — dock to complete'}
+        </div>
+        <div className="flex flex-wrap gap-2 mt-1">
+          {Object.entries(cabinClasses).map(([cls, berths]) => (
+            <span key={cls} className={`text-[9px] border border-orange-900 px-1.5 py-0.5 ${CABIN_COLORS[cls] || 'text-orange-400'}`}>
+              {CABIN_LABELS[cls] || cls}: {berths} berths
+            </span>
+          ))}
         </div>
       </div>
 
@@ -99,7 +111,10 @@ export default function PassengerScreen() {
           return (
             <div key={m.id} className="border border-orange-950 p-2 flex items-center justify-between">
               <div>
-                <div className="text-orange-300 text-xs font-bold">{m.type.label} — {m.passengers} passenger(s)</div>
+                <div className="text-orange-300 text-xs font-bold flex items-center gap-2">
+                  {m.type.label} — {m.passengers} passenger(s)
+                  <span className={`text-[8px] ${CABIN_COLORS[m.type.requiresCabin] || 'text-orange-600'}`}>[{CABIN_LABELS[m.type.requiresCabin]}]</span>
+                </div>
                 <div className="text-[10px] text-orange-600 flex items-center gap-3">
                   <span className="flex items-center gap-0.5"><MapPin className="w-2.5 h-2.5" /> → {m.destination}</span>
                   <span className="flex items-center gap-0.5"><Coins className="w-2.5 h-2.5" /> {m.reward.toLocaleString()} CR</span>
