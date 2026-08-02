@@ -27,10 +27,11 @@ export function generateSolSystem() {
   const rng = makeRng(SOL_SEED + ':system');
   const G_CLASS = STAR_CLASSES[4];
   const bodies = [];
+  const P = SOL_SEED + '_'; // prefix ensures body IDs are globally unique across systems
 
   // Sol — the star
   const solStar = {
-    id: 'star_0', type: BODY_TYPES.STAR, designation: 'A', name: 'Sol',
+    id: P + 'star_0', type: BODY_TYPES.STAR, designation: 'A', name: 'Sol',
     starClass: G_CLASS, radius: 1.0, temperature: 5778, color: G_CLASS.color,
     parent: null, orbitRadius: 0, orbitPeriod: 0, axialTilt: 7.25, rotationPeriod: 25,
     scanValue: 0, scanned: false,
@@ -38,22 +39,22 @@ export function generateSolSystem() {
   bodies.push(solStar);
 
   const makePlanet = (id, designation, name, planetType, planetTypeName, color, radius, orbitRadius, orbitPeriod, axialTilt, rotationPeriod, temperature, gravity, atmosphere, habitable, landable, hasRings, ringType) => ({
-    id, type: BODY_TYPES.PLANET, designation, name, planetType, planetTypeName, color,
+    id: P + id, type: BODY_TYPES.PLANET, designation, name, planetType, planetTypeName, color,
     radius, orbitRadius, orbitPeriod, axialTilt, rotationPeriod, temperature, gravity,
     atmosphere, habitable, hasRings: hasRings || false, ringType: ringType || null,
     volcanic: false, terraformed: false,
     materials: generatePlanetMaterials(rng, { id: planetType }),
-    parent: 'star_0', scanValue: 50000, scanned: false, discovered: false, landable,
-    surfaceSignals: generateSurfaceSignals(id, planetType),
+    parent: P + 'star_0', scanValue: 50000, scanned: false, discovered: false, landable,
+    surfaceSignals: generateSurfaceSignals(P + id, planetType),
   });
 
   const makeMoon = (id, designation, name, parentId, color, radius, orbitRadius, orbitPeriod, temperature, gravity) => ({
-    id, type: BODY_TYPES.MOON, designation, name, planetType: 'rocky', planetTypeName: 'Rocky Body', color,
+    id: P + id, type: BODY_TYPES.MOON, designation, name, planetType: 'rocky', planetTypeName: 'Rocky Body', color,
     radius, orbitRadius, orbitPeriod, axialTilt: 0, rotationPeriod: orbitPeriod, temperature, gravity,
     atmosphere: false, habitable: false, hasRings: false, volcanic: false,
     materials: generatePlanetMaterials(rng, { id: 'rocky' }),
-    parent: parentId, scanValue: 20000, scanned: false, discovered: false, landable: true,
-    surfaceSignals: generateSurfaceSignals(id, 'rocky'),
+    parent: P + parentId, scanValue: 20000, scanned: false, discovered: false, landable: true,
+    surfaceSignals: generateSurfaceSignals(P + id, 'rocky'),
   });
 
   // Mercury
@@ -66,7 +67,7 @@ export function generateSolSystem() {
   // Mars
   bodies.push(makePlanet('star_0_p4', 'A 4', 'Mars', 'desert', 'Desert World', '#cc6644', 0.53, 22, 687, 25.2, 1.03, -65, 0.38, true, false, true));
   // Asteroid Belt
-  bodies.push({ id: 'star_0_b1', type: BODY_TYPES.BELT, designation: 'A Belt', name: 'Asteroid Belt', color: '#665544', radius: 1.5, orbitRadius: 30, orbitPeriod: 1680, parent: 'star_0', scanValue: 15000, scanned: false, discovered: false, bodyCount: 1000000, materials: generatePlanetMaterials(rng, { id: 'rocky' }) });
+  bodies.push({ id: P + 'star_0_b1', type: BODY_TYPES.BELT, designation: 'A Belt', name: 'Asteroid Belt', color: '#665544', radius: 1.5, orbitRadius: 30, orbitPeriod: 1680, parent: P + 'star_0', scanValue: 15000, scanned: false, discovered: false, bodyCount: 1000000, materials: generatePlanetMaterials(rng, { id: 'rocky' }) });
   // Jupiter + Galilean moons
   bodies.push(makePlanet('star_0_p5', 'A 5', 'Jupiter', 'gas_giant', 'Class I Gas Giant', '#cc9966', 11.2, 45, 4333, 3.1, 0.41, -145, 2.53, true, false, false, true, 'icy'));
   bodies.push(makeMoon('star_0_p5_m0', 'A 5 a', 'Io', 'star_0_p5', '#ffcc44', 0.29, 14, 1.77, -143, 0.18));
@@ -84,9 +85,9 @@ export function generateSolSystem() {
   bodies.push(makePlanet('star_0_p9', 'A 9', 'Pluto', 'icy', 'Icy Body', '#b0a090', 0.19, 115, 90560, 122.5, 6.39, -229, 0.06, false, false, true));
 
   const stations = [
-    { id: 'station_0', name: 'Abraham Lincoln Station', parentId: 'star_0_p3', parentName: 'Earth', type: 'coriolis', isOrbital: true, stationOrbitRadius: 3, distanceFromStar: 16, economy: ECONOMY_TYPES[0], services: { market: true, refuel: true, repair: true, rearm: true, shipyard: true, outfitting: true, missions: true, exploration: true, cartographics: true, contact: true } },
-    { id: 'station_1', name: 'Mars Point Settlement', parentId: 'star_0_p4', parentName: 'Mars', type: 'planetary', isOrbital: false, stationOrbitRadius: 0, distanceFromStar: 22, economy: ECONOMY_TYPES[0], services: { market: true, refuel: true, repair: true, rearm: false, shipyard: false, outfitting: true, missions: true, exploration: false, cartographics: false, contact: false } },
-    { id: 'station_2', name: 'Galileo Orbital', parentId: 'star_0_p5', parentName: 'Jupiter', type: 'orbis', isOrbital: true, stationOrbitRadius: 5, distanceFromStar: 45, economy: ECONOMY_TYPES[0], services: { market: true, refuel: true, repair: true, rearm: false, shipyard: false, outfitting: false, missions: true, exploration: false, cartographics: false, contact: false } },
+    { id: 'station_0', name: 'Abraham Lincoln Station', parentId: P + 'star_0_p3', parentName: 'Earth', type: 'coriolis', isOrbital: true, stationOrbitRadius: 3, distanceFromStar: 16, economy: ECONOMY_TYPES[0], services: { market: true, refuel: true, repair: true, rearm: true, shipyard: true, outfitting: true, missions: true, exploration: true, cartographics: true, contact: true } },
+    { id: 'station_1', name: 'Mars Point Settlement', parentId: P + 'star_0_p4', parentName: 'Mars', type: 'planetary', isOrbital: false, stationOrbitRadius: 0, distanceFromStar: 22, economy: ECONOMY_TYPES[0], services: { market: true, refuel: true, repair: true, rearm: false, shipyard: false, outfitting: true, missions: true, exploration: false, cartographics: false, contact: false } },
+    { id: 'station_2', name: 'Galileo Orbital', parentId: P + 'star_0_p5', parentName: 'Jupiter', type: 'orbis', isOrbital: true, stationOrbitRadius: 5, distanceFromStar: 45, economy: ECONOMY_TYPES[0], services: { market: true, refuel: true, repair: true, rearm: false, shipyard: false, outfitting: false, missions: true, exploration: false, cartographics: false, contact: false } },
   ];
 
   return { seed: SOL_SEED, stars: [solStar], bodies, stations, faction: 'Sol Federation', economy: ECONOMY_TYPES[0], bodyCount: bodies.length, isSol: true };

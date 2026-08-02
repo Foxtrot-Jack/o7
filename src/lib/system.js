@@ -127,7 +127,7 @@ export function generateSystem(starSeed, parentStarClass, population = 0) {
 
   // Primary star
   stars.push({
-    id: 'star_0',
+    id: `${starSeed}_star_0`,
     type: BODY_TYPES.STAR,
     designation: rootLetters[0],
     name: parentStarClass.name,
@@ -151,7 +151,7 @@ export function generateSystem(starSeed, parentStarClass, population = 0) {
     const compClass = pickWeighted(rng, smallerClasses.map(c => ({ value: c, weight: c.weight })));
 
     stars.push({
-      id: `star_${s}`,
+      id: `${starSeed}_star_${s}`,
       type: BODY_TYPES.STAR,
       designation: rootLetters[s],
       name: compClass.name,
@@ -159,7 +159,7 @@ export function generateSystem(starSeed, parentStarClass, population = 0) {
       radius: compClass.radius[0] + rng() * (compClass.radius[1] - compClass.radius[0]),
       temperature: compClass.temp[0] + rng() * (compClass.temp[1] - compClass.temp[0]),
       color: compClass.color,
-      parent: s === 1 ? 'star_0' : `star_${s - 1}`,
+      parent: s === 1 ? `${starSeed}_star_0` : `${starSeed}_star_${s - 1}`,
       orbitRadius: randFloat(rng, 50, 500) * (s),
       orbitPeriod: randFloat(rng, 100, 2000),
       axialTilt: randFloat(rng, 0, 30),
