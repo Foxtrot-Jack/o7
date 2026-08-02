@@ -1155,7 +1155,6 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
                           : 'border-transparent text-amber-600'
                       }`}
                     >
-                      <span>💎</span>
                       <span className="flex-1 text-left">{matName} — Hotspot</span>
                       {inOrbit && (
                         <span className="text-amber-700">{isMining ? '...' : '[MINE]'}</span>
