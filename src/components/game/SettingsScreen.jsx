@@ -1,7 +1,7 @@
 // Settings — restructured into intuitive tabbed categories
 import React, { useState } from 'react';
 import { useGameState } from '@/lib/gameState';
-import { Settings, Monitor, Palette, Type, Volume2, Hand, Database, Download, Upload, RotateCcw, ArrowLeftRight, Lock, Unlock, Smartphone, Maximize, Contrast } from 'lucide-react';
+import { Settings, Monitor, Palette, Type, Volume2, Hand, Database, Download, Upload, RotateCcw, ArrowLeftRight, Lock, Unlock, Smartphone, Maximize, Contrast, LayoutGrid, ChevronDown } from 'lucide-react';
 import { THEME_LIST } from '@/lib/themes';
 import TextBrightnessSettings from '@/components/game/TextBrightnessSettings';
 import SoundSettings from '@/components/game/SoundSettings';
@@ -23,6 +23,25 @@ const TABS = [
   { id: 'controls', label: 'Controls', icon: Hand },
   { id: 'data', label: 'Data', icon: Database },
 ];
+
+// Collapsible section — nests related controls under a single header so the
+// tab stays scannable instead of overwhelming.
+function Section({ icon: Icon, title, summary, children, defaultOpen = false }) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="border border-orange-900">
+      <button onClick={() => setOpen(!open)} className="flex items-center gap-2 w-full p-3 text-left">
+        {Icon && <Icon className="w-4 h-4 text-orange-500 flex-shrink-0" />}
+        <div className="flex-1 min-w-0">
+          <h3 className="text-orange-400 text-sm font-bold uppercase">{title}</h3>
+          {summary && <div className="text-orange-700 text-[10px] truncate">{summary}</div>}
+        </div>
+        <ChevronDown className={`w-4 h-4 text-orange-600 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && <div className="p-3 space-y-3 border-t border-orange-900/50">{children}</div>}
+    </div>
+  );
+}
 
 export default function SettingsScreen() {
   const { state, update, resetGame, switchSave } = useGameState();
@@ -63,101 +82,109 @@ export default function SettingsScreen() {
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {tab === 'display' && (
           <>
-            <TextBrightnessSettings />
+            {/* Screen & Window — hardware-level display options */}
+            <Section icon={Monitor} title="Screen & Window" summary="CRT effects, fullscreen, display scale, orientation" defaultOpen>
+              <div className="border border-orange-950/60 bg-black/40 p-3 space-y-2">
+                <div className="flex items-center gap-2">
+                  <Smartphone className="w-4 h-4 text-orange-500" />
+                  <h4 className="text-orange-400 text-xs font-bold uppercase">Mini Screen Mode</h4>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-orange-600 text-xs">Compact UI for external displays</span>
+                  <button onClick={() => set('miniScreen', !s.miniScreen)} className={`px-3 py-1 border text-xs ${s.miniScreen ? 'border-orange-500 bg-orange-950/40 text-orange-300' : 'border-orange-900 text-orange-700'}`}>{s.miniScreen ? 'ON' : 'OFF'}</button>
+                </div>
+              </div>
 
-            <div className="border border-orange-900 p-4 space-y-2">
-              <div className="flex items-center gap-2">
-                <Smartphone className="w-4 h-4 text-orange-500" />
-                <h3 className="text-orange-400 text-sm font-bold uppercase">Mini Screen Mode</h3>
+              <div className="border border-orange-950/60 bg-black/40 p-3 space-y-2">
+                <div className="flex items-center gap-2">
+                  <Monitor className="w-4 h-4 text-orange-500" />
+                  <h4 className="text-orange-400 text-xs font-bold uppercase">CRT Effects</h4>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-orange-600 text-xs">Scanlines, glow, and CRT flicker</span>
+                  <button onClick={() => set('crtEffect', !s.crtEffect)} className={`px-3 py-1 border text-xs ${s.crtEffect ? 'border-orange-500 bg-orange-950/40 text-orange-300' : 'border-orange-900 text-orange-700'}`}>{s.crtEffect ? 'ON' : 'OFF'}</button>
+                </div>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-orange-600 text-xs">Compact UI for external displays (Moto Razr 50 cover screen)</span>
-                <button onClick={() => set('miniScreen', !s.miniScreen)} className={`px-3 py-1 border text-xs ${s.miniScreen ? 'border-orange-500 bg-orange-950/40 text-orange-300' : 'border-orange-900 text-orange-700'}`}>{s.miniScreen ? 'ON' : 'OFF'}</button>
-              </div>
-            </div>
 
-            <div className="border border-orange-900 p-4 space-y-2">
-              <div className="flex items-center gap-2">
-                <Monitor className="w-4 h-4 text-orange-500" />
-                <h3 className="text-orange-400 text-sm font-bold uppercase">CRT Effects</h3>
+              <div className="border border-orange-950/60 bg-black/40 p-3 space-y-2">
+                <div className="flex items-center gap-2">
+                  <Maximize className="w-4 h-4 text-orange-500" />
+                  <h4 className="text-orange-400 text-xs font-bold uppercase">Window Mode</h4>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-orange-600 text-xs">Fullscreen hides browser chrome</span>
+                  <button
+                    onClick={() => { if (!document.fullscreenElement) document.documentElement.requestFullscreen?.().catch(() => {}); else document.exitFullscreen?.(); }}
+                    className={`px-3 py-1 border text-xs ${isFullscreen ? 'border-orange-500 bg-orange-950/40 text-orange-300' : 'border-orange-900 text-orange-700'}`}
+                  >
+                    {isFullscreen ? 'EXIT FULLSCREEN' : 'ENTER FULLSCREEN'}
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-orange-600 text-xs">Scanlines, glow, and CRT flicker</span>
-                <button onClick={() => set('crtEffect', !s.crtEffect)} className={`px-3 py-1 border text-xs ${s.crtEffect ? 'border-orange-500 bg-orange-950/40 text-orange-300' : 'border-orange-900 text-orange-700'}`}>{s.crtEffect ? 'ON' : 'OFF'}</button>
-              </div>
-            </div>
 
-            <div className="border border-orange-900 p-4 space-y-2">
-              <div className="flex items-center gap-2">
-                <Maximize className="w-4 h-4 text-orange-500" />
-                <h3 className="text-orange-400 text-sm font-bold uppercase">Window Mode</h3>
+              <div className="border border-orange-950/60 bg-black/40 p-3 space-y-2">
+                <div className="flex items-center gap-2">
+                  <Maximize className="w-3.5 h-3.5 text-orange-500" />
+                  <h4 className="text-orange-400 text-xs font-bold uppercase">Display Scale</h4>
+                </div>
+                <div className="flex items-center gap-3">
+                  <input type="range" min="50" max="150" value={s.displayScale || 100} onChange={e => set('displayScale', parseInt(e.target.value))} className="flex-1" />
+                  <span className="text-orange-300 text-xs w-12">{s.displayScale || 100}%</span>
+                </div>
+                <div className="text-orange-700 text-[10px]">Scales the entire game interface.</div>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-orange-600 text-xs">Fullscreen hides browser chrome for an immersive cockpit view</span>
-                <button
-                  onClick={() => { if (!document.fullscreenElement) document.documentElement.requestFullscreen?.().catch(() => {}); else document.exitFullscreen?.(); }}
-                  className={`px-3 py-1 border text-xs ${isFullscreen ? 'border-orange-500 bg-orange-950/40 text-orange-300' : 'border-orange-900 text-orange-700'}`}
-                >
-                  {isFullscreen ? 'EXIT FULLSCREEN' : 'ENTER FULLSCREEN'}
-                </button>
-              </div>
-              <div className="text-orange-700 text-[10px]">Press ESC to exit fullscreen. Contrast, saturation, and color inversion are in Controls settings.</div>
-            </div>
 
-            <div className="border border-orange-900 p-4 space-y-2">
-              <div className="flex items-center gap-2">
-                <Maximize className="w-3.5 h-3.5 text-orange-500" />
-                <h3 className="text-orange-400 text-sm font-bold uppercase">Display Scale</h3>
+              <div className="border border-orange-950/60 bg-black/40 p-3 space-y-2">
+                <div className="flex items-center gap-2">
+                  <Smartphone className="w-4 h-4 text-orange-500" />
+                  <h4 className="text-orange-400 text-xs font-bold uppercase">Screen Orientation</h4>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => set('screenOrientation', 'portrait')} className={`flex-1 py-2 border text-xs flex items-center justify-center gap-2 ${s.screenOrientation === 'portrait' ? 'border-orange-500 bg-orange-950/40 text-orange-300' : 'border-orange-900 text-orange-700 hover:text-orange-500'}`}>
+                    <Smartphone className="w-3.5 h-3.5" /> PORTRAIT
+                  </button>
+                  <button onClick={() => set('screenOrientation', 'landscape')} className={`flex-1 py-2 border text-xs flex items-center justify-center gap-2 ${(!s.screenOrientation || s.screenOrientation === 'landscape') ? 'border-orange-500 bg-orange-950/40 text-orange-300' : 'border-orange-900 text-orange-700 hover:text-orange-500'}`}>
+                    <Monitor className="w-3.5 h-3.5" /> LANDSCAPE
+                  </button>
+                  <button onClick={() => set('orientationLocked', !s.orientationLocked)} className={`px-3 py-2 border text-xs flex items-center justify-center gap-1.5 ${s.orientationLocked ? 'border-orange-500 bg-orange-950/40 text-orange-300' : 'border-orange-900 text-orange-700 hover:text-orange-500'}`} title={s.orientationLocked ? 'Orientation locked — tap to unlock' : 'Orientation unlocked — tap to lock'}>
+                    {s.orientationLocked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
+                    {s.orientationLocked ? 'LOCKED' : 'UNLOCKED'}
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center gap-3">
-                <input type="range" min="50" max="150" value={s.displayScale || 100} onChange={e => set('displayScale', parseInt(e.target.value))} className="flex-1" />
-                <span className="text-orange-300 text-xs w-12">{s.displayScale || 100}%</span>
-              </div>
-              <div className="text-orange-700 text-[10px]">Scales the entire game interface. Lower for more content on screen, higher for readability on small displays.</div>
-            </div>
+            </Section>
 
-            <div className="border border-orange-900 p-4 space-y-2">
-              <div className="flex items-center gap-2">
-                <Maximize className="w-3.5 h-3.5 text-orange-500" />
-                <h3 className="text-orange-400 text-sm font-bold uppercase">UI Element Sizing</h3>
-              </div>
-              <div>
-                <div className="flex justify-between text-orange-700 text-[10px]"><span>CELESTIAL BODIES LIST</span><span>{s.uiScale?.bodyList ?? 100}%</span></div>
-                <input type="range" min="50" max="200" value={s.uiScale?.bodyList ?? 100} onChange={e => set('uiScale', { ...(s.uiScale || {}), bodyList: parseInt(e.target.value) })} className="w-full" />
-              </div>
-              <div>
-                <div className="flex justify-between text-orange-700 text-[10px]"><span>NAVIGATION &amp; MENUS (FONT/SCALE)</span><span>{s.uiScale?.navPanel ?? 100}%</span></div>
-                <input type="range" min="50" max="200" value={s.uiScale?.navPanel ?? 100} onChange={e => set('uiScale', { ...(s.uiScale || {}), navPanel: parseInt(e.target.value) })} className="w-full" />
-              </div>
-              <div className="text-orange-700 text-[10px]">Resize these panels independently. The bodies list anchors to the right edge and scrolls; the nav panel wraps to extra rows. Nothing moves permanently off-screen.</div>
+            {/* Global Text — brightness & base text color */}
+            <Section icon={Type} title="Global Text" summary="Brightness and base text color">
+              <TextBrightnessSettings />
+            </Section>
 
+            {/* Navigation Chrome — status header, nav bar, body list */}
+            <Section icon={LayoutGrid} title="Navigation Chrome" summary="Status header, nav bar, celestial body list sizing & color">
+              <div className="border border-orange-950/60 bg-black/40 p-3 space-y-2">
+                <h4 className="text-orange-400 text-xs font-bold uppercase">Panel Sizing</h4>
+                <div>
+                  <div className="flex justify-between text-orange-700 text-[10px]"><span>CELESTIAL BODIES LIST</span><span>{s.uiScale?.bodyList ?? 100}%</span></div>
+                  <input type="range" min="50" max="200" value={s.uiScale?.bodyList ?? 100} onChange={e => set('uiScale', { ...(s.uiScale || {}), bodyList: parseInt(e.target.value) })} className="w-full" />
+                </div>
+                <div>
+                  <div className="flex justify-between text-orange-700 text-[10px]"><span>NAVIGATION &amp; MENUS</span><span>{s.uiScale?.navPanel ?? 100}%</span></div>
+                  <input type="range" min="50" max="200" value={s.uiScale?.navPanel ?? 100} onChange={e => set('uiScale', { ...(s.uiScale || {}), navPanel: parseInt(e.target.value) })} className="w-full" />
+                </div>
+                <div>
+                  <div className="flex justify-between text-orange-700 text-[10px]"><span>STATUS HEADER</span><span>{s.uiScale?.statusHeader ?? 100}%</span></div>
+                  <input type="range" min="50" max="200" value={s.uiScale?.statusHeader ?? 100} onChange={e => set('uiScale', { ...(s.uiScale || {}), statusHeader: parseInt(e.target.value) })} className="w-full" />
+                </div>
+              </div>
               <NavTextRGBControl />
               <StatusHeaderStyleControl />
-            </div>
+            </Section>
 
+            {/* Screen Content Text — per screen-group size & RGB (self-collapsing) */}
             <UITextStyleSettings />
 
+            {/* Dropdown Menu Text — per nav-group size & RGB (self-collapsing) */}
             <MenuTextStyleSettings />
-
-            <div className="border border-orange-900 p-4 space-y-2">
-              <div className="flex items-center gap-2">
-                <Smartphone className="w-4 h-4 text-orange-500" />
-                <h3 className="text-orange-400 text-sm font-bold uppercase">Screen Orientation</h3>
-              </div>
-              <div className="flex items-center gap-2">
-                <button onClick={() => set('screenOrientation', 'portrait')} className={`flex-1 py-2 border text-xs flex items-center justify-center gap-2 ${s.screenOrientation === 'portrait' ? 'border-orange-500 bg-orange-950/40 text-orange-300' : 'border-orange-900 text-orange-700 hover:text-orange-500'}`}>
-                  <Smartphone className="w-3.5 h-3.5" /> PORTRAIT
-                </button>
-                <button onClick={() => set('screenOrientation', 'landscape')} className={`flex-1 py-2 border text-xs flex items-center justify-center gap-2 ${(!s.screenOrientation || s.screenOrientation === 'landscape') ? 'border-orange-500 bg-orange-950/40 text-orange-300' : 'border-orange-900 text-orange-700 hover:text-orange-500'}`}>
-                  <Monitor className="w-3.5 h-3.5" /> LANDSCAPE
-                </button>
-                <button onClick={() => set('orientationLocked', !s.orientationLocked)} className={`px-3 py-2 border text-xs flex items-center justify-center gap-1.5 ${s.orientationLocked ? 'border-orange-500 bg-orange-950/40 text-orange-300' : 'border-orange-900 text-orange-700 hover:text-orange-500'}`} title={s.orientationLocked ? 'Orientation locked — tap to unlock' : 'Orientation unlocked — tap to lock'}>
-                  {s.orientationLocked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
-                  {s.orientationLocked ? 'LOCKED' : 'UNLOCKED'}
-                </button>
-              </div>
-              <div className="text-orange-700 text-[10px]">Choose your preferred orientation, then press the lock to force it regardless of device rotation. When unlocked, the game follows your device's natural orientation.</div>
-            </div>
           </>
         )}
 
