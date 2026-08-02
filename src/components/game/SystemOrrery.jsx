@@ -12,6 +12,7 @@ import { MODULES } from '@/lib/shipOutfitting';
 import CelestialBodyList from './CelestialBodyList';
 import MiningPanel from './MiningPanel';
 import RadioChatter from './RadioChatter';
+import ShipCopilot from './ShipCopilot';
 import { generateBodyDescription } from '@/lib/bodyDescriptions';
 import { COMMODITY_MAP } from '@/lib/commodities';
 
@@ -1060,8 +1061,9 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
       </div>
       )}
 
-      {/* Ship AI radio chatter */}
-      <div className="absolute bottom-2 right-44 sm:right-56 w-40 sm:w-48 z-20">
+      {/* Ship AI copilot + radio chatter */}
+      <div className="absolute bottom-2 right-44 sm:right-56 w-40 sm:w-48 z-20 space-y-1">
+        <ShipCopilot />
         <RadioChatter />
       </div>
 
