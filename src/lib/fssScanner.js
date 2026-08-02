@@ -68,6 +68,7 @@ export function generateFSSSignals(systemData) {
       isStar: body.type === 'star',
       isBelt: body.type === 'belt',
       isMoon: body.type === 'moon',
+      isAlien: body.type === 'alien_site',
       starClass: body.starClass?.class,
     };
   }).sort((a, b) => a.frequency - b.frequency);

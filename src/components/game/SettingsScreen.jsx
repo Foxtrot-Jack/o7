@@ -1,7 +1,7 @@
 // Display Settings — brightness, mini-screen, CRT, reset
 import React from 'react';
 import { useGameState } from '@/lib/gameState';
-import { Settings, Sun, Monitor, Tv, RotateCcw, ArrowLeftRight, Palette, Download, Upload, Lock, Unlock, Smartphone } from 'lucide-react';
+import { Settings, Sun, Monitor, Tv, RotateCcw, ArrowLeftRight, Palette, Download, Upload, Lock, Unlock, Smartphone, Maximize } from 'lucide-react';
 import { THEME_LIST } from '@/lib/themes';
 import SoundSettings from '@/components/game/SoundSettings';
 import GestureDisplaySettings from '@/components/game/GestureDisplaySettings';
@@ -11,6 +11,12 @@ import FontSelector from '@/components/game/FontSelector';
 export default function SettingsScreen() {
   const { state, update, resetGame, switchSave } = useGameState();
   const s = state.settings || {};
+  const [isFullscreen, setIsFullscreen] = React.useState(!!document.fullscreenElement);
+  React.useEffect(() => {
+    const handler = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', handler);
+    return () => document.removeEventListener('fullscreenchange', handler);
+  }, []);
 
   const set = (key, val) => update({ settings: { ...s, [key]: val } });
 
@@ -53,6 +59,29 @@ export default function SettingsScreen() {
           <span className="text-orange-600 text-xs">Scanlines, glow, and CRT flicker</span>
           <button onClick={() => set('crtEffect', !s.crtEffect)} className={`px-3 py-1 border text-xs ${s.crtEffect ? 'border-orange-500 bg-orange-950/40 text-orange-300' : 'border-orange-900 text-orange-700'}`}>{s.crtEffect ? 'ON' : 'OFF'}</button>
         </div>
+      </div>
+
+      <div className="border border-orange-900 p-4 space-y-2">
+        <div className="flex items-center gap-2">
+          <Maximize className="w-4 h-4 text-orange-500" />
+          <h3 className="text-orange-400 text-sm font-bold uppercase">Window Mode</h3>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-orange-600 text-xs">Fullscreen hides browser chrome for an immersive cockpit view</span>
+          <button
+            onClick={() => {
+              if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen?.().catch(() => {});
+              } else {
+                document.exitFullscreen?.();
+              }
+            }}
+            className={`px-3 py-1 border text-xs ${isFullscreen ? 'border-orange-500 bg-orange-950/40 text-orange-300' : 'border-orange-900 text-orange-700'}`}
+          >
+            {isFullscreen ? 'EXIT FULLSCREEN' : 'ENTER FULLSCREEN'}
+          </button>
+        </div>
+        <div className="text-orange-700 text-[10px]">Press ESC to exit fullscreen. Contrast, saturation, and color inversion are in Gestures &amp; Display settings.</div>
       </div>
 
       <div className="border border-orange-900 p-4 space-y-2">

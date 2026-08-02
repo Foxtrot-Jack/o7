@@ -1003,6 +1003,7 @@ export default function GalaxyMap({ onJumpToSystem }) {
             <div className="border border-cyan-800 bg-black/50 p-2 text-[10px] space-y-1">
               <div className="flex items-center justify-between">
                 <span className="text-cyan-400 font-bold uppercase">Route Saved</span>
+                <button onClick={() => { plotRoute(null); setRouteResult(null); }} className="text-red-500 hover:text-red-400 text-[9px] font-bold">CLEAR ROUTE</button>
                 <button onClick={() => setRouteResult(null)} className="text-cyan-700 hover:text-cyan-400">✕</button>
               </div>
               <div className="grid grid-cols-3 gap-1 text-center">

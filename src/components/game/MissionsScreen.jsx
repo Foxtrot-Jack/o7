@@ -4,9 +4,10 @@ import { useGameState, MISSION_TYPES, SHIP_MAP } from '@/lib/gameState';
 import { makeRng, randInt, randFloat, pick, pickWeighted } from '@/lib/prng';
 import { COMMODITIES, COMMODITY_MAP } from '@/lib/commodities';
 import { computeCustomShipStats } from '@/lib/shipParts';
+import { MODULES } from '@/lib/shipOutfitting';
 import { generateStarsInRange, distance3D } from '@/lib/galaxy';
 import { MINING_MATERIAL_IDS } from '@/lib/system';
-import { ClipboardList, CheckCircle, Clock, MapPin, Package, Pickaxe, Telescope, Users, Wrench, Map } from 'lucide-react';
+import { ClipboardList, CheckCircle, Clock, MapPin, Package, Pickaxe, Telescope, Users, Wrench, Map, XCircle, Camera } from 'lucide-react';
 
 const MISSION_TEMPLATES = {
   [MISSION_TYPES.DELIVERY]: {
@@ -57,10 +58,16 @@ const MISSION_TEMPLATES = {
     desc: 'Provide surface scan data for a celestial body in {destination}.',
     rewardBase: 30000,
   },
+  [MISSION_TYPES.TOURISM]: {
+    name: 'Sightseeing Tour',
+    icon: Camera,
+    desc: 'Take {qty} tourists on a scenic tour of {destination}.',
+    rewardBase: 22000,
+  },
 };
 
 export default function MissionsScreen() {
-  const { state, getSystemData, addMission, completeMission, addCargo, addCredits, removeCargo, lockSurfaceMap, unlockSurfaceMaps } = useGameState();
+  const { state, getSystemData, addMission, completeMission, addCargo, addCredits, removeCargo, lockSurfaceMap, unlockSurfaceMaps, update } = useGameState();
   const [acceptedFilter, setAcceptedFilter] = useState(false);
 
   const systemData = getSystemData();
@@ -99,6 +106,7 @@ export default function MissionsScreen() {
         { value: MISSION_TYPES.EXPLORATION, weight: 10 },
         { value: MISSION_TYPES.COLONIZATION_SUPPLY, weight: 5 },
         { value: MISSION_TYPES.SURFACE_SCAN, weight: 8 },
+        { value: MISSION_TYPES.TOURISM, weight: 8 },
       ]);
 
       const template = MISSION_TEMPLATES[type];
@@ -110,7 +118,8 @@ export default function MissionsScreen() {
       const rewardMultiplier = randFloat(rng, 0.8, 2.5);
       const isSurfaceScan = type === MISSION_TYPES.SURFACE_SCAN;
       const isCourier = type === MISSION_TYPES.COURIER;
-      const noCargo = isSurfaceScan || isCourier;
+      const isTourism = type === MISSION_TYPES.TOURISM;
+      const noCargo = isSurfaceScan || isCourier || isTourism;
       const scanReward = Math.round(template.rewardBase * randFloat(rng, 0.8, 2.0) / 10) * 10;
       const reward = isSurfaceScan ? scanReward : isCourier ? Math.round(template.rewardBase * rewardMultiplier / 10) * 10 : Math.round(template.rewardBase * qty * rewardMultiplier / 10) * 10;
 
@@ -145,6 +154,22 @@ export default function MissionsScreen() {
   }, [station, systemData, state.currentSystem]);
 
   const handleAccept = (mission) => {
+    // Passenger missions require sufficient cabin capacity
+    if (mission.type === MISSION_TYPES.PASSENGER || mission.type === MISSION_TYPES.TOURISM) {
+      const modules = state.ship?.modules || {};
+      let totalCapacity = 0;
+      for (const [key, modId] of Object.entries(modules)) {
+        if (!key.startsWith('opt_')) continue;
+        const mod = MODULES[modId];
+        if (mod && mod.type === 'passenger_cabin') {
+          totalCapacity += mod.passengerCapacity || 0;
+        }
+      }
+      if (totalCapacity < mission.qty) {
+        alert(`INSUFFICIENT PASSENGER CABINS — Need ${mission.qty} berths, have ${totalCapacity}. Install passenger cabins in Outfitting.`);
+        return;
+      }
+    }
     addMission(mission);
     if (mission.type === MISSION_TYPES.SURFACE_SCAN && mission.destinationSystem?.seed) {
       lockSurfaceMap(mission.id, mission.destinationSystem.seed);
@@ -153,7 +178,7 @@ export default function MissionsScreen() {
 
   const handleCompleteMission = (mission) => {
     // Travel missions require being at the destination system
-    const travelMissions = [MISSION_TYPES.DELIVERY, MISSION_TYPES.COURIER, MISSION_TYPES.PASSENGER, MISSION_TYPES.COLONIZATION_SUPPLY];
+    const travelMissions = [MISSION_TYPES.DELIVERY, MISSION_TYPES.COURIER, MISSION_TYPES.PASSENGER, MISSION_TYPES.COLONIZATION_SUPPLY, MISSION_TYPES.TOURISM];
     if (travelMissions.includes(mission.type) && mission.destinationSystem && state.currentSystem.seed !== mission.destinationSystem.seed) {
       alert('MUST BE AT DESTINATION SYSTEM TO COMPLETE');
       return;
@@ -184,6 +209,17 @@ export default function MissionsScreen() {
     }
   };
 
+  const handleCancelMission = (mission) => {
+    if (!window.confirm('Cancel this mission? You will lose reputation with the issuing faction.')) return;
+    update({
+      activeMissions: state.activeMissions.filter(m => m.id !== mission.id),
+      reputation: Math.max(-100, (state.reputation || 0) - (mission.reputation * 2)),
+    });
+    if (mission.type === MISSION_TYPES.SURFACE_SCAN) {
+      unlockSurfaceMaps(mission.id);
+    }
+  };
+
   const formatDeadline = (timestamp) => {
     const remaining = timestamp - Date.now();
     const hours = Math.floor(remaining / (60 * 60 * 1000));
@@ -193,7 +229,56 @@ export default function MissionsScreen() {
   };
 
   if (!station) {
-    return <div className="p-4 text-orange-500">Must be docked at a station to access the mission board.</div>;
+    return (
+      <div className="w-full h-full flex flex-col">
+        <div className="border-b border-orange-900 p-3 flex items-center gap-2">
+          <ClipboardList className="w-4 h-4 text-orange-500" />
+          <span className="text-orange-300 font-bold uppercase text-sm">Active Missions — In Flight</span>
+        </div>
+        <div className="flex-1 overflow-y-auto p-3 space-y-2">
+          <div className="text-orange-700 text-[10px]">Dock at a station to accept new contracts.</div>
+          {state.activeMissions.length === 0 && (
+            <div className="text-center text-orange-700 py-8">
+              <ClipboardList className="w-8 h-8 mx-auto mb-2 opacity-50" />
+              <p>No active missions.</p>
+            </div>
+          )}
+          {state.activeMissions.map(mission => {
+            const template = MISSION_TEMPLATES[mission.type];
+            const Icon = template.icon;
+            return (
+              <div key={mission.id} className="border border-green-900 p-3 text-xs">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start gap-2">
+                    <Icon className="w-4 h-4 text-green-500 mt-0.5" />
+                    <div>
+                      <div className="text-green-300 font-bold">{mission.name}</div>
+                      <div className="text-orange-600 mt-0.5">{mission.description}</div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-orange-300 font-bold">{mission.reward.toLocaleString()} CR</div>
+                    <div className="text-orange-700 text-[10px] flex items-center gap-1 justify-end">
+                      <Clock className="w-2.5 h-2.5" />
+                      {formatDeadline(mission.deadline)}
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-2 flex justify-end">
+                  <button
+                    onClick={() => handleCancelMission(mission)}
+                    className="px-2 py-1 border border-red-800 text-red-500 hover:bg-red-950/30 text-[10px] flex items-center gap-1"
+                  >
+                    <XCircle className="w-3 h-3" />
+                    CANCEL
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -279,7 +364,7 @@ export default function MissionsScreen() {
           const cargoItem = mission.commodity ? state.ship.cargo.find(c => c.commodity === mission.commodity) : null;
           const hasCargo = cargoItem && cargoItem.qty >= mission.qty;
           const hasSurfaceMap = mission.type === MISSION_TYPES.SURFACE_SCAN && Object.values(state.surfaceMaps || {}).some(m => m.systemSeed === mission.destinationSystem?.seed);
-          const isDataMission = mission.type === MISSION_TYPES.COURIER || mission.type === MISSION_TYPES.PASSENGER;
+          const isDataMission = mission.type === MISSION_TYPES.COURIER || mission.type === MISSION_TYPES.PASSENGER || mission.type === MISSION_TYPES.TOURISM;
           const isAtDestination = !mission.destinationSystem || state.currentSystem.seed === mission.destinationSystem.seed;
           const hasScans = mission.type === MISSION_TYPES.EXPLORATION ? Object.keys(state.scannedBodies || {}).length >= (mission.qty || 1) : false;
           const canComplete = (isDataMission && isAtDestination) || (mission.type === MISSION_TYPES.EXPLORATION ? (hasScans && isAtDestination) : (mission.type === MISSION_TYPES.SURFACE_SCAN ? hasSurfaceMap : (hasCargo && isAtDestination)));
@@ -330,7 +415,14 @@ export default function MissionsScreen() {
                   </div>
                 </div>
               </div>
-              <div className="mt-2 flex justify-end">
+              <div className="mt-2 flex justify-end gap-1">
+                <button
+                  onClick={() => handleCancelMission(mission)}
+                  className="px-2 py-1 border border-red-800 text-red-500 hover:bg-red-950/30 text-[10px] flex items-center gap-1"
+                >
+                  <XCircle className="w-3 h-3" />
+                  CANCEL
+                </button>
                 <button
                   onClick={() => handleCompleteMission(mission)}
                   disabled={!canComplete}

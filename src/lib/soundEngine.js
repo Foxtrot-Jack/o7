@@ -131,6 +131,36 @@ class SoundEngine {
     }
   }
 
+  // FSS body-type-specific ambient sound — plays during FSS tuning
+  playFssBody(bodyType, planetType) {
+    if (!this.settings.enabled) return;
+    this.init();
+    if (!this.ctx) return;
+    this.resume();
+    const t = this.ctx.currentTime;
+    let cat = 'rocky';
+    if (bodyType === 'star') cat = 'star';
+    else if (bodyType === 'belt') cat = 'belt';
+    else if (bodyType === 'alien_site') cat = 'alien';
+    else if (bodyType === 'moon') cat = (planetType && planetType.includes('icy')) ? 'icy' : 'rocky';
+    else if (planetType && (planetType.includes('gas_giant') || planetType.includes('helium'))) cat = 'gas';
+    else if (planetType && planetType.includes('lava')) cat = 'lava';
+    else if (planetType && (planetType.includes('icy') || planetType.includes('rocky_ice'))) cat = 'icy';
+    else if (planetType && (planetType.includes('water') || planetType.includes('earthlike'))) cat = 'water';
+    else if (planetType && planetType.includes('ammonia')) cat = 'ammonia';
+    switch (cat) {
+      case 'star': this._fssStar(t); break;
+      case 'gas': this._fssGas(t); break;
+      case 'lava': this._fssLava(t); break;
+      case 'icy': this._fssIcy(t); break;
+      case 'water': this._fssWater(t); break;
+      case 'ammonia': this._fssAmmonia(t); break;
+      case 'alien': this._fssAlien(t); break;
+      case 'belt': this._fssBelt(t); break;
+      default: this._fssRocky(t); break;
+    }
+  }
+
   // ===== SFX PRIMITIVES =====
   _blip(freq, dur, type, gain, t) {
     const osc = this.ctx.createOscillator();
@@ -201,6 +231,40 @@ class SoundEngine {
     src.connect(filter).connect(g).connect(this.sfxGain);
     src.start(t);
     src.stop(t + dur + 0.02);
+  }
+
+  // ===== FSS BODY SOUNDS =====
+  _fssStar(t) {
+    this._blip(80, 1.2, 'sine', 0.15, t);
+    this._blip(160, 1.0, 'sine', 0.08, t);
+  }
+  _fssGas(t) {
+    this._sweep(40, 120, 1.0, 'sawtooth', 0.12, t);
+    this._noiseBurst(1.0, 0.06, 300, t);
+  }
+  _fssLava(t) {
+    this._blip(50, 1.0, 'sawtooth', 0.12, t);
+    for (let i = 0; i < 4; i++) this._noiseBurst(0.08, 0.1, 3000, t + i * 0.2);
+  }
+  _fssIcy(t) {
+    for (let i = 0; i < 6; i++) this._blip(2000 + Math.random() * 2000, 0.03, 'triangle', 0.06, t + i * 0.12);
+  }
+  _fssWater(t) {
+    for (let i = 0; i < 3; i++) this._sweep(800 - i * 200, 400 - i * 100, 0.3, 'sine', 0.08, t + i * 0.15);
+  }
+  _fssAmmonia(t) {
+    this._noiseBurst(1.0, 0.1, 1500, t);
+  }
+  _fssAlien(t) {
+    this._blip(440, 1.0, 'sine', 0.1, t);
+    this._blip(444, 1.0, 'sine', 0.08, t);
+    this._blip(220, 1.2, 'triangle', 0.06, t);
+  }
+  _fssBelt(t) {
+    for (let i = 0; i < 5; i++) this._blip(300 + Math.random() * 400, 0.02, 'square', 0.05, t + i * 0.15);
+  }
+  _fssRocky(t) {
+    this._noiseBurst(0.3, 0.1, 500, t);
   }
 
   // ===== COMPLEX SFX =====

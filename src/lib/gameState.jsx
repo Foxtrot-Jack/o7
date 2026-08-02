@@ -69,7 +69,7 @@ export const MISSION_TYPES = {
   SALVAGE: 'salvage',
   EXPLORATION: 'exploration',
   COLONIZATION_SUPPLY: 'colonization_supply',
-  SURFACE_SCAN: 'surface_scan',
+  SURFACE_SCAN: 'surface_scan', TOURISM: 'tourism',
 };
 
 function createInitialState() {

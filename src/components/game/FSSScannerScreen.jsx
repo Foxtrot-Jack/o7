@@ -10,6 +10,7 @@ const SIGNAL_ICONS = {
   planet: Globe,
   moon: Globe,
   belt: Layers,
+  alien_site: Zap,
 };
 
 export default function FSSScannerScreen() {
@@ -66,6 +67,7 @@ export default function FSSScannerScreen() {
     setTuning(signal);
     setTuneProgress(0);
     soundEngine.play('fss_tune');
+    soundEngine.playFssBody(signal.bodyType, signal.planetType);
 
     intervalRef.current = setInterval(() => {
       const elapsed = Date.now() - start;
@@ -112,6 +114,16 @@ export default function FSSScannerScreen() {
     }
     setTuning(null);
     setTuneProgress(0);
+  };
+
+  const handleCancelTuning = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    setTuning(null);
+    setTuneProgress(0);
+    soundEngine.play('back');
   };
 
   const tuneNext = (remaining, index) => {
@@ -171,7 +183,11 @@ export default function FSSScannerScreen() {
             <button onClick={handleStopAuto} className="text-red-500 hover:text-red-400 flex items-center gap-1 font-bold">
               <Square className="w-3 h-3" /> STOP AUTO-TUNE
             </button>
-          ) : tuning ? null : (
+          ) : tuning ? (
+            <button onClick={handleCancelTuning} className="text-red-500 hover:text-red-400 flex items-center gap-1 font-bold">
+              <Square className="w-3 h-3" /> ABORT TUNING
+            </button>
+          ) : (
             <button onClick={handleAutoTune} className="text-cyan-500 hover:text-cyan-400 flex items-center gap-1 font-bold">
               <Zap className="w-3 h-3" /> AUTO-TUNE ALL ({progress.total - progress.found} remaining)
             </button>
