@@ -10,6 +10,31 @@ import { Wrench, X, Zap, Shield, Package, Gauge, Weight, Crosshair, Settings, Us
 
 const STAT_KEYS = ['cargo','shield','power','range','damage','thrust','oxygen','scanRange','distro','scoopRate','fuel','hull','limpets','repair','srvs','fighters','bins','shieldBoost','moduleProtection','passengerCapacity'];
 
+// Guardian module ID prefix → blueprint ID required to unlock
+const GUARDIAN_MODULE_BLUEPRINT = {
+  gfsd: 'g_fsd_booster',
+  ghr: 'g_hull_reinforcement',
+  gmr: 'g_module_reinforcement',
+  gsr: 'g_shield_reinforcement',
+  gpc: 'g_plasma_charger',
+  gsc: 'g_shard_cannon',
+  ggc: 'g_gauss_cannon',
+};
+
+function getGuardianBlueprintId(mod) {
+  if (!mod) return null;
+  for (const [prefix, bpId] of Object.entries(GUARDIAN_MODULE_BLUEPRINT)) {
+    if (mod.id.startsWith(prefix + '_')) return bpId;
+  }
+  return null;
+}
+
+function isGuardianModuleUnlocked(mod, guardianBlueprints) {
+  const bpId = getGuardianBlueprintId(mod);
+  if (!bpId) return true;
+  return guardianBlueprints && guardianBlueprints[bpId] && guardianBlueprints[bpId].count > 0;
+}
+
 function getModStat(mod) {
   if (!mod) return { value: '—', unit: '' };
   const key = STAT_KEYS.find(k => mod[k] !== undefined);
@@ -122,6 +147,7 @@ export default function OutfittingScreen() {
           onClose={() => setSelectedSlot(null)}
           credits={state.credits}
           isSandbox={state.saveMode === 'sandbox' || (state.cheats?.unlocked && state.cheats?.active?.free_outfitting)}
+          guardianBlueprints={state.guardianBlueprints}
         />
       )}
 
@@ -184,7 +210,7 @@ function SlotSection({ title, slots, modules, onSelect, onEngineering, disabled 
   );
 }
 
-function ModulePicker({ slot, currentModuleId, onEquip, onUnequip, onClose, credits, isSandbox = false }) {
+function ModulePicker({ slot, currentModuleId, onEquip, onUnequip, onClose, credits, isSandbox = false, guardianBlueprints = {} }) {
   const [filter, setFilter] = useState('all');
   const available = useMemo(() => {
     const mods = getModulesForSlot(slot.type, slot.size, null);
@@ -219,16 +245,20 @@ function ModulePicker({ slot, currentModuleId, onEquip, onUnequip, onClose, cred
             const canAfford = isSandbox || netCost <= credits;
             const isEquipped = currentModuleId === mod.id;
             const stat = getModStat(mod);
+            const guardianBpId = getGuardianBlueprintId(mod);
+            const isGuardianLocked = guardianBpId !== null && !isGuardianModuleUnlocked(mod, guardianBlueprints);
             return (
-              <button key={mod.id} onClick={() => !isEquipped && onEquip(mod.id)} disabled={isEquipped || !canAfford} className={`w-full text-left border p-2 text-xs ${isEquipped ? 'border-green-700' : canAfford ? 'border-orange-900 hover:border-orange-700' : 'border-gray-900 opacity-40'}`}>
+              <button key={mod.id} onClick={() => !isEquipped && !isGuardianLocked && onEquip(mod.id)} disabled={isEquipped || !canAfford || isGuardianLocked} className={`w-full text-left border p-2 text-xs ${isEquipped ? 'border-green-700' : isGuardianLocked ? 'border-purple-950 opacity-50' : canAfford ? 'border-orange-900 hover:border-orange-700' : 'border-gray-900 opacity-40'}`}>
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className={`font-bold ${mod.premium ? 'text-yellow-400' : 'text-orange-300'}`}>{mod.name}</span>
+                    <span className={`font-bold ${mod.premium ? 'text-yellow-400' : isGuardianLocked ? 'text-purple-600' : 'text-orange-300'}`}>{mod.name}</span>
                     {mod.premium && <span className="text-yellow-500 text-[9px] ml-1">EXPANDED</span>}
+                    {isGuardianLocked && <span className="text-purple-500 text-[9px] ml-1">🔒 GUARDIAN</span>}
                   </div>
-                  <span className="text-orange-400">{isEquipped ? '✓ EQUIPPED' : isSandbox ? 'FREE' : netCost >= 0 ? `${netCost.toLocaleString()} CR` : `+${Math.abs(netCost).toLocaleString()} CR`}</span>
+                  <span className="text-orange-400">{isEquipped ? '✓ EQUIPPED' : isGuardianLocked ? 'LOCKED' : isSandbox ? 'FREE' : netCost >= 0 ? `${netCost.toLocaleString()} CR` : `+${Math.abs(netCost).toLocaleString()} CR`}</span>
                 </div>
                 <div className="text-orange-600 text-[9px]">{mod.statLabel}: {stat.value}{stat.unit} · Mass: {mod.mass}T</div>
+                {isGuardianLocked && <div className="text-purple-600 text-[8px]">Scan alien sites to unlock guardian blueprints.</div>}
               </button>
             );
           })}

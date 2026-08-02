@@ -4,13 +4,16 @@ import { useGameState } from '@/lib/gameState';
 import { COMMODITIES, COMMODITY_MAP } from '@/lib/commodities';
 import { makeRng, randInt, randFloat } from '@/lib/prng';
 import { getMarketCycle, getPriceModifier, getPriceTrend, getTrendDisplay } from '@/lib/dynamicEconomy';
-import { Skull, ShoppingCart, AlertTriangle, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import HackingMinigame from './HackingMinigame';
+import { Skull, ShoppingCart, AlertTriangle, TrendingUp, TrendingDown, Minus, Terminal } from 'lucide-react';
 
 const CONTRABAND_IDS = COMMODITIES.filter(c => c.legality === 1).map(c => c.id);
 
 export default function BlackMarketScreen() {
-  const { state, getSystemData, addCredits, addCargo, removeCargo, addCrime } = useGameState();
+  const { state, getSystemData, addCredits, addCargo, removeCargo, addCrime, addMaterial } = useGameState();
   const [tradeAmounts, setTradeAmounts] = useState({});
+  const [hacking, setHacking] = useState(false);
+  const [hackResult, setHackResult] = useState(null);
   const systemData = getSystemData();
   const station = systemData?.stations.find(s => s.id === state.currentStationId);
 
@@ -70,6 +73,23 @@ export default function BlackMarketScreen() {
         <Skull className="w-5 h-5 text-red-500" />
         <h2 className="text-red-300 font-bold uppercase">Black Market — {station.name}</h2>
         <span className="text-red-700 text-[10px] ml-auto">⚠ TRADING HERE INCREASES NOTORIETY</span>
+      </div>
+
+      {/* Data Heist */}
+      <div className="border border-green-900 p-3">
+        <div className="flex items-center gap-2 mb-1">
+          <Terminal className="w-4 h-4 text-green-500" />
+          <h3 className="text-green-300 font-bold uppercase text-xs">Data Terminal Heist</h3>
+        </div>
+        <p className="text-green-700 text-[10px] mb-2">Crack the station's encrypted data cache for credits and materials. Failure triggers security alerts.</p>
+        {hackResult && (
+          <div className={`text-[10px] mb-2 p-1.5 border ${hackResult.success ? 'border-green-700 text-green-400' : 'border-red-700 text-red-400'}`}>
+            {hackResult.success ? `✓ DATA EXTRACTED: +${hackResult.reward.toLocaleString()} CR, ${hackResult.materials}x materials` : '✗ LOCKOUT — Security alerted, notoriety increased.'}
+          </div>
+        )}
+        <button onClick={() => { setHacking(true); setHackResult(null); }} className="w-full py-1.5 border border-green-700 text-green-400 hover:bg-green-950/30 text-xs font-bold flex items-center justify-center gap-1.5">
+          <Terminal className="w-3.5 h-3.5" /> HACK TERMINAL
+        </button>
       </div>
 
       <div className="space-y-1">

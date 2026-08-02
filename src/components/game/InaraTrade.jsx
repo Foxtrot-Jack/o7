@@ -6,15 +6,18 @@ import { useGameState } from '@/lib/gameState';
 import { COMMODITIES, COMMODITY_CATEGORIES, COMMODITY_MAP } from '@/lib/commodities';
 import { generateStarsInRange, distance3D } from '@/lib/galaxy';
 import { generateSystem } from '@/lib/system';
-import { TrendingUp, Loader, RefreshCw, ArrowRight, Search } from 'lucide-react';
+import { calculateRoute } from '@/lib/routeCalculator';
+import { computeShipStats } from '@/lib/shipOutfitting';
+import { TrendingUp, Loader, RefreshCw, ArrowRight, Search, Navigation } from 'lucide-react';
 
 const SEARCH_RADIUS = 40;
 const MAX_SYSTEMS = 20;
 const MAX_RESULTS = 30;
 
 export default function InaraTrade() {
-  const { state, getSystemData } = useGameState();
+  const { state, getSystemData, plotRoute } = useGameState();
   const [loading, setLoading] = useState(false);
+  const [plottedSystem, setPlottedSystem] = useState(null);
   const [opportunities, setOpportunities] = useState([]);
   const [commodityFilter, setCommodityFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -40,16 +43,17 @@ export default function InaraTrade() {
         const sysData = generateSystem(star.seed, star.starClass);
         const targetEconomy = sysData.economy;
 
+        const oppBase = { system: star.name, seed: star.seed, star, distance: star.dist, economy: targetEconomy.name };
         if (commodityFilter !== 'all') {
           const comm = COMMODITY_MAP[commodityFilter];
           if (comm) {
             const catKey = Object.entries(COMMODITY_CATEGORIES).find(([k, v]) => v === comm.category)?.[0];
             if (catKey) {
               if ((currentEconomy?.produces || []).includes(catKey) && (targetEconomy?.consumes || []).includes(catKey)) {
-                opps.push({ system: star.name, seed: star.seed, distance: star.dist, economy: targetEconomy.name, commodity: comm.name, buyPrice: Math.round(comm.basePrice * 0.6), sellPrice: Math.round(comm.basePrice * 1.4), profit: Math.round(comm.basePrice * 0.8), direction: 'forward' });
+                opps.push({ ...oppBase, commodity: comm.name, buyPrice: Math.round(comm.basePrice * 0.6), sellPrice: Math.round(comm.basePrice * 1.4), profit: Math.round(comm.basePrice * 0.8), direction: 'forward' });
               }
               if ((targetEconomy?.produces || []).includes(catKey) && (currentEconomy?.consumes || []).includes(catKey)) {
-                opps.push({ system: star.name, seed: star.seed, distance: star.dist, economy: targetEconomy.name, commodity: comm.name + ' (return)', buyPrice: Math.round(comm.basePrice * 0.6), sellPrice: Math.round(comm.basePrice * 1.4), profit: Math.round(comm.basePrice * 0.8), direction: 'return' });
+                opps.push({ ...oppBase, commodity: comm.name + ' (return)', buyPrice: Math.round(comm.basePrice * 0.6), sellPrice: Math.round(comm.basePrice * 1.4), profit: Math.round(comm.basePrice * 0.8), direction: 'return' });
               }
             }
           }
@@ -57,12 +61,12 @@ export default function InaraTrade() {
           const fwdCategories = (currentEconomy?.produces || []).filter(c => (targetEconomy?.consumes || []).includes(c));
           const fwdBest = findBestCommodity(fwdCategories);
           if (fwdBest) {
-            opps.push({ system: star.name, seed: star.seed, distance: star.dist, economy: targetEconomy.name, commodity: fwdBest.name, buyPrice: Math.round(fwdBest.basePrice * 0.6), sellPrice: Math.round(fwdBest.basePrice * 1.4), profit: Math.round(fwdBest.basePrice * 0.8), direction: 'forward' });
+            opps.push({ ...oppBase, commodity: fwdBest.name, buyPrice: Math.round(fwdBest.basePrice * 0.6), sellPrice: Math.round(fwdBest.basePrice * 1.4), profit: Math.round(fwdBest.basePrice * 0.8), direction: 'forward' });
           }
           const retCategories = (targetEconomy?.produces || []).filter(c => (currentEconomy?.consumes || []).includes(c));
           const retBest = findBestCommodity(retCategories);
           if (retBest) {
-            opps.push({ system: star.name, seed: star.seed, distance: star.dist, economy: targetEconomy.name, commodity: retBest.name + ' (return)', buyPrice: Math.round(retBest.basePrice * 0.6), sellPrice: Math.round(retBest.basePrice * 1.4), profit: Math.round(retBest.basePrice * 0.8), direction: 'return' });
+            opps.push({ ...oppBase, commodity: retBest.name + ' (return)', buyPrice: Math.round(retBest.basePrice * 0.6), sellPrice: Math.round(retBest.basePrice * 1.4), profit: Math.round(retBest.basePrice * 0.8), direction: 'return' });
           }
         }
       }
@@ -77,6 +81,15 @@ export default function InaraTrade() {
   const filteredOpps = searchQuery
     ? opportunities.filter(o => o.system.toLowerCase().includes(searchQuery.toLowerCase()) || o.commodity.toLowerCase().includes(searchQuery.toLowerCase()))
     : opportunities;
+
+  const handlePlotRoute = (opp) => {
+    if (!opp.star) return;
+    const stats = computeShipStats(state.ship.type, state.ship.modules || {});
+    const jumpRange = stats.jumpRange || 10;
+    const route = calculateRoute(state.currentSystem, opp.star, jumpRange, true);
+    plotRoute(route.length > 0 ? route : [{ name: opp.star.name, starClass: opp.star.starClass, x: opp.star.x, y: opp.star.y, z: opp.star.z, jumpDist: opp.distance, fromNeutron: false }]);
+    setPlottedSystem(opp.system);
+  };
 
   return (
     <div className="p-4 space-y-3">
@@ -148,6 +161,12 @@ export default function InaraTrade() {
                 <div>PROFIT: <span className="text-green-400 font-bold">+{opp.profit.toLocaleString()}</span></div>
               </div>
               <div className="text-[9px] text-orange-700 mt-0.5">PROFIT/LY: {Math.round(opp.profit / opp.distance).toLocaleString()} CR</div>
+              <button
+                onClick={() => handlePlotRoute(opp)}
+                className={`mt-1 w-full px-2 py-0.5 border text-[9px] flex items-center justify-center gap-1 transition-all ${plottedSystem === opp.system ? 'border-cyan-500 bg-cyan-950/30 text-cyan-300' : 'border-orange-800 text-orange-500 hover:bg-orange-950/30'}`}
+              >
+                <Navigation className="w-2.5 h-2.5" /> {plottedSystem === opp.system ? 'ROUTE PLOTTED ✓' : 'PLOT ROUTE'}
+              </button>
             </div>
           ))}
         </div>
