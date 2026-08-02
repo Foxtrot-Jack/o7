@@ -759,29 +759,29 @@ export default function GalaxyMap({ onJumpToSystem }) {
         </div>
       )}
 
-      {/* HUD overlay - top left (compact) */}
-      <div className="absolute top-2 left-2 text-orange-600 text-[10px] space-y-0 pointer-events-none">
-        <div className="text-orange-400 font-bold">{state.currentSystem.name}</div>
-        <div>POS {state.currentSystem.x.toFixed(0)},{state.currentSystem.y.toFixed(0)},{state.currentSystem.z.toFixed(0)} · CORE {Math.sqrt(state.currentSystem.x ** 2 + state.currentSystem.y ** 2).toFixed(0)}LY</div>
-        <div>{getRegionName(state.currentSystem.x, state.currentSystem.y, state.currentSystem.z)} · {stars.length} STARS</div>
-      </div>
-
-      {/* View controls (compact) */}
-      <div className="absolute top-14 left-2 flex gap-0.5 z-20">
-        <button onClick={() => { setGalaxyViewMode(true); rotState.current.targetPanX = -state.currentSystem.x; rotState.current.targetPanZ = -state.currentSystem.z; rotState.current.targetPanY = -state.currentSystem.y; rotState.current.targetPolar = 0.15; rotState.current.targetDistance = 35000; }} className={`px-1.5 py-0.5 border text-[9px] ${galaxyViewMode ? 'border-red-500 bg-red-950/30 text-red-400' : 'border-orange-800 bg-black/80 text-orange-600'}`}>GALAXY</button>
-        <button onClick={() => { setGalaxyViewMode(false); rotState.current.targetPanX = 0; rotState.current.targetPanZ = 0; rotState.current.targetPanY = 0; rotState.current.targetDistance = 120; }} className="px-1.5 py-0.5 border border-orange-800 bg-black/80 text-orange-600 text-[9px]">LOCAL</button>
-        <button onClick={() => setShowGrid(!showGrid)} className={`px-1.5 py-0.5 border text-[9px] ${showGrid ? 'border-cyan-600 text-cyan-400' : 'border-orange-800 bg-black/80 text-orange-600'}`}>GRID</button>
-      </div>
-
-      {/* Coordinate display when grid is on (compact) */}
-      {showGrid && (
-        <div className="absolute top-24 left-2 text-[9px] space-y-0 pointer-events-none z-20">
-          <div className="text-cyan-700 uppercase">CUR <span className="text-red-400">{state.currentSystem.x.toFixed(0)}</span>/<span className="text-green-400">{state.currentSystem.y.toFixed(0)}</span>/<span className="text-blue-400">{state.currentSystem.z.toFixed(0)}</span></div>
-          {selectedStar && (
-            <div className="text-cyan-700 uppercase">SEL <span className="text-red-400">{selectedStar.x.toFixed(0)}</span>/<span className="text-green-400">{selectedStar.y.toFixed(0)}</span>/<span className="text-blue-400">{selectedStar.z.toFixed(0)}</span></div>
-          )}
+      {/* Nav panel banner */}
+      <div className="absolute top-2 left-2 right-2 sm:right-auto border border-orange-700 bg-black/90 p-2 z-20">
+        <div className="flex items-center justify-between gap-3">
+          <div className="text-[10px] space-y-0">
+            <div className="text-orange-400 font-bold">{state.currentSystem.name}</div>
+            <div className="text-orange-600">POS {state.currentSystem.x.toFixed(0)},{state.currentSystem.y.toFixed(0)},{state.currentSystem.z.toFixed(0)} · CORE {Math.sqrt(state.currentSystem.x ** 2 + state.currentSystem.y ** 2).toFixed(0)}LY</div>
+            <div className="text-orange-600">{getRegionName(state.currentSystem.x, state.currentSystem.y, state.currentSystem.z)} · {stars.length} STARS</div>
+          </div>
+          <div className="flex gap-0.5 flex-shrink-0">
+            <button onClick={() => { setGalaxyViewMode(true); rotState.current.targetPanX = -state.currentSystem.x; rotState.current.targetPanZ = -state.currentSystem.z; rotState.current.targetPanY = -state.currentSystem.y; rotState.current.targetPolar = 0.15; rotState.current.targetDistance = 35000; }} className={`px-1.5 py-0.5 border text-[9px] ${galaxyViewMode ? 'border-red-500 bg-red-950/30 text-red-400' : 'border-orange-800 bg-black/80 text-orange-600'}`}>GALAXY</button>
+            <button onClick={() => { setGalaxyViewMode(false); rotState.current.targetPanX = 0; rotState.current.targetPanZ = 0; rotState.current.targetPanY = 0; rotState.current.targetDistance = 120; }} className="px-1.5 py-0.5 border border-orange-800 bg-black/80 text-orange-600 text-[9px]">LOCAL</button>
+            <button onClick={() => setShowGrid(!showGrid)} className={`px-1.5 py-0.5 border text-[9px] ${showGrid ? 'border-cyan-600 text-cyan-400' : 'border-orange-800 bg-black/80 text-orange-600'}`}>GRID</button>
+          </div>
         </div>
-      )}
+        {showGrid && (
+          <div className="border-t border-orange-900 mt-1 pt-1 text-[9px] flex gap-4">
+            <div className="text-cyan-700 uppercase">CUR <span className="text-red-400">{state.currentSystem.x.toFixed(0)}</span>/<span className="text-green-400">{state.currentSystem.y.toFixed(0)}</span>/<span className="text-blue-400">{state.currentSystem.z.toFixed(0)}</span></div>
+            {selectedStar && (
+              <div className="text-cyan-700 uppercase">SEL <span className="text-red-400">{selectedStar.x.toFixed(0)}</span>/<span className="text-green-400">{selectedStar.y.toFixed(0)}</span>/<span className="text-blue-400">{selectedStar.z.toFixed(0)}</span></div>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Star legend - top right (collapsible) */}
       <div className="absolute top-2 right-2 text-[10px] pointer-events-auto">

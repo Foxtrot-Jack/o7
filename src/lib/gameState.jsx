@@ -2678,14 +2678,8 @@ export function hasCarrierVendor(system) {
 export function getAvailableShipsAtStation(system, isSandbox = false) {
   if (isSandbox) return new Set(SHIP_TYPES.map(s => s.id));
   const pop = system?.population || 0;
-  const available = ['sidewinder', 'eagle', 'hauler', 'adder'];
-  if (pop > 100000) available.push('viper', 'cobra', 'dolphin');
-  if (pop > 1000000) available.push('cobramk4', 'type6', 'diamondback', 'cobramk5');
-  if (pop > 10000000) available.push('asp', 'federal_dropship', 'vulture', 'imperial_courier', 'type7');
-  if (pop > 100000000) available.push('python', 'mandalay', 'alliance_chieftain', 'federal_assault', 'imperial_clipper', 'type8');
-  if (pop > 1000000000) available.push('alliance_crusader', 'alliance_challenger', 'krait_phantom', 'krait_mk2', 'orca', 'mamba', 'type9', 'anaconda');
-  if (pop > 10000000000) available.push('python_mk2', 'beluga', 'type10', 'federal_corvette', 'imperial_cutter');
-  return new Set(available);
+  const maxCost = pop > 1e10 ? 1e12 : pop > 1e9 ? 3e8 : pop > 1e8 ? 8e7 : pop > 1e7 ? 2.5e7 : pop > 1e6 ? 5e6 : pop > 1e5 ? 1e6 : 1e5;
+  return new Set(SHIP_TYPES.filter(s => s.cost <= maxCost).map(s => s.id));
 }
 
 // Determine outfitting/engineering level based on system stats

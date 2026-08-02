@@ -159,4 +159,5 @@ const BASE_SHIP_TYPES = [
   { id: 'imperial_cutter', name: 'Dynast Sovereign', manufacturer: 'Solaris Dynasty', cargoCapacity: 120, fuelCapacity: 64, jumpRange: 16, cost: 210000000, multirole: true, class: 4 },
 ];
 
-export const SHIP_TYPES = [...BASE_SHIP_TYPES, ...ADDITIONAL_SHIPS];
+import { EXPANDED_SHIPS } from './shipRosterExpanded';
+export const SHIP_TYPES = [...BASE_SHIP_TYPES, ...ADDITIONAL_SHIPS, ...EXPANDED_SHIPS];

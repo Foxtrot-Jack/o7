@@ -1,4 +1,4 @@
-// ShipModelViewer — rotating, interactive 3D ship wireframe
+// ShipModelViewer — rotating, interactive 3D ship wireframe with pinch-to-zoom
 import React, { useRef, useEffect } from 'react';
 import * as THREE from 'three';
 import { buildShipModel } from '@/lib/shipModelBuilder';
@@ -12,9 +12,10 @@ export default function ShipModelViewer({ ship, customShips }) {
   const cameraRef = useRef(null);
   const modelRef = useRef(null);
   const animationIdRef = useRef(null);
-  const rotState = useRef({ azimuth: 0, targetAzimuth: 0, polar: 0.3, targetPolar: 0.3 });
+  const rotState = useRef({ azimuth: 0, targetAzimuth: 0, polar: 0.3, targetPolar: 0.3, distance: 5, targetDistance: 5 });
   const isDraggingRef = useRef(false);
   const lastPosRef = useRef({ x: 0, y: 0 });
+  const pinchDistRef = useRef(0);
 
   useEffect(() => {
     if (!mountRef.current) return;
@@ -37,7 +38,7 @@ export default function ShipModelViewer({ ship, customShips }) {
     rendererRef.current = renderer;
     cameraRef.current = camera;
 
-    // Build ship model
+    // Build ship model — reflects the currently flown ship
     let model;
     if (ship.type === 'custom' && ship.customShipId) {
       const design = (customShips || []).find(s => s.id === ship.customShipId);
@@ -53,6 +54,7 @@ export default function ShipModelViewer({ ship, customShips }) {
     const canvas = renderer.domElement;
     canvas.style.touchAction = 'none';
 
+    // Pointer drag rotation
     const onPointerDown = (e) => {
       isDraggingRef.current = true;
       lastPosRef.current = { x: e.clientX, y: e.clientY };
@@ -67,20 +69,70 @@ export default function ShipModelViewer({ ship, customShips }) {
     };
     const onPointerUp = () => { isDraggingRef.current = false; };
 
+    // Wheel zoom (desktop)
+    const onWheel = (e) => {
+      e.preventDefault();
+      rotState.current.targetDistance = Math.max(2, Math.min(15, rotState.current.targetDistance + e.deltaY * 0.01));
+    };
+
+    // Touch pinch zoom (mobile)
+    const onTouchStart = (e) => {
+      if (e.touches.length === 2) {
+        isDraggingRef.current = false;
+        pinchDistRef.current = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+      } else if (e.touches.length === 1) {
+        isDraggingRef.current = true;
+        lastPosRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      }
+    };
+    const onTouchMove = (e) => {
+      e.preventDefault();
+      if (e.touches.length === 2) {
+        const newDist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        const delta = pinchDistRef.current - newDist;
+        pinchDistRef.current = newDist;
+        rotState.current.targetDistance = Math.max(2, Math.min(15, rotState.current.targetDistance + delta * 0.03));
+      } else if (e.touches.length === 1 && isDraggingRef.current) {
+        const dx = e.touches[0].clientX - lastPosRef.current.x;
+        const dy = e.touches[0].clientY - lastPosRef.current.y;
+        lastPosRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        rotState.current.targetAzimuth += dx * 0.01;
+        rotState.current.targetPolar = Math.max(0.1, Math.min(Math.PI - 0.1, rotState.current.targetPolar + dy * 0.01));
+      }
+    };
+    const onTouchEnd = () => {
+      isDraggingRef.current = false;
+      pinchDistRef.current = 0;
+    };
+
     canvas.addEventListener('pointerdown', onPointerDown);
     canvas.addEventListener('pointermove', onPointerMove);
     canvas.addEventListener('pointerup', onPointerUp);
+    canvas.addEventListener('wheel', onWheel, { passive: false });
+    canvas.addEventListener('touchstart', onTouchStart, { passive: false });
+    canvas.addEventListener('touchmove', onTouchMove, { passive: false });
+    canvas.addEventListener('touchend', onTouchEnd);
 
     const animate = () => {
       animationIdRef.current = requestAnimationFrame(animate);
       const rs = rotState.current;
       rs.azimuth += (rs.targetAzimuth - rs.azimuth) * 0.1;
       rs.polar += (rs.targetPolar - rs.polar) * 0.1;
+      rs.distance += (rs.targetDistance - rs.distance) * 0.1;
       if (!isDraggingRef.current) rs.targetAzimuth += 0.004;
       if (modelRef.current) {
         modelRef.current.rotation.y = rs.azimuth;
         modelRef.current.rotation.x = Math.sin(rs.polar - Math.PI / 2) * 0.3;
       }
+      // Apply zoom via camera distance
+      camera.position.set(0, 1.5, rs.distance);
+      camera.lookAt(0, 0, 0);
       renderer.render(scene, camera);
     };
     animate();
@@ -101,6 +153,10 @@ export default function ShipModelViewer({ ship, customShips }) {
       canvas.removeEventListener('pointerdown', onPointerDown);
       canvas.removeEventListener('pointermove', onPointerMove);
       canvas.removeEventListener('pointerup', onPointerUp);
+      canvas.removeEventListener('wheel', onWheel);
+      canvas.removeEventListener('touchstart', onTouchStart);
+      canvas.removeEventListener('touchmove', onTouchMove);
+      canvas.removeEventListener('touchend', onTouchEnd);
       renderer.dispose();
       if (mountRef.current && canvas.parentNode) mountRef.current.removeChild(canvas);
     };

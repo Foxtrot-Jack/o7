@@ -119,7 +119,8 @@ function BodyNode({ node, depth, stations, selectedBody, selectedStation, onSele
     );
   }
 
-  const isScanned = scannedBodies?.[body.id];
+  const parentScannedForRing = body.type === BODY_TYPES.RING && body.parent && scannedBodies?.[body.parent];
+  const isScanned = scannedBodies?.[body.id] || parentScannedForRing;
   const probeState = probeProgress?.[body.id];
   const isMapped = probeState?.complete;
 
@@ -132,7 +133,7 @@ function BodyNode({ node, depth, stations, selectedBody, selectedStation, onSele
   const symbol = TYPE_SYMBOLS[body.type] || '●';
   const indent = depth * 10;
 
-  const statusIcon = isStar ? '' : isMapped ? ' ✓' : isScanned ? ' ◉' : '';
+  const statusIcon = isStar ? '' : isMapped ? ' ✓' : isScanned ? ' ✓' : '';
 
   return (
     <div>

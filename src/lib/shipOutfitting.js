@@ -3,6 +3,8 @@
 // References Coriolis-style outfitting from Elite Dangerous
 // ============================================================
 
+import { EXPANDED_SHIP_SLOTS } from './shipRosterExpanded';
+
 const CLASS_MULT = { E: 0.8, D: 0.85, C: 0.9, B: 1.0, A: 1.25 };
 const CLASS_ORDER = ['E', 'D', 'C', 'B', 'A'];
 
@@ -113,7 +115,38 @@ function generateModules() {
   // Detailed surface scanner
   m['dss_1e'] = { id: 'dss_1e', name: 'Detailed Surface Scanner 1E', category: 'optional', type: 'surface_scanner', size: 1, class: 'E', mass: 2, statLabel: 'Scan Bonus' };
 
-  // ---- Hardpoint weapons ----
+  // ---- Expanded optional modules ----
+  // Prospector limpet controllers
+  for (const size of [1,3,5,7]) { m[`plc_${size}d`] = { id: `plc_${size}d`, name: `Prospector Limpet ${size}D`, category: 'optional', type: 'prospector_limpet', size, class: 'D', mass: size, limpets: size, statLabel: 'Limpets' }; }
+  // Shield cell banks
+  for (const size of [1,2,3,4,5,6,7,8]) { for (const cls of ['A','C','D']) { m[`scb_${size}${cls.toLowerCase()}`] = { id: `scb_${size}${cls.toLowerCase()}`, name: `Shield Cell Bank ${size}${cls}`, category: 'optional', type: 'shield_cell_bank', size, class: cls, mass: size * 1.5, shieldRestore: Math.round(size * 30 * CLASS_MULT[cls]), statLabel: 'Shield Restore' }; } }
+  // Repair limpet controllers
+  for (const size of [1,3,5,7]) { m[`rlc_${size}d`] = { id: `rlc_${size}d`, name: `Repair Limpet ${size}D`, category: 'optional', type: 'repair_limpet', size, class: 'D', mass: size, limpets: size, statLabel: 'Limpets' }; }
+  // Recon limpet controllers
+  for (const size of [1,3,5]) { m[`reclc_${size}d`] = { id: `reclc_${size}d`, name: `Recon Limpet ${size}D`, category: 'optional', type: 'recon_limpet', size, class: 'D', mass: size, limpets: size, statLabel: 'Limpets' }; }
+  // Decontamination limpet
+  for (const size of [1,3]) { m[`dlc_${size}e`] = { id: `dlc_${size}e`, name: `Decontamination Limpet ${size}E`, category: 'optional', type: 'decontamination_limpet', size, class: 'E', mass: size, limpets: size, statLabel: 'Limpets' }; }
+  // Research limpet controllers
+  for (const size of [1,3,5]) { m[`rslc_${size}d`] = { id: `rslc_${size}d`, name: `Research Limpet ${size}D`, category: 'optional', type: 'research_limpet', size, class: 'D', mass: size, limpets: size, statLabel: 'Limpets' }; }
+  // Hull reinforcement — expanded classes
+  for (const size of [1,2,3,4,5]) { for (const cls of ['C','B']) { m[`hrp_${size}${cls.toLowerCase()}`] = { id: `hrp_${size}${cls.toLowerCase()}`, name: `Hull Reinforcement ${size}${cls}`, category: 'optional', type: 'hull_reinforcement', size, class: cls, mass: size * 2, hull: Math.round(size * 150 * CLASS_MULT[cls]), statLabel: 'Hull' }; } }
+  // Module reinforcement — expanded classes
+  for (const size of [1,2,3,4]) { for (const cls of ['D','C']) { m[`mrp_${size}${cls.toLowerCase()}`] = { id: `mrp_${size}${cls.toLowerCase()}`, name: `Module Reinforcement ${size}${cls}`, category: 'optional', type: 'module_reinforcement', size, class: cls, mass: size * 1.5, moduleProtection: Math.round(size * 30 * CLASS_MULT[cls]), statLabel: 'Protection' }; } }
+  // Guardian FSD booster
+  for (const size of [1,2,3,4,5]) { m[`gfsd_${size}h`] = { id: `gfsd_${size}h`, name: `Guardian FSD Booster ${size}H`, category: 'optional', type: 'guardian_fsd_booster', size, class: 'H', mass: size * 1.5, jumpRangeBonus: size * 2, statLabel: 'Jump +LY' }; }
+  // Guardian hull reinforcement
+  for (const size of [1,2,3,4,5]) { m[`ghr_${size}d`] = { id: `ghr_${size}d`, name: `Guardian Hull Reinforcement ${size}D`, category: 'optional', type: 'guardian_hull_reinforcement', size, class: 'D', mass: size * 2, hull: size * 200, statLabel: 'Hull' }; }
+  // Guardian module reinforcement
+  for (const size of [1,2,3]) { m[`gmr_${size}d`] = { id: `gmr_${size}d`, name: `Guardian Module Reinforcement ${size}D`, category: 'optional', type: 'guardian_module_reinforcement', size, class: 'D', mass: size * 1.5, moduleProtection: size * 50, statLabel: 'Protection' }; }
+  // Guardian shield reinforcement
+  for (const size of [1,2,3,4,5]) { m[`gsr_${size}d`] = { id: `gsr_${size}d`, name: `Guardian Shield Reinforcement ${size}D`, category: 'optional', type: 'guardian_shield_reinforcement', size, class: 'D', mass: size * 1.5, shield: size * 80, statLabel: 'Shield MJ' }; }
+  // Meta-alloy hull reinforcement (caustic resistant)
+  for (const size of [1,2,3,4,5]) { m[`mhr_${size}d`] = { id: `mhr_${size}d`, name: `Meta-Alloy Hull Reinforcement ${size}D`, category: 'optional', type: 'meta_alloy_hull_reinforcement', size, class: 'D', mass: size * 2, hull: size * 180, causticResist: true, statLabel: 'Hull' }; }
+  // Shield cell bank — pre-engineered variant
+  for (const size of [4,5,6,7,8]) { m[`scb_${size}a_r5`] = { id: `scb_${size}a_r5`, name: `Shield Cell Bank ${size}A (Rapid)`, category: 'optional', type: 'shield_cell_bank', size, class: 'A', mass: size * 1.5, shieldRestore: Math.round(size * 30 * 1.25 * 1.3), statLabel: 'Shield Restore', premium: true, preEngineered: true }; }
+
+  // ---- Hardpoint weapons (all class ratings E-A + expanded types) ----
+  const WEAPON_CLASS_MULT = { E: 1.0, D: 1.15, C: 1.3, B: 1.5, A: 1.7 };
   const weaponDefs = [
     { abbr: 'pl', name: 'Pulse Laser', sizes: [1,2,3,4], dmg: 12 },
     { abbr: 'bl', name: 'Burst Laser', sizes: [1,2,3], dmg: 10 },
@@ -124,24 +157,84 @@ function generateModules() {
     { abbr: 'mr', name: 'Missile Rack', sizes: [1,2], dmg: 20 },
     { abbr: 'tor', name: 'Torpedo Pylon', sizes: [1], dmg: 80 },
     { abbr: 'pa', name: 'Plasma Accelerator', sizes: [2,3,4], dmg: 50 },
+    { abbr: 'fc', name: 'Frag Cannon', sizes: [1,2,3], dmg: 18 },
+    { abbr: 'sm', name: 'Shock Mine Launcher', sizes: [1,2], dmg: 22 },
+    { abbr: 'mnl', name: 'Mine Launcher', sizes: [1,2], dmg: 16 },
+    { abbr: 'ps', name: 'Plasma Slug', sizes: [2,3], dmg: 40 },
+    { abbr: 'gc', name: 'Gauss Cannon', sizes: [1,2], dmg: 28 },
+    { abbr: 'sc', name: 'Shard Cannon', sizes: [1,2], dmg: 14 },
+    { abbr: 'fm', name: 'Flak Missile', sizes: [2,3], dmg: 24 },
+    { abbr: 'rp', name: 'Rocket Pod', sizes: [1,2], dmg: 19 },
+    { abbr: 'em', name: 'Enzyme Missile Rack', sizes: [1,2], dmg: 21 },
+    { abbr: 'axm', name: 'AX Missile Rack', sizes: [2,3], dmg: 26 },
+    { abbr: 'axmc', name: 'AX Multi-Cannon', sizes: [2,3], dmg: 17 },
+    { abbr: 'ggc', name: 'Guardian Gauss Cannon', sizes: [1,2], dmg: 32 },
+    { abbr: 'gsc', name: 'Guardian Shard Cannon', sizes: [1,2], dmg: 16 },
+    { abbr: 'gpc', name: 'Guardian Plasma Charger', sizes: [2,3], dmg: 35 },
+    { abbr: 'minl', name: 'Mining Laser', sizes: [1,2,3], dmg: 5 },
+    { abbr: 'scl', name: 'Seismic Charge Launcher', sizes: [2,3], dmg: 15 },
+    { abbr: 'ab', name: 'Abrasion Blaster', sizes: [1,2], dmg: 8 },
+    { abbr: 'ssm', name: 'Sub-Surface Missile', sizes: [1,2], dmg: 12 },
   ];
   for (const d of weaponDefs) {
     for (const size of d.sizes) {
-      const id = `${d.abbr}_${size}e`;
-      if (m[id]) continue;
-      m[id] = { id, name: `${d.name} ${size}E`, category: 'hardpoint', type: d.abbr, size, class: 'E', mass: size * 2, damage: d.dmg * size, statLabel: 'Damage' };
+      for (const cls of CLASS_ORDER) {
+        const id = `${d.abbr}_${size}${cls.toLowerCase()}`;
+        if (m[id]) continue;
+        m[id] = { id, name: `${d.name} ${size}${cls}`, category: 'hardpoint', type: d.abbr, size, class: cls, mass: Math.round(size * 2 * (cls === 'A' ? 1.5 : cls === 'D' ? 0.8 : 1) * 10) / 10, damage: Math.round(d.dmg * size * WEAPON_CLASS_MULT[cls]), statLabel: 'Damage' };
+      }
     }
   }
 
-  // ---- Utility mounts ----
+  // ---- Utility mounts (expanded with class variants + new types) ----
   for (const cls of ['A','B','C','D','E']) {
     const id = `sb_0${cls.toLowerCase()}`;
     m[id] = { id, name: `Shield Booster 0${cls}`, category: 'utility', type: 'shield_booster', size: 0, class: cls, mass: 1.3, shieldBoost: Math.round((CLASS_MULT[cls] - 0.7) * 100), statLabel: 'Shield %' };
   }
-  m['ch_0e'] = { id: 'ch_0e', name: 'Chaff Launcher 0E', category: 'utility', type: 'chaff', size: 0, class: 'E', mass: 1.3, statLabel: 'Utility' };
-  m['hs_0e'] = { id: 'hs_0e', name: 'Heat Sink Launcher 0E', category: 'utility', type: 'heat_sink', size: 0, class: 'E', mass: 1.3, statLabel: 'Utility' };
-  m['pdu_0e'] = { id: 'pdu_0e', name: 'Point Defence 0E', category: 'utility', type: 'point_defence', size: 0, class: 'E', mass: 1.3, statLabel: 'Utility' };
-  m['kws_0e'] = { id: 'kws_0e', name: 'Kill Warrant Scanner 0E', category: 'utility', type: 'kws', size: 0, class: 'E', mass: 1.3, statLabel: 'Bounty %' };
+  for (const cls of CLASS_ORDER) {
+    const cl = cls.toLowerCase();
+    m[`ch_0${cl}`] = { id: `ch_0${cl}`, name: `Chaff Launcher 0${cls}`, category: 'utility', type: 'chaff', size: 0, class: cls, mass: 1.3, statLabel: 'Utility' };
+    m[`hs_0${cl}`] = { id: `hs_0${cl}`, name: `Heat Sink Launcher 0${cls}`, category: 'utility', type: 'heat_sink', size: 0, class: cls, mass: 1.3, statLabel: 'Utility' };
+    m[`pdu_0${cl}`] = { id: `pdu_0${cl}`, name: `Point Defence 0${cls}`, category: 'utility', type: 'point_defence', size: 0, class: cls, mass: 1.3, statLabel: 'Utility' };
+    m[`kws_0${cl}`] = { id: `kws_0${cl}`, name: `Kill Warrant Scanner 0${cls}`, category: 'utility', type: 'kws', size: 0, class: cls, mass: 1.3, bountyBonus: Math.round(CLASS_MULT[cls] * 50), statLabel: 'Bounty %' };
+    m[`ecm_0${cl}`] = { id: `ecm_0${cl}`, name: `Electronic Countermeasure 0${cls}`, category: 'utility', type: 'ecm', size: 0, class: cls, mass: 1.3, statLabel: 'ECM' };
+    m[`man_0${cl}`] = { id: `man_0${cl}`, name: `Manifest Scanner 0${cls}`, category: 'utility', type: 'manifest_scanner', size: 0, class: cls, mass: 1.3, scanRange: Math.round(CLASS_MULT[cls] * 500), statLabel: 'Scan Range' };
+    m[`fsw_0${cl}`] = { id: `fsw_0${cl}`, name: `Frame Shift Wake Scanner 0${cls}`, category: 'utility', type: 'wake_scanner', size: 0, class: cls, mass: 1.3, scanRange: Math.round(CLASS_MULT[cls] * 1000), statLabel: 'Wake Scan' };
+    m[`sgs_0${cl}`] = { id: `sgs_0${cl}`, name: `Sinuous Tether 0${cls}`, category: 'utility', type: 'sinuous_tether', size: 0, class: cls, mass: 1.3, statLabel: 'Utility' };
+  }
+
+  // ---- Pre-engineered modules (premium, engineering built in) ----
+  const preEngCore = [
+    { abbr: 'fsd', name: 'FSD Long Range', type: 'fsd', sizes: [3,4,5,6,7], statKey: 'range', statBase: 3, statMult: 1.4, cat: 'core' },
+    { abbr: 'thr', name: 'Thrusters Dirty Drive', type: 'thrusters', sizes: [3,4,5,6,7], statKey: 'thrust', statBase: 10, statMult: 1.5, cat: 'core' },
+    { abbr: 'pp', name: 'Power Plant Overcharged', type: 'power_plant', sizes: [3,4,5,6,7], statKey: 'power', statBase: 8, statMult: 1.4, cat: 'core' },
+    { abbr: 'sg', name: 'Shield Generator Reinforced', type: 'shield_generator', sizes: [3,4,5,6,7], statKey: 'shield', statBase: 50, statMult: 1.5, cat: 'optional' },
+  ];
+  for (const pe of preEngCore) {
+    for (const size of pe.sizes) {
+      const id = `pe_${pe.abbr}_${size}a`;
+      m[id] = { id, name: `${pe.name} ${size}A`, category: pe.cat, type: pe.type, size, class: 'A', mass: Math.round(size * 2 * 1.5 * 10) / 10, [pe.statKey]: Math.round(size * pe.statBase * 1.25 * pe.statMult), statLabel: 'Engineered', premium: true, preEngineered: true };
+    }
+  }
+  // Pre-engineered shield boosters
+  for (const cls of ['B','A']) {
+    const id = `pe_sb_0${cls.toLowerCase()}`;
+    m[id] = { id, name: `Shield Booster 0${cls} (Reinforced)`, category: 'utility', type: 'shield_booster', size: 0, class: cls, mass: 1.3, shieldBoost: Math.round((CLASS_MULT[cls] - 0.7) * 150), statLabel: 'Shield %', premium: true, preEngineered: true };
+  }
+  // Pre-engineered weapons
+  const preEngWpns = [
+    { abbr: 'mc', name: 'Multi-Cannon Overcharged', sizes: [1,2,3], dmg: 15 },
+    { abbr: 'bml', name: 'Beam Laser Long Range', sizes: [1,2,3], dmg: 8 },
+    { abbr: 'pa', name: 'Plasma Accelerator Overcharged', sizes: [2,3], dmg: 50 },
+    { abbr: 'can', name: 'Cannon High Yield', sizes: [2,3,4], dmg: 25 },
+    { abbr: 'pl', name: 'Pulse Laser Efficient', sizes: [1,2,3], dmg: 12 },
+  ];
+  for (const pw of preEngWpns) {
+    for (const size of pw.sizes) {
+      const id = `pe_${pw.abbr}_${size}a`;
+      m[id] = { id, name: `${pw.name} ${size}A`, category: 'hardpoint', type: pw.abbr, size, class: 'A', mass: size * 3, damage: Math.round(pw.dmg * size * 1.7 * 1.3), statLabel: 'Damage', premium: true, preEngineered: true };
+    }
+  }
 
   return m;
 }
@@ -153,7 +246,7 @@ export const MODULES = generateModules();
 // optional: array of maxSize per slot
 // hardpoints: array of sizes (1=small, 2=medium, 3=large, 4=huge)
 // utility: count
-export const SHIP_SLOTS = {
+const BASE_SHIP_SLOTS = {
   sidewinder:         { core: { pp: 2, thr: 2, fsd: 2, ls: 1, sen: 1, pd: 1 }, optional: [2, 2, 1], hardpoints: [1, 1], utility: 2 },
   eagle:              { core: { pp: 2, thr: 2, fsd: 2, ls: 1, sen: 1, pd: 1 }, optional: [2, 2, 1], hardpoints: [1, 1, 1], utility: 2 },
   hauler:             { core: { pp: 2, thr: 2, fsd: 2, ls: 1, sen: 1, pd: 1 }, optional: [3, 2, 2, 1], hardpoints: [1], utility: 2 },
@@ -190,6 +283,8 @@ export const SHIP_SLOTS = {
   imperial_cutter:    { core: { pp: 7, thr: 7, fsd: 6, ls: 5, sen: 5, pd: 6 }, optional: [7, 6, 6, 5, 5, 4, 3, 2], hardpoints: [4, 4, 3, 3, 2, 2], utility: 8 },
   type10:             { core: { pp: 7, thr: 7, fsd: 6, ls: 5, sen: 5, pd: 6 }, optional: [7, 7, 6, 6, 5, 5, 4, 3], hardpoints: [1, 1, 2, 2, 3, 3, 3], utility: 8 },
 };
+
+export const SHIP_SLOTS = { ...BASE_SHIP_SLOTS, ...EXPANDED_SHIP_SLOTS };
 
 // ---- Engineering blueprints ----
 export const ENGINEERING_BLUEPRINTS = {

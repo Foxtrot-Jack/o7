@@ -1145,28 +1145,32 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
               <>
                 <div>TYPE: <span className="text-orange-300 capitalize">{selectedBody.ringType || 'rocky'} Ring</span></div>
                 <div>HOTSPOTS: <span className="text-orange-300">{selectedBody.hotspots?.length || 0}</span></div>
-                {selectedBody.hotspots?.map(hs => {
-                  const inOrbit = orbitingBodyId === selectedBody.parent;
-                  const matName = COMMODITY_MAP[hs.materialId]?.name || hs.materialId;
-                  const isMining = miningHotspotId === hs.id;
-                  return (
-                    <button
-                      key={hs.id}
-                      onClick={() => handleMineHotspot(hs)}
-                      disabled={!inOrbit || isMining}
-                      className={`w-full flex items-center gap-1 py-0.5 px-1 text-[10px] border transition-all ${
-                        inOrbit
-                          ? 'border-amber-700 text-amber-400 hover:bg-amber-950/30 disabled:opacity-50'
-                          : 'border-transparent text-amber-600'
-                      }`}
-                    >
-                      <span className="flex-1 text-left">{matName} — Hotspot</span>
-                      {inOrbit && (
-                        <span className="text-amber-700">{isMining ? '...' : '[MINE]'}</span>
-                      )}
-                    </button>
-                  );
-                })}
+                {(() => {
+                  const parentScanned = state.scannedBodies?.[selectedBody.parent];
+                  if (!parentScanned) return <div className="text-orange-700 text-[10px] text-center py-1">⚠ SCAN PARENT PLANET TO REVEAL HOTSPOTS</div>;
+                  return (selectedBody.hotspots || []).map(hs => {
+                    const inOrbit = orbitingBodyId === selectedBody.parent;
+                    const matName = COMMODITY_MAP[hs.materialId]?.name || hs.materialId;
+                    const isMining = miningHotspotId === hs.id;
+                    return (
+                      <button
+                        key={hs.id}
+                        onClick={() => handleMineHotspot(hs)}
+                        disabled={!inOrbit || isMining}
+                        className={`w-full flex items-center gap-1 py-0.5 px-1 text-[10px] border transition-all ${
+                          inOrbit
+                            ? 'border-amber-700 text-amber-400 hover:bg-amber-950/30 disabled:opacity-50'
+                            : 'border-transparent text-amber-600'
+                        }`}
+                      >
+                        <span className="flex-1 text-left">{matName} — Hotspot ✓</span>
+                        {inOrbit && (
+                          <span className="text-amber-700">{isMining ? '...' : '[MINE]'}</span>
+                        )}
+                      </button>
+                    );
+                  });
+                })()}
               </>
             )}
           </div>

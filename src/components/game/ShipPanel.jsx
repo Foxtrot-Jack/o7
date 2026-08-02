@@ -129,7 +129,7 @@ function ShipOverview({ ship, shipType, customShips }) {
 
       {/* 3D rotating ship model */}
       <div className="border border-orange-900 p-2">
-        <div className="text-orange-700 text-[9px] uppercase mb-1 text-center">Wireframe Model — Drag to Rotate</div>
+        <div className="text-orange-700 text-[9px] uppercase mb-1 text-center">Wireframe Model — Drag to Rotate · Pinch to Zoom</div>
         <ShipModelViewer ship={ship} customShips={customShips} />
       </div>
     </div>
