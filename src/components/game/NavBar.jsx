@@ -262,7 +262,7 @@ export default function NavBar({ currentScreen, onNavigate, location }) {
   };
 
   return (
-    <nav ref={navRef} className="relative z-[100] flex flex-wrap items-center gap-1 px-2 py-1.5 border-b border-orange-900/50 bg-black">
+    <nav ref={navRef} className="relative z-[100] flex flex-wrap items-center gap-1 px-2 py-1.5 border-b border-orange-900/50 bg-black" style={{ zoom: (state.settings?.uiScale?.navPanel ?? 100) / 100 }}>
       {NAV_GROUPS.map((group) => {
         const Icon = group.icon;
         const allItems = getAllItems(group);

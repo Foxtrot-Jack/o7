@@ -51,6 +51,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
   const planetColorsOn = colorEnabledFor('planets', effTheme, settings.monoOverrides);
   const shipColorsOn = colorEnabledFor('ships', effTheme, settings.monoOverrides);
   const stationColorsOn = colorEnabledFor('stations', effTheme, settings.monoOverrides);
+  const bodyListScale = (settings.uiScale?.bodyList ?? 100) / 100;
   const [selectedBody, setSelectedBody] = useState(null);
   const [hoveredBody, setHoveredBody] = useState(null);
   const [bodiesCollapsed, setBodiesCollapsed] = useState(state.settings?.miniScreen || false);
@@ -1075,7 +1076,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
       {bodiesCollapsed ? (
         <button onClick={() => setBodiesCollapsed(false)} className="absolute top-2 right-2 border border-orange-900 bg-black/80 p-2 text-xs text-orange-600 hover:text-orange-400">◀ BODIES</button>
       ) : (
-      <div className="absolute top-2 right-2 bottom-2 w-40 sm:w-48 overflow-y-auto border border-orange-900/50 bg-black/80 p-2 text-xs space-y-0.5">
+      <div className="absolute top-2 right-2 bottom-2 w-40 sm:w-48 overflow-y-auto border border-orange-900/50 bg-black/80 p-2 text-xs space-y-0.5" style={{ zoom: bodyListScale }}>
         <div className="flex items-center justify-between border-b border-orange-900 pb-1 mb-1">
           <span className="text-orange-700 uppercase text-[10px]">Celestial Bodies</span>
           <button onClick={() => setBodiesCollapsed(true)} className="text-orange-700 hover:text-orange-400 text-[10px]">▶</button>

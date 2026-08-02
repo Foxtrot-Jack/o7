@@ -80,6 +80,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
               screens: { ...(prev.settings?.display?.screens || {}), ...(parsed.settings?.display?.screens || {}) },
             },
             monoOverrides: { ...(prev.settings?.monoOverrides || {}), ...(parsed.settings?.monoOverrides || {}) },
+            uiScale: { ...(prev.settings?.uiScale || {}), ...(parsed.settings?.uiScale || {}) },
           },
           achievements: {
             firstDiscoveries: {}, milestones: {}, scannedSystemSeeds: [], systemsScanned: 0, totalBodiesScanned: 0,

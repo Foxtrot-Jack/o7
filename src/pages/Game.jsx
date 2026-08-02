@@ -345,7 +345,8 @@ function GameContent() {
   const display = { ...displayGlobal, ...displayScreen };
 
   return (
-    <div className={`w-full h-screen bg-black flex flex-col overflow-hidden ${state.settings?.miniScreen ? 'mini-screen' : ''} ${state.settings?.orientationLocked ? (state.settings?.screenOrientation === 'portrait' ? 'force-portrait' : 'force-landscape') : ''}`} style={state.settings?.displayScale && state.settings.displayScale !== 100 ? { zoom: state.settings.displayScale / 100 } : undefined}>
+    <div className={`w-full h-screen bg-black flex flex-col overflow-auto ${state.settings?.miniScreen ? 'mini-screen' : ''} ${state.settings?.orientationLocked ? (state.settings?.screenOrientation === 'portrait' ? 'force-portrait' : 'force-landscape') : ''}`}>
+      <div className="w-full h-screen" style={state.settings?.displayScale && state.settings.displayScale !== 100 ? { zoom: state.settings.displayScale / 100 } : undefined}>
       <CRTFrame enabled={state.settings.crtEffect} brightness={state.settings.textBrightness || 100} theme={effectiveTheme} customColor={state.settings.customColor} textRGB={state.settings.textRGB} fontFamily={state.settings.fontFamily} fontScale={state.settings.fontScale} display={display}>
         <div className="flex flex-col h-full">
           <div className={`relative z-40 ${monoUI ? 'crt-mono-ui' : ''}`}>
@@ -385,6 +386,7 @@ function GameContent() {
           </div>
         </div>
       </CRTFrame>
+      </div>
     </div>
   );
 }

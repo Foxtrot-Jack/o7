@@ -106,6 +106,7 @@ export function createInitialState() {
       screenOrientation: 'landscape',
       orientationLocked: false,
       monoOverrides: { stars: false, planets: false, ships: false, stations: false, uiAccent: false },
+      uiScale: { bodyList: 100, navPanel: 100 },
       sound: {
         enabled: true,
         sfxVolume: 0.7,

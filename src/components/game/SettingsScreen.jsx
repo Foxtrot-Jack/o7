@@ -114,6 +114,22 @@ export default function SettingsScreen() {
 
             <div className="border border-orange-900 p-4 space-y-2">
               <div className="flex items-center gap-2">
+                <Maximize className="w-3.5 h-3.5 text-orange-500" />
+                <h3 className="text-orange-400 text-sm font-bold uppercase">UI Element Sizing</h3>
+              </div>
+              <div>
+                <div className="flex justify-between text-orange-700 text-[10px]"><span>CELESTIAL BODIES LIST</span><span>{s.uiScale?.bodyList ?? 100}%</span></div>
+                <input type="range" min="50" max="200" value={s.uiScale?.bodyList ?? 100} onChange={e => set('uiScale', { ...(s.uiScale || {}), bodyList: parseInt(e.target.value) })} className="w-full" />
+              </div>
+              <div>
+                <div className="flex justify-between text-orange-700 text-[10px]"><span>NAV PANEL</span><span>{s.uiScale?.navPanel ?? 100}%</span></div>
+                <input type="range" min="50" max="200" value={s.uiScale?.navPanel ?? 100} onChange={e => set('uiScale', { ...(s.uiScale || {}), navPanel: parseInt(e.target.value) })} className="w-full" />
+              </div>
+              <div className="text-orange-700 text-[10px]">Resize these panels independently. The bodies list anchors to the right edge and scrolls; the nav panel wraps to extra rows. Nothing moves permanently off-screen.</div>
+            </div>
+
+            <div className="border border-orange-900 p-4 space-y-2">
+              <div className="flex items-center gap-2">
                 <Smartphone className="w-4 h-4 text-orange-500" />
                 <h3 className="text-orange-400 text-sm font-bold uppercase">Screen Orientation</h3>
               </div>

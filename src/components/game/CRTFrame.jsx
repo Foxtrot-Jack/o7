@@ -26,14 +26,14 @@ export default function CRTFrame({ children, enabled = true, brightness = 100, t
   const rootStyle = `:root { font-size: ${rootFontSize}px; }`;
 
   if (!enabled) return (
-    <div className="crt-container w-full h-full overflow-hidden bg-black" style={filterStyle}>
+    <div className="crt-container w-full h-full overflow-auto bg-black" style={filterStyle}>
       <style>{rootStyle}</style>
       {children}
     </div>
   );
 
   return (
-    <div className="crt-container relative w-full h-full overflow-hidden bg-black" style={filterStyle}>
+    <div className="crt-container relative w-full h-full overflow-auto bg-black" style={filterStyle}>
       <div className="crt-content relative z-10 w-full h-full">
         {children}
       </div>
