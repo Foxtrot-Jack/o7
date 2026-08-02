@@ -29,10 +29,23 @@ function getGuardianBlueprintId(mod) {
   return null;
 }
 
+// High-tier Guardian modules (larger size) require more blueprint fragments
+function getGuardianFragmentsRequired(mod) {
+  if (!mod) return 0;
+  // Size 1-2: 1 fragment, 3: 2, 4: 3, 5+: 4
+  const size = mod.size || 1;
+  if (size <= 2) return 1;
+  if (size === 3) return 2;
+  if (size === 4) return 3;
+  return 4;
+}
+
 function isGuardianModuleUnlocked(mod, guardianBlueprints) {
   const bpId = getGuardianBlueprintId(mod);
   if (!bpId) return true;
-  return guardianBlueprints && guardianBlueprints[bpId] && guardianBlueprints[bpId].count > 0;
+  const required = getGuardianFragmentsRequired(mod);
+  const have = (guardianBlueprints && guardianBlueprints[bpId]?.count) || 0;
+  return have >= required;
 }
 
 function getModStat(mod) {
@@ -247,6 +260,8 @@ function ModulePicker({ slot, currentModuleId, onEquip, onUnequip, onClose, cred
             const stat = getModStat(mod);
             const guardianBpId = getGuardianBlueprintId(mod);
             const isGuardianLocked = guardianBpId !== null && !isGuardianModuleUnlocked(mod, guardianBlueprints);
+            const fragmentsHave = (guardianBlueprints && guardianBlueprints[guardianBpId]?.count) || 0;
+            const fragmentsNeed = getGuardianFragmentsRequired(mod);
             return (
               <button key={mod.id} onClick={() => !isEquipped && !isGuardianLocked && onEquip(mod.id)} disabled={isEquipped || !canAfford || isGuardianLocked} className={`w-full text-left border p-2 text-xs ${isEquipped ? 'border-green-700' : isGuardianLocked ? 'border-purple-950 opacity-50' : canAfford ? 'border-orange-900 hover:border-orange-700' : 'border-gray-900 opacity-40'}`}>
                 <div className="flex items-center justify-between">
@@ -258,7 +273,7 @@ function ModulePicker({ slot, currentModuleId, onEquip, onUnequip, onClose, cred
                   <span className="text-orange-400">{isEquipped ? '✓ EQUIPPED' : isGuardianLocked ? 'LOCKED' : isSandbox ? 'FREE' : netCost >= 0 ? `${netCost.toLocaleString()} CR` : `+${Math.abs(netCost).toLocaleString()} CR`}</span>
                 </div>
                 <div className="text-orange-600 text-[9px]">{mod.statLabel}: {stat.value}{stat.unit} · Mass: {mod.mass}T</div>
-                {isGuardianLocked && <div className="text-purple-600 text-[8px]">Scan alien sites to unlock guardian blueprints.</div>}
+                {isGuardianLocked && <div className="text-purple-600 text-[8px]">Requires {fragmentsNeed} blueprint fragment{fragmentsNeed === 1 ? '' : 's'} — you have {fragmentsHave}. Scan alien sites to acquire.</div>}
               </button>
             );
           })}

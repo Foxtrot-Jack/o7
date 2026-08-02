@@ -171,6 +171,11 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
         rs.targetFocusX = fwp.x;
         rs.targetFocusZ = fwp.z;
       }
+      // During ship travel, focus the camera on the ship so it stays in view
+      if (travelRef.current && shipPosRef.current) {
+        rs.targetFocusX = shipPosRef.current.x;
+        rs.targetFocusZ = shipPosRef.current.z;
+      }
       updateCameraPosition(camera, rs);
 
       // Pulse selected marker

@@ -1,7 +1,7 @@
 // Display Settings — brightness, mini-screen, CRT, reset
 import React from 'react';
 import { useGameState } from '@/lib/gameState';
-import { Settings, Sun, Monitor, Tv, RotateCcw, ArrowLeftRight, Palette, Download, Upload, Lock, Unlock, Smartphone, Maximize } from 'lucide-react';
+import { Settings, Sun, Monitor, Tv, RotateCcw, ArrowLeftRight, Palette, Download, Upload, Lock, Unlock, Smartphone, Maximize, ZoomIn } from 'lucide-react';
 import { THEME_LIST } from '@/lib/themes';
 import SoundSettings from '@/components/game/SoundSettings';
 import GestureDisplaySettings from '@/components/game/GestureDisplaySettings';
@@ -134,6 +134,18 @@ export default function SettingsScreen() {
         <div className="text-orange-700 text-[10px]">
           Choose your preferred orientation, then press the lock to force it regardless of device rotation. When unlocked, the game follows your device's natural orientation.
         </div>
+      </div>
+
+      <div className="border border-orange-900 p-4 space-y-2">
+        <div className="flex items-center gap-2">
+          <ZoomIn className="w-4 h-4 text-orange-500" />
+          <h3 className="text-orange-400 text-sm font-bold uppercase">Display Scale</h3>
+        </div>
+        <div className="flex items-center gap-3">
+          <input type="range" min="50" max="150" value={s.displayScale || 100} onChange={e => set('displayScale', parseInt(e.target.value))} className="flex-1" />
+          <span className="text-orange-300 text-xs w-12">{s.displayScale || 100}%</span>
+        </div>
+        <div className="text-orange-700 text-[10px]">Scales the entire game interface. Lower for more content on screen, higher for readability on small displays.</div>
       </div>
 
       <ColorCustomizer />

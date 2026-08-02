@@ -5,7 +5,7 @@
 
 import { EXPANDED_SHIP_SLOTS } from './shipRosterExpanded';
 
-const CLASS_MULT = { E: 0.8, D: 0.85, C: 0.9, B: 1.0, A: 1.25 };
+const CLASS_MULT = { E: 0.7, D: 0.85, C: 1.0, B: 1.2, A: 1.5 };
 const CLASS_ORDER = ['E', 'D', 'C', 'B', 'A'];
 
 const CARGO_CAP = { 1: 2, 2: 4, 3: 8, 4: 16, 5: 32, 6: 64, 7: 128, 8: 256 };
@@ -320,12 +320,34 @@ export const HARDPOINT_ENGINEERING = {
 };
 
 // ---- Module price calculation ----
+// Type-based price multipliers — weapons and premium tech cost more than cargo racks
+const TYPE_PRICE_MULT = {
+  power_plant: 2.5, thrusters: 2.5, fsd: 3.0, life_support: 1.5, sensors: 1.5, power_distributor: 2.0,
+  shield_generator: 2.0, hull_reinforcement: 1.2, module_reinforcement: 1.5, fuel_scoop: 1.8, fuel_tank: 0.8,
+  cargo_rack: 0.6, collector_limpet: 1.3, afm_unit: 2.0, srv_hangar: 2.2, fighter_hangar: 4.0, refinery: 1.6,
+  passenger_cabin: 1.4, surface_scanner: 1.5, prospector_limpet: 1.3, shield_cell_bank: 2.5,
+  repair_limpet: 1.5, recon_limpet: 1.5, decontamination_limpet: 1.4, research_limpet: 1.5,
+  guardian_fsd_booster: 6.0, guardian_hull_reinforcement: 4.0, guardian_module_reinforcement: 4.0,
+  guardian_shield_reinforcement: 4.0, meta_alloy_hull_reinforcement: 3.5,
+};
+const HARDPOINT_PRICE_MULT = { 1: 1.0, 2: 2.5, 3: 6.0, 4: 15.0 };
+
 export function getModulePrice(moduleId) {
   const mod = MODULES[moduleId];
   if (!mod) return 0;
   const classPriceMult = { E: 1, D: 3, C: 8, B: 20, A: 50 };
   let base = mod.size * 1000 * (classPriceMult[mod.class] || 1);
-  if (mod.premium) base *= 1.5;
+  // Apply type multiplier
+  if (mod.category === 'hardpoint') {
+    base *= HARDPOINT_PRICE_MULT[mod.size] || 1.0;
+  } else if (mod.category === 'utility') {
+    base *= 0.8;
+  } else {
+    base *= TYPE_PRICE_MULT[mod.type] || 1.5;
+  }
+  // Premium / pre-engineered modules cost significantly more
+  if (mod.premium) base *= 2.0;
+  if (mod.preEngineered) base *= 3.0;
   return Math.round(base);
 }
 

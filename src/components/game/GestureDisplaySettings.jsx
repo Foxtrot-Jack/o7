@@ -5,15 +5,15 @@ import { INTERACTIVE_SCREENS } from '@/lib/screenSettings';
 import { Hand, Monitor, ZoomIn, Move, RotateCw, ScanLine, FlipHorizontal, FlipVertical, RefreshCw } from 'lucide-react';
 
 const GESTURE_FIELDS = [
-  { key: 'pinchZoom', label: 'Pinch to Zoom', type: 'toggle', icon: ZoomIn, default: true },
+  { key: 'pinchZoom', label: 'Pinch to Zoom', type: 'toggle', icon: ZoomIn, default: true, desc: 'Two-finger pinch gesture to zoom in/out of 3D views' },
   { key: 'pinchSensitivity', label: 'Pinch Sensitivity', type: 'range', min: 25, max: 200, default: 100, unit: '%' },
-  { key: 'panEnabled', label: 'Swipe to Pan', type: 'toggle', icon: Move, default: true },
+  { key: 'panEnabled', label: 'Swipe to Pan', type: 'toggle', icon: Move, default: true, desc: 'Drag to pan the camera across 3D views' },
   { key: 'panSensitivity', label: 'Pan Sensitivity', type: 'range', min: 25, max: 200, default: 100, unit: '%' },
-  { key: 'invertPan', label: 'Invert Pan Direction', type: 'toggle', default: false },
-  { key: 'rotateEnabled', label: 'Rotation Gestures', type: 'toggle', icon: RotateCw, default: true },
+  { key: 'invertPan', label: 'Invert Pan (Natural Drag)', type: 'toggle', default: false, desc: 'ON: drag moves the world (natural scroll). OFF: drag moves the camera' },
+  { key: 'rotateEnabled', label: 'Rotation Gestures', type: 'toggle', icon: RotateCw, default: true, desc: 'Two-finger rotate to orbit the camera around the scene' },
   { key: 'rotateSensitivity', label: 'Rotate Sensitivity', type: 'range', min: 25, max: 200, default: 100, unit: '%' },
-  { key: 'doubleTapZoom', label: 'Double-Tap Zoom', type: 'toggle', default: true },
-  { key: 'scrollInvert', label: 'Invert Scroll', type: 'toggle', default: false },
+  { key: 'doubleTapZoom', label: 'Double-Tap Zoom', type: 'toggle', default: true, desc: 'Double-tap to toggle zoom level on 3D views' },
+  { key: 'scrollInvert', label: 'Invert Mouse Scroll', type: 'toggle', default: false, desc: 'ON: scroll up zooms out. OFF: scroll up zooms in' },
 ];
 
 const DISPLAY_FIELDS = [
@@ -153,12 +153,15 @@ export default function GestureDisplaySettings() {
           const val = globalSettings[field.key] ?? field.default;
           const Icon = field.icon;
           return (
-            <div key={field.key} className="flex items-center gap-2 py-0.5">
-              {Icon && <Icon className="w-3.5 h-3.5 text-orange-600 flex-shrink-0" />}
-              <span className="text-orange-500 text-xs flex-1">{field.label}</span>
-              {field.type === 'toggle'
-                ? <ToggleBtn value={val} onClick={() => setGlobal(field.key, !val)} />
-                : <RangeInput field={field} value={val} onChange={v => setGlobal(field.key, v)} />}
+            <div key={field.key} className="py-0.5">
+              <div className="flex items-center gap-2">
+                {Icon && <Icon className="w-3.5 h-3.5 text-orange-600 flex-shrink-0" />}
+                <span className="text-orange-500 text-xs flex-1">{field.label}</span>
+                {field.type === 'toggle'
+                  ? <ToggleBtn value={val} onClick={() => setGlobal(field.key, !val)} />
+                  : <RangeInput field={field} value={val} onChange={v => setGlobal(field.key, v)} />}
+              </div>
+              {field.desc && <div className="text-orange-800 text-[9px] pl-6 mt-0.5">{field.desc}</div>}
             </div>
           );
         })}

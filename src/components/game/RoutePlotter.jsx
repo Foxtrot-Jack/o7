@@ -5,13 +5,13 @@ import { useGameState, SHIP_MAP } from '@/lib/gameState';
 import { generateStarsInRange, distance3D, SOL_SYSTEM, COLONIA_SYSTEM, FAR_REACH_SYSTEM } from '@/lib/galaxy';
 import { computeShipStats, getDefaultModules } from '@/lib/shipOutfitting';
 import { calculateRoute } from '@/lib/routeCalculator';
-import { Route, Search, Zap, Navigation, AlertTriangle, Star, MapPin } from 'lucide-react';
+import { Route, Search, Zap, Navigation, AlertTriangle, Star, MapPin, X } from 'lucide-react';
 
 export default function RoutePlotter() {
-  const { state, setCurrentSystem } = useGameState();
+  const { state, setCurrentSystem, plotRoute: saveRouteGlobal } = useGameState();
   const [searchName, setSearchName] = useState('');
   const [destination, setDestination] = useState(null);
-  const [route, setRoute] = useState(null);
+  const [route, setRoute] = useState(() => state.plottedRoute?.length > 0 ? state.plottedRoute : null);
   const [searching, setSearching] = useState(false);
   const [useNeutron, setUseNeutron] = useState(true);
   const [error, setError] = useState('');
@@ -62,6 +62,16 @@ export default function RoutePlotter() {
   const plotRoute = (start, end, range, neutron) => {
     const jumps = calculateRoute(start, end, range, neutron);
     setRoute(jumps);
+    // Sync to global state so Galaxy Map and other tools can see it
+    if (saveRouteGlobal) saveRouteGlobal(jumps);
+  };
+
+  const clearRoute = () => {
+    setRoute(null);
+    setDestination(null);
+    setSearchName('');
+    setError('');
+    if (saveRouteGlobal) saveRouteGlobal([]);
   };
 
   const totalDist = route ? route.reduce((s, j) => s + j.jumpDist, 0) : 0;
@@ -75,6 +85,14 @@ export default function RoutePlotter() {
         <div className="flex items-center gap-2 mb-2">
           <Route className="w-4 h-4 text-orange-500" />
           <h2 className="text-orange-300 font-bold uppercase text-sm">Route Plotter</h2>
+          {(route || destination) && (
+            <button
+              onClick={clearRoute}
+              className="ml-auto px-2 py-0.5 border border-red-800 text-red-500 hover:bg-red-950/30 text-[10px] flex items-center gap-1"
+            >
+              <X className="w-2.5 h-2.5" /> CLEAR
+            </button>
+          )}
         </div>
         <div className="text-xs text-orange-600 space-y-0.5">
           <div>CURRENT: <span className="text-orange-300">{state.currentSystem.name}</span></div>
