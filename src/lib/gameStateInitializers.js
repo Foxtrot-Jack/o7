@@ -110,6 +110,7 @@ export function createInitialState() {
       monoOverrides: { stars: false, planets: false, ships: false, stations: false, uiAccent: false },
       uiScale: { bodyList: 100, navPanel: 100, statusHeader: 100 },
       uiTextStyles: {},
+      navGroupStyles: {},
       shipComms: true,
       sound: {
         enabled: true,

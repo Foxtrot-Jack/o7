@@ -3,6 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Compass, Store, Package, ClipboardList, Pickaxe, Telescope, Home, Map, Rocket, Layers, Anchor, Trophy, Settings, Wrench, MapPin, TrendingUp, User, Hammer, BookOpen, Briefcase, ChevronDown, Lock, Sparkles, Medal, Palette, DoorOpen, ArrowLeftRight, FlaskConical, Users, Crown, Target, Skull, Newspaper, Crosshair, Swords, AlertTriangle, Gem, UserCheck, Building, ScrollText, Plane, Activity, Leaf, Route, Radio, ListChecks, Award, Save, Brain, LayoutDashboard, Network, Eye, Fish, Calendar, Gamepad2, Zap } from 'lucide-react';
 import { useGameState } from '@/lib/gameState';
 import { soundEngine } from '@/lib/soundEngine';
+import { getNavGroupStyle } from '@/components/game/MenuTextStyleSettings';
 
 const NAV_GROUPS = [
   {
@@ -195,6 +196,7 @@ export default function NavBar({ currentScreen, onNavigate, location }) {
   const navShadow = navTextRGB
     ? `0 0 3px rgba(${navTextRGB.r},${navTextRGB.g},${navTextRGB.b},0.8), 0 0 6px rgba(${navTextRGB.r},${navTextRGB.g},${navTextRGB.b},0.4)`
     : undefined;
+  const navGroupStyles = state.settings?.navGroupStyles || {};
 
   useEffect(() => {
     if (!openGroup) return;
@@ -273,9 +275,12 @@ export default function NavBar({ currentScreen, onNavigate, location }) {
         const hasActive = allItems.some(i => i.id === currentScreen);
         const groupDisabled = group.stationOnly && location !== 'station';
         const isOpen = openGroup === group.id;
+        const gs = getNavGroupStyle(navGroupStyles, group.id);
+        const gsShadow = gs.rgb ? `0 0 3px rgba(${gs.rgb.r},${gs.rgb.g},${gs.rgb.b},0.8), 0 0 6px rgba(${gs.rgb.r},${gs.rgb.g},${gs.rgb.b},0.4)` : undefined;
+        const groupStyle = (gs.size !== 100 || gsShadow) ? { zoom: gs.size / 100, textShadow: gsShadow } : undefined;
 
         return (
-          <div key={group.id} className="relative flex-shrink-0">
+          <div key={group.id} className="relative flex-shrink-0" style={groupStyle}>
             <button
               onClick={() => { if (!groupDisabled) handleGroupClick(group); }}
               disabled={groupDisabled}
