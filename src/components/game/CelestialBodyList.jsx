@@ -100,7 +100,23 @@ function BodyNode({ node, depth, stations, selectedBody, selectedStation, onSele
   // Belts default to collapsed (they contain many asteroids)
   const [collapsed, setCollapsed] = useState(body.type === BODY_TYPES.BELT);
 
-  const discovered = fssDiscoveredBodies?.[body.id];
+  const isPrimaryStar = body.type === BODY_TYPES.STAR && body.parent === null;
+  const discovered = isPrimaryStar || fssDiscoveredBodies?.[body.id];
+
+  // Undiscovered body — show "?" placeholder, don't reveal children
+  if (!discovered) {
+    const indent = depth * 10;
+    return (
+      <div style={{ paddingLeft: indent }}>
+        <div className="flex items-center gap-1 px-1 py-0.5 text-[10px] text-orange-800 border border-transparent">
+          <span className="w-3 flex-shrink-0 text-orange-900">·</span>
+          <span className="text-orange-700 font-bold">?</span>
+          <span className="text-orange-900 text-[8px]">UNDISCOVERED</span>
+        </div>
+      </div>
+    );
+  }
+
   const isScanned = scannedBodies?.[body.id];
   const probeState = probeProgress?.[body.id];
   const isMapped = probeState?.complete;

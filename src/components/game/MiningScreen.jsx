@@ -1,5 +1,6 @@
 // Mining Screen — read-only list of minable bodies in the system
 // Mining itself happens inline in the System Orrery body info panel when orbiting
+// Undiscovered bodies show as "?" until FSS scan reveals them
 import React, { useState, useEffect, useMemo } from 'react';
 import { useGameState } from '@/lib/gameState';
 import { BODY_TYPES } from '@/lib/system';
@@ -26,6 +27,7 @@ export default function MiningScreen({ onNavigate }) {
   const fssScanned = state.fssScannedSystems?.[systemSeed];
   const fssDiscovered = state.fssDiscoveredBodies || {};
 
+  // All minable bodies — regardless of FSS discovery (undiscovered ones show as "?")
   const minableBodies = useMemo(() => {
     if (!systemData) return [];
     return systemData.bodies.filter(b => {
@@ -34,13 +36,10 @@ export default function MiningScreen({ onNavigate }) {
         b.type === BODY_TYPES.ASTEROID ||
         (b.type === BODY_TYPES.PLANET && b.landable) ||
         b.type === BODY_TYPES.RING;
-      if (!isMinableType) return false;
-      if (b.type === BODY_TYPES.RING) return fssDiscovered[b.parent];
-      return fssDiscovered[b.id];
+      return isMinableType;
     });
-  }, [systemData, fssDiscovered]);
+  }, [systemData]);
 
-  // Compute deposit availability per body
   const bodyDepositInfo = useMemo(() => {
     return minableBodies.map(body => {
       const rng = makeRng(body.id + ':prospect');
@@ -90,13 +89,21 @@ export default function MiningScreen({ onNavigate }) {
           Travel to a body in the System Map to mine its deposits
         </div>
 
-        {/* No FSS scan */}
-        {minableBodies.length === 0 && !fssScanned && (
-          <div className="border border-cyan-900 bg-black/50 p-4 text-center space-y-2">
-            <Radio className="w-8 h-8 mx-auto text-cyan-700" />
-            <div className="text-cyan-400 text-xs font-bold uppercase">No Survey Data</div>
+        {/* No minable bodies at all */}
+        {minableBodies.length === 0 && (
+          <div className="text-orange-700 text-xs text-center py-8 border border-orange-950">
+            <Gem className="w-8 h-8 mx-auto mb-2 opacity-50" />
+            <p>No minable bodies in this system.</p>
+          </div>
+        )}
+
+        {/* FSS scan prompt — shown when system not fully scanned */}
+        {!fssScanned && minableBodies.length > 0 && (
+          <div className="border border-cyan-900 bg-black/50 p-3 text-center space-y-2">
+            <Radio className="w-6 h-6 mx-auto text-cyan-700" />
+            <div className="text-cyan-400 text-xs font-bold uppercase">Partial Survey</div>
             <div className="text-cyan-600 text-[10px]">
-              No minable bodies discovered yet. Run an FSS scan to reveal asteroid belts, ringed planets, and landable bodies.
+              Some bodies remain undiscovered. Run an FSS scan to reveal them.
             </div>
             {onNavigate && (
               <button
@@ -109,17 +116,26 @@ export default function MiningScreen({ onNavigate }) {
           </div>
         )}
 
-        {/* No minable bodies */}
-        {minableBodies.length === 0 && fssScanned && (
-          <div className="text-orange-700 text-xs text-center py-8 border border-orange-950">
-            <Gem className="w-8 h-8 mx-auto mb-2 opacity-50" />
-            <p>No minable bodies in this system.</p>
-          </div>
-        )}
-
-        {/* Body list — read only */}
+        {/* Body list — read only, with "?" for undiscovered */}
         {bodyDepositInfo.map(({ body, total, available, regen }) => {
           const isRing = body.type === BODY_TYPES.RING;
+          const isDiscovered = isRing ? fssDiscovered[body.parent] : fssDiscovered[body.id];
+
+          // Undiscovered body — show "?" placeholder
+          if (!isDiscovered) {
+            return (
+              <div key={body.id} className="border border-orange-950 p-2 text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="text-orange-700 text-lg font-bold">?</span>
+                  <div>
+                    <div className="text-orange-800">UNDISCOVERED</div>
+                    <div className="text-orange-900 text-[10px]">FSS scan required to reveal</div>
+                  </div>
+                </div>
+              </div>
+            );
+          }
+
           const parentName = isRing
             ? systemData.bodies.find(b => b.id === body.parent)?.designation
             : null;

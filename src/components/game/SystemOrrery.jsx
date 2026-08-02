@@ -342,6 +342,12 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
     const center = { x: 0, y: 0, z: 0 };
 
     for (const body of allBodies) {
+      // Skip rings — rendered on their parent planet
+      if (body.type === BODY_TYPES.RING) continue;
+      // Only show FSS-discovered bodies (primary star always visible)
+      const isPrimaryStar = body.parent === null && body.type === BODY_TYPES.STAR;
+      if (!isPrimaryStar && !state.fssDiscoveredBodies?.[body.id]) continue;
+
       const group = new THREE.Group();
       let mesh = null;
 
@@ -395,9 +401,6 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
         }
       } else if (body.type === BODY_TYPES.BELT) {
         // Asteroid belt — orbit line only (dots removed to prevent venn-diagram overlap with orbit rings)
-      } else if (body.type === BODY_TYPES.RING) {
-        // Skip — rings are handled on the planet
-        continue;
       } else if (body.type === BODY_TYPES.ASTEROID) {
         const radius = Math.max(0.1, body.radius * 2);
         const geom = new THREE.OctahedronGeometry(radius, 0);
@@ -601,7 +604,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
 
     // Auto-fit camera to system
     rotState.current.targetDistance = maxOrbit * 2.5;
-  }, [systemData, state.ship?.type, state.ship?.customShipId, state.fleetCarriers?.filter(c => c.systemSeed === state.currentSystem?.seed).length]);
+  }, [systemData, state.ship?.type, state.ship?.customShipId, state.fleetCarriers?.filter(c => c.systemSeed === state.currentSystem?.seed).length, state.fssDiscoveredBodies]);
 
   // Pointer interaction
   useEffect(() => {
@@ -1136,6 +1139,17 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
               ? orbitingBodyId === selectedBody.parent
               : orbitingBodyId === selectedBody.id;
             if (!inOrbit) return null;
+            // Landable planets require probe scan completion before revealing mining sites
+            const needsProbes = selectedBody.type === BODY_TYPES.PLANET && selectedBody.landable;
+            const isMapped = state.mappedBodies?.[selectedBody.id]?.mapped || state.probeProgress?.[selectedBody.id]?.complete;
+            if (needsProbes && !isMapped) {
+              return (
+                <div className="border-t border-orange-900 pt-1 space-y-1">
+                  <div className="text-orange-700 text-[10px] uppercase">Mining</div>
+                  <div className="text-cyan-700 text-[10px] text-center py-1">⚠ SURFACE SCAN REQUIRED — Launch probes to reveal mining sites</div>
+                </div>
+              );
+            }
             const miningBody = isRing
               ? { ...selectedBody, _parentName: systemData.bodies.find(b => b.id === selectedBody.parent)?.designation }
               : selectedBody;
