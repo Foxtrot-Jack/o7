@@ -179,11 +179,13 @@ export function generateSystem(starSeed, parentStarClass, population = 0) {
     const maxOrbits = si === 0 ? randInt(rng, 6, 12) : randInt(rng, 0, 4);
     if (maxOrbits === 0) continue;
 
-    let currentOrbitRadius = randFloat(rng, 0.5, 5) + star.radius * 0.5;
+    // Ensure initial orbit is well outside the star's visual radius (max 10 in orrery)
+    const starVisualRadius = Math.max(3, Math.min(10, star.radius * 1.2));
+    let currentOrbitRadius = Math.max(15, starVisualRadius * 2 + randFloat(rng, 3, 8));
 
     for (let o = 1; o <= maxOrbits; o++) {
-      // Orbital spacing increases with distance
-      const gap = randFloat(rng, 3, 15) * (1 + o * 0.3);
+      // Orbital spacing increases with distance — minimum gap prevents overlap
+      const gap = Math.max(6, randFloat(rng, 6, 15) * (1 + o * 0.25));
       currentOrbitRadius += gap;
 
       // Determine if this orbit slot is a planet or a belt

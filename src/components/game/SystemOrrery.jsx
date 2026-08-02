@@ -1002,7 +1002,12 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
           <>
             <div className="text-orange-600">FACTION: {systemData.faction}</div>
             <div className="text-orange-600">ECONOMY: {systemData.economy.name}</div>
-            <div className="text-orange-600">BODIES: {systemData.bodyCount}</div>
+            <div className="text-orange-600">BODIES: {systemData.bodies.filter(b => {
+              if (b.parent === null && b.type === BODY_TYPES.STAR) return true;
+              if (state.fssDiscoveredBodies?.[b.id]) return true;
+              if (b.type === BODY_TYPES.RING && state.scannedBodies?.[b.parent]) return true;
+              return false;
+            }).length}/{systemData.bodyCount}</div>
             {(() => {
               const scannable = systemData.bodies.filter(b => b.type === 'star' || b.type === 'planet' || b.type === 'moon' || b.type === 'belt');
               const fssCount = scannable.filter(b => state.fssDiscoveredBodies?.[b.id]).length;

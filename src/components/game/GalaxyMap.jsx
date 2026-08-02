@@ -38,6 +38,7 @@ export default function GalaxyMap({ onJumpToSystem }) {
   const [trailBrightness, setTrailBrightness] = useState(40);
   const [overviewBrightness, setOverviewBrightness] = useState(80);
   const [showGrid, setShowGrid] = useState(false);
+  const [showLegend, setShowLegend] = useState(false);
   const brightnessRef = useRef({ star: 100, trail: 40, overview: 80 });
   brightnessRef.current = { star: starBrightness, trail: trailBrightness, overview: overviewBrightness };
   const [galaxyViewMode, setGalaxyViewMode] = useState(false);
@@ -738,58 +739,53 @@ export default function GalaxyMap({ onJumpToSystem }) {
         </div>
       )}
 
-      {/* HUD overlay - top left */}
-      <div className="absolute top-2 left-2 text-orange-600 text-xs space-y-0.5 pointer-events-none">
-        <div>GALACTIC POSITION: {state.currentSystem.x.toFixed(0)}, {state.currentSystem.y.toFixed(0)}, {state.currentSystem.z.toFixed(0)}</div>
-        <div>DISTANCE FROM CORE: {Math.sqrt(state.currentSystem.x ** 2 + state.currentSystem.y ** 2).toFixed(0)} LY</div>
-        <div>REGION: {getRegionName(state.currentSystem.x, state.currentSystem.y, state.currentSystem.z)}</div>
-        <div>STARS IN RANGE: {stars.length}</div>
-        <div className="text-orange-800">DRAG TO ROTATE · 2-FINGER PAN/PINCH · SCROLL TO ZOOM · TAP STAR TO SELECT</div>
+      {/* HUD overlay - top left (compact) */}
+      <div className="absolute top-2 left-2 text-orange-600 text-[10px] space-y-0 pointer-events-none">
+        <div className="text-orange-400 font-bold">{state.currentSystem.name}</div>
+        <div>POS {state.currentSystem.x.toFixed(0)},{state.currentSystem.y.toFixed(0)},{state.currentSystem.z.toFixed(0)} · CORE {Math.sqrt(state.currentSystem.x ** 2 + state.currentSystem.y ** 2).toFixed(0)}LY</div>
+        <div>{getRegionName(state.currentSystem.x, state.currentSystem.y, state.currentSystem.z)} · {stars.length} STARS</div>
       </div>
 
-      {/* Zoom controls */}
-      <div className="absolute top-16 left-2 flex gap-1 z-20">
-        <button onClick={() => { setGalaxyViewMode(true); rotState.current.targetPanX = -state.currentSystem.x; rotState.current.targetPanZ = -state.currentSystem.z; rotState.current.targetPanY = -state.currentSystem.y; rotState.current.targetPolar = 0.15; rotState.current.targetDistance = 35000; }} className={`px-2 py-0.5 border text-[10px] ${galaxyViewMode ? 'border-red-500 bg-red-950/30 text-red-400' : 'border-orange-700 bg-black/80 text-orange-500 hover:bg-orange-950/30'}`}>☁ GALAXY</button>
-        <button onClick={() => { setGalaxyViewMode(false); rotState.current.targetPanX = 0; rotState.current.targetPanZ = 0; rotState.current.targetPanY = 0; rotState.current.targetDistance = 120; }} className="px-2 py-0.5 border border-orange-700 bg-black/80 text-orange-500 hover:bg-orange-950/30 text-[10px]">⊕ CENTER</button>
-        <button onClick={() => { setGalaxyViewMode(false); rotState.current.targetDistance = 120; }} className="px-2 py-0.5 border border-orange-700 bg-black/80 text-orange-500 hover:bg-orange-950/30 text-[10px]">LOCAL VIEW</button>
-        <button onClick={() => setShowGrid(!showGrid)} className={`px-2 py-0.5 border text-[10px] ${showGrid ? 'border-cyan-600 text-cyan-400' : 'border-orange-700 bg-black/80 text-orange-500'}`}>⊞ GRID</button>
+      {/* View controls (compact) */}
+      <div className="absolute top-14 left-2 flex gap-0.5 z-20">
+        <button onClick={() => { setGalaxyViewMode(true); rotState.current.targetPanX = -state.currentSystem.x; rotState.current.targetPanZ = -state.currentSystem.z; rotState.current.targetPanY = -state.currentSystem.y; rotState.current.targetPolar = 0.15; rotState.current.targetDistance = 35000; }} className={`px-1.5 py-0.5 border text-[9px] ${galaxyViewMode ? 'border-red-500 bg-red-950/30 text-red-400' : 'border-orange-800 bg-black/80 text-orange-600'}`}>GALAXY</button>
+        <button onClick={() => { setGalaxyViewMode(false); rotState.current.targetPanX = 0; rotState.current.targetPanZ = 0; rotState.current.targetPanY = 0; rotState.current.targetDistance = 120; }} className="px-1.5 py-0.5 border border-orange-800 bg-black/80 text-orange-600 text-[9px]">LOCAL</button>
+        <button onClick={() => setShowGrid(!showGrid)} className={`px-1.5 py-0.5 border text-[9px] ${showGrid ? 'border-cyan-600 text-cyan-400' : 'border-orange-800 bg-black/80 text-orange-600'}`}>GRID</button>
       </div>
 
-      {/* Coordinate display when grid is on */}
+      {/* Coordinate display when grid is on (compact) */}
       {showGrid && (
-        <div className="absolute top-28 left-2 text-[10px] space-y-0.5 pointer-events-none z-20">
-          <div className="text-cyan-700 uppercase">Coordinates</div>
-          <div>X: <span className="text-red-400">{state.currentSystem.x.toFixed(1)}</span></div>
-          <div>Y: <span className="text-green-400">{state.currentSystem.y.toFixed(1)}</span></div>
-          <div>Z: <span className="text-blue-400">{state.currentSystem.z.toFixed(1)}</span></div>
+        <div className="absolute top-24 left-2 text-[9px] space-y-0 pointer-events-none z-20">
+          <div className="text-cyan-700 uppercase">CUR <span className="text-red-400">{state.currentSystem.x.toFixed(0)}</span>/<span className="text-green-400">{state.currentSystem.y.toFixed(0)}</span>/<span className="text-blue-400">{state.currentSystem.z.toFixed(0)}</span></div>
           {selectedStar && (
-            <div className="mt-1 border-t border-cyan-900 pt-1">
-              <div className="text-cyan-700 uppercase">Selected</div>
-              <div>X: <span className="text-red-400">{selectedStar.x.toFixed(1)}</span></div>
-              <div>Y: <span className="text-green-400">{selectedStar.y.toFixed(1)}</span></div>
-              <div>Z: <span className="text-blue-400">{selectedStar.z.toFixed(1)}</span></div>
-            </div>
+            <div className="text-cyan-700 uppercase">SEL <span className="text-red-400">{selectedStar.x.toFixed(0)}</span>/<span className="text-green-400">{selectedStar.y.toFixed(0)}</span>/<span className="text-blue-400">{selectedStar.z.toFixed(0)}</span></div>
           )}
         </div>
       )}
 
-      {/* Star legend - top right */}
-      <div className="absolute top-2 right-2 text-xs space-y-0.5 pointer-events-none">
-        <div className="text-orange-700 uppercase text-[10px]">Spectral Classes</div>
-        {[
-          { c: '#9bb0ff', l: 'O - Blue Supergiant' },
-          { c: '#cad7ff', l: 'A - White' },
-          { c: '#fff4ea', l: 'G - Yellow' },
-          { c: '#ffd2a1', l: 'K - Orange Dwarf' },
-          { c: '#ffcc6f', l: 'M - Red Dwarf' },
-          { c: '#cccccc', l: 'NS - Neutron Star' },
-          { c: '#330000', l: 'BH - Black Hole' },
-        ].map((item) => (
-          <div key={item.l} className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full" style={{ background: item.c, boxShadow: `0 0 4px ${item.c}` }} />
-            <span className="text-orange-600">{item.l}</span>
+      {/* Star legend - top right (collapsible) */}
+      <div className="absolute top-2 right-2 text-[10px] pointer-events-auto">
+        <button onClick={() => setShowLegend(!showLegend)} className="px-1.5 py-0.5 border border-orange-800 bg-black/80 text-orange-600 hover:text-orange-400">
+          {showLegend ? 'HIDE' : 'LEGEND'}
+        </button>
+        {showLegend && (
+          <div className="mt-1 border border-orange-900 bg-black/95 p-1.5 space-y-0.5">
+            {[
+              { c: '#9bb0ff', l: 'O - Blue Supergiant' },
+              { c: '#cad7ff', l: 'A - White' },
+              { c: '#fff4ea', l: 'G - Yellow' },
+              { c: '#ffd2a1', l: 'K - Orange Dwarf' },
+              { c: '#ffcc6f', l: 'M - Red Dwarf' },
+              { c: '#cccccc', l: 'NS - Neutron Star' },
+              { c: '#330000', l: 'BH - Black Hole' },
+            ].map((item) => (
+              <div key={item.l} className="flex items-center gap-1.5">
+                <div className="w-2 h-2 rounded-full" style={{ background: item.c, boxShadow: `0 0 4px ${item.c}` }} />
+                <span className="text-orange-600">{item.l}</span>
+              </div>
+            ))}
           </div>
-        ))}
+        )}
       </div>
 
       {/* Filter toggle */}
@@ -870,49 +866,29 @@ export default function GalaxyMap({ onJumpToSystem }) {
         </div>
       )}
 
-      {/* Player marker indicator + marker legend */}
-      <div className="absolute bottom-2 left-2 text-xs pointer-events-none space-y-0.5">
-        <div className="flex items-center gap-1.5">
-          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-          <span className="text-green-500">CURRENT: {state.currentSystem.name}</span>
+      {/* Marker legend (compact) */}
+      <div className="absolute bottom-2 left-2 text-[9px] pointer-events-none space-y-0.5">
+        <div className="flex items-center gap-1">
+          <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+          <span className="text-green-500">{state.currentSystem.name}</span>
         </div>
-        {filters.showParkedShips && state.ownedShips.length > 0 && (
-          <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 bg-cyan-400 rounded-full" />
-            <span className="text-cyan-400">PARKED SHIPS</span>
-          </div>
-        )}
-        {filters.showColonies && state.colonies.length > 0 && (
-          <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 bg-purple-400 rounded-full" />
-            <span className="text-purple-400">COLONIES</span>
-          </div>
-        )}
-        {filters.showMissions && state.activeMissions?.length > 0 && (
-          <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse" />
-            <span className="text-yellow-400">MISSION TARGETS</span>
-          </div>
-        )}
-        <div className="flex items-center gap-1.5">
-          <div className="w-2 h-2 bg-orange-400 rounded-full" />
-          <span className="text-orange-400">LANDMARKS</span>
+        <div className="flex flex-wrap gap-x-2 gap-y-0.5">
+          {filters.showParkedShips && state.ownedShips.length > 0 && (
+            <div className="flex items-center gap-1"><div className="w-1.5 h-1.5 bg-cyan-400 rounded-full" /><span className="text-cyan-400">SHIPS</span></div>
+          )}
+          {filters.showColonies && state.colonies.length > 0 && (
+            <div className="flex items-center gap-1"><div className="w-1.5 h-1.5 bg-purple-400 rounded-full" /><span className="text-purple-400">COLONIES</span></div>
+          )}
+          {filters.showMissions && state.activeMissions?.length > 0 && (
+            <div className="flex items-center gap-1"><div className="w-1.5 h-1.5 bg-yellow-400 rounded-full animate-pulse" /><span className="text-yellow-400">MISSIONS</span></div>
+          )}
+          <div className="flex items-center gap-1"><div className="w-1.5 h-1.5 bg-orange-400 rounded-full" /><span className="text-orange-400">LANDMARKS</span></div>
         </div>
         {galaxyViewMode && (
-          <div className="border-t border-orange-900 pt-1 mt-1 space-y-0.5">
-            <div className="text-orange-700 uppercase text-[9px]">Galaxy View</div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-              <span className="text-red-400">YOU ARE HERE</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-2 h-2 bg-yellow-400 rounded-full" />
-              <span className="text-yellow-400">BOOKMARKS ({state.bookmarkedSystems?.length || 0})</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-2 h-2 bg-cyan-400 rounded-full" />
-              <span className="text-cyan-400">LANDMARKS & BUBBLES</span>
-            </div>
+          <div className="flex flex-wrap gap-x-2 gap-y-0.5 border-t border-orange-900 pt-0.5">
+            <div className="flex items-center gap-1"><div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" /><span className="text-red-400">YOU</span></div>
+            <div className="flex items-center gap-1"><div className="w-1.5 h-1.5 bg-yellow-400 rounded-full" /><span className="text-yellow-400">BMK ({state.bookmarkedSystems?.length || 0})</span></div>
+            <div className="flex items-center gap-1"><div className="w-1.5 h-1.5 bg-cyan-400 rounded-full" /><span className="text-cyan-400">HUBS</span></div>
           </div>
         )}
       </div>

@@ -4,6 +4,7 @@ import { useGameState, SHIP_TYPES, SHIP_MAP, getAvailableShipsAtStation } from '
 import { COMMODITY_MAP } from '@/lib/commodities';
 import { Package, Fuel, Ship as ShipIcon, Map, Trash2, ShoppingBag, Wrench, FlaskConical, ArrowUpDown, RefreshCw } from 'lucide-react';
 import MaterialsLocker from './MaterialsLocker';
+import ShipModelViewer from './ShipModelViewer';
 
 export default function ShipPanel({ onNavigate }) {
   const { state, buyShip, addCredits, removeCargo, refuel, switchShip, transferShip, renameShip, getRebuyCost } = useGameState();
@@ -58,7 +59,7 @@ export default function ShipPanel({ onNavigate }) {
       </div>
 
       <div className="flex-1 overflow-y-auto p-4">
-        {tab === 'overview' && <ShipOverview ship={state.ship || {}} shipType={currentShip} />}
+        {tab === 'overview' && <ShipOverview ship={state.ship || {}} shipType={currentShip} customShips={state.customShips || []} />}
         {tab === 'cargo' && <CargoHold cargo={state.ship?.cargo || []} onJettison={(id, qty) => removeCargo(id, qty)} />}
         {tab === 'materials' && <MaterialsLocker />}
         {tab === 'shipyard' && (
@@ -100,7 +101,7 @@ export default function ShipPanel({ onNavigate }) {
   );
 }
 
-function ShipOverview({ ship, shipType }) {
+function ShipOverview({ ship, shipType, customShips }) {
   const stats = [
     { label: 'Manufacturer', value: shipType?.manufacturer },
     { label: 'Ship Class', value: `Class ${shipType?.class}` },
@@ -126,19 +127,10 @@ function ShipOverview({ ship, shipType }) {
         </div>
       </div>
 
-      {/* Ship wireframe visual */}
-      <div className="border border-orange-900 p-4 flex justify-center">
-        <svg width="200" height="120" viewBox="0 0 200 120" className="text-orange-500">
-          {/* Simple wireframe ship */}
-          <polygon points="100,10 160,80 140,100 100,90 60,100 40,80" fill="none" stroke="currentColor" strokeWidth="1" />
-          <polygon points="100,10 100,90" fill="none" stroke="currentColor" strokeWidth="0.5" />
-          <polygon points="40,80 160,80" fill="none" stroke="currentColor" strokeWidth="0.5" />
-          <circle cx="100" cy="50" r="8" fill="none" stroke="currentColor" strokeWidth="0.5" />
-          <line x1="100" y1="90" x2="80" y2="110" stroke="currentColor" strokeWidth="0.5" />
-          <line x1="100" y1="90" x2="120" y2="110" stroke="currentColor" strokeWidth="0.5" />
-          <line x1="60" y1="100" x2="60" y2="115" stroke="currentColor" strokeWidth="0.5" />
-          <line x1="140" y1="100" x2="140" y2="115" stroke="currentColor" strokeWidth="0.5" />
-        </svg>
+      {/* 3D rotating ship model */}
+      <div className="border border-orange-900 p-2">
+        <div className="text-orange-700 text-[9px] uppercase mb-1 text-center">Wireframe Model — Drag to Rotate</div>
+        <ShipModelViewer ship={ship} customShips={customShips} />
       </div>
     </div>
   );
