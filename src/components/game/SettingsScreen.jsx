@@ -9,6 +9,7 @@ import GestureDisplaySettings from '@/components/game/GestureDisplaySettings';
 import ColorCustomizer from '@/components/game/ColorCustomizer';
 import FontSelector from '@/components/game/FontSelector';
 import MonoThemeSettings from '@/components/game/MonoThemeSettings';
+import NavTextRGBControl from '@/components/game/NavTextRGBControl';
 
 const TABS = [
   { id: 'display', label: 'Display', icon: Monitor },
@@ -122,10 +123,12 @@ export default function SettingsScreen() {
                 <input type="range" min="50" max="200" value={s.uiScale?.bodyList ?? 100} onChange={e => set('uiScale', { ...(s.uiScale || {}), bodyList: parseInt(e.target.value) })} className="w-full" />
               </div>
               <div>
-                <div className="flex justify-between text-orange-700 text-[10px]"><span>NAV PANEL</span><span>{s.uiScale?.navPanel ?? 100}%</span></div>
+                <div className="flex justify-between text-orange-700 text-[10px]"><span>NAVIGATION &amp; MENUS (FONT/SCALE)</span><span>{s.uiScale?.navPanel ?? 100}%</span></div>
                 <input type="range" min="50" max="200" value={s.uiScale?.navPanel ?? 100} onChange={e => set('uiScale', { ...(s.uiScale || {}), navPanel: parseInt(e.target.value) })} className="w-full" />
               </div>
               <div className="text-orange-700 text-[10px]">Resize these panels independently. The bodies list anchors to the right edge and scrolls; the nav panel wraps to extra rows. Nothing moves permanently off-screen.</div>
+
+              <NavTextRGBControl />
             </div>
 
             <div className="border border-orange-900 p-4 space-y-2">

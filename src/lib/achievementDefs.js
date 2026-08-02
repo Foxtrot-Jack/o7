@@ -10,6 +10,7 @@ export const ACHIEVEMENT_ICONS = {
   pickaxe: 'Pickaxe', trophy: 'Trophy', planet: 'Globe', comet: 'Star',
   gem: 'Award', atom: 'Star', crown: 'Trophy', target: 'Map', compass: 'Compass',
   layers: 'Layers', scan: 'Telescope', shield: 'Award', sword: 'Award',
+  briefcase: 'Briefcase', palette: 'Palette',
 };
 
 // Helper to create count-based milestones
@@ -178,6 +179,17 @@ export const ACHIEVEMENT_DEFS = [
   milestone('custom_ships_1', 'Ship Designer', 'Design 1 custom ship', 'boxes', s => num(s.customShips), 1),
   milestone('custom_ships_5', 'Shipyard Master', 'Design 5 custom ships', 'boxes', s => num(s.customShips), 5),
   milestone('custom_ships_10', 'Master Shipwright', 'Design 10 custom ships', 'boxes', s => num(s.customShips), 10),
+
+  // ===== NEW FEATURE MILESTONES (9) =====
+  { id: 'first_warp_gate', name: 'Gate Builder', desc: 'Constructed your first warp gate', section: 'milestones', icon: 'route' },
+  { id: 'first_company', name: 'Entrepreneur', desc: 'Registered your trade company', section: 'milestones', icon: 'briefcase' },
+  { id: 'first_custom_carrier', name: 'Carrier Designer', desc: 'Saved a custom carrier design', section: 'milestones', icon: 'anchor' },
+  { id: 'first_badge', name: 'Herald', desc: 'Designed and saved your first badge', section: 'milestones', icon: 'palette' },
+  { id: 'first_synthesis', name: 'Chemist', desc: 'Performed your first synthesis', section: 'milestones', icon: 'flask' },
+  { id: 'first_wingmate', name: 'Squadron Leader', desc: 'Hired your first wingmate', section: 'milestones', icon: 'ship' },
+  { id: 'first_station_built', name: 'Station Architect', desc: 'Built your first orbital station', section: 'milestones', icon: 'hammer' },
+  { id: 'first_fighter', name: 'Fighter Pilot', desc: 'Constructed your first ship-launched fighter', section: 'milestones', icon: 'rocket' },
+  { id: 'first_exobiology', name: 'Xenobiologist', desc: 'Completed your first exobiology analysis', section: 'milestones', icon: 'flask' },
 
   // ===== LIFETIME EARNINGS MILESTONES (4) =====
   milestone('earnings_1m', 'First Million Earned', 'Earn 1,000,000 credits total', 'coins', s => num(s.lifetimeEarnings), 1000000),

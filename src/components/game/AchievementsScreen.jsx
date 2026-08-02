@@ -2,9 +2,9 @@
 import React from 'react';
 import { useGameState } from '@/lib/gameState';
 import { ACHIEVEMENT_DEFS } from '@/lib/achievementDefs';
-import { Trophy, Star, Globe, Map, Telescope, Award, Rocket, Ship, Coins, Fuel, Anchor, Bookmark, Zap, Mountain, Beaker, Boxes, Hammer, Route, TrendingUp, Pickaxe, Layers, Compass } from 'lucide-react';
+import { Trophy, Star, Globe, Map, Telescope, Award, Rocket, Ship, Coins, Fuel, Anchor, Bookmark, Zap, Mountain, Beaker, Boxes, Hammer, Route, TrendingUp, Pickaxe, Layers, Compass, Briefcase, Palette } from 'lucide-react';
 
-const ICON_MAP = { Star, Globe, Map, Telescope, Award, Rocket, Ship, Coins, Fuel, Anchor, Bookmark, Zap, Mountain, Beaker, Boxes, Hammer, Route, TrendingUp, Pickaxe, Trophy, Layers, Compass };
+const ICON_MAP = { Star, Globe, Map, Telescope, Award, Rocket, Ship, Coins, Fuel, Anchor, Bookmark, Zap, Mountain, Beaker, Boxes, Hammer, Route, TrendingUp, Pickaxe, Trophy, Layers, Compass, Briefcase, Palette };
 
 const GALAXY_SIZE = 4000000000;
 

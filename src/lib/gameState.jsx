@@ -1176,6 +1176,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
           lastCollection: Date.now(),
           createdAt: Date.now(),
         },
+        achievements: { ...prev.achievements, milestones: { ...(prev.achievements?.milestones || {}), ...(prev.achievements?.milestones?.first_company ? {} : { first_company: { date: Date.now() } }) } },
       };
     });
   }, []);
@@ -1394,7 +1395,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
   }, []);
 
   const saveCustomCarrierDesign = useCallback((design) => {
-    setState(prev => ({ ...prev, customCarrierDesigns: [...(prev.customCarrierDesigns || []), { ...design, id: `carrier_design_${Date.now()}`, createdAt: Date.now() }] }));
+    setState(prev => ({ ...prev, customCarrierDesigns: [...(prev.customCarrierDesigns || []), { ...design, id: `carrier_design_${Date.now()}`, createdAt: Date.now() }], achievements: { ...prev.achievements, milestones: { ...(prev.achievements?.milestones || {}), ...(prev.achievements?.milestones?.first_custom_carrier ? {} : { first_custom_carrier: { date: Date.now() } }) } } }));
   }, []);
 
   const deleteCustomCarrierDesign = useCallback((designId) => {
@@ -1444,7 +1445,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
   const saveBadgeToGallery = useCallback((badge) => {
     setState(prev => {
       const saved = { ...badge, id: `badge_${Date.now()}`, createdAt: Date.now() };
-      return { ...prev, savedBadges: [...(prev.savedBadges || []), saved] };
+      return { ...prev, savedBadges: [...(prev.savedBadges || []), saved], achievements: { ...prev.achievements, milestones: { ...(prev.achievements?.milestones || {}), ...(prev.achievements?.milestones?.first_badge ? {} : { first_badge: { date: Date.now() } }) } } };
     });
   }, []);
 
@@ -2020,6 +2021,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
         mats[matId] -= qty;
       }
       let updates = { materials: mats };
+      updates.achievements = { ...prev.achievements, milestones: { ...(prev.achievements?.milestones || {}), ...(prev.achievements?.milestones?.first_synthesis ? {} : { first_synthesis: { date: Date.now() } }) } };
       if (recipe.effect === 'fsd_boost') updates.fsdBoost = true;
       if (recipe.effect === 'hull_repair') updates.ship = { ...prev.ship, integrity: Math.min(100, (prev.ship.integrity ?? 100) + 20) };
       if (recipe.effect === 'afm_refill') updates.ship = { ...prev.ship, integrity: Math.min(100, (prev.ship.integrity ?? 100) + 10) };
@@ -2174,6 +2176,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
         ...prev,
         credits: prev.credits - (isSb ? 0 : pilot.hireCost),
         wingmates: [...(prev.wingmates || []), { ...pilot, active: true, hiredAt: Date.now() }],
+        achievements: { ...prev.achievements, milestones: { ...(prev.achievements?.milestones || {}), ...(prev.achievements?.milestones?.first_wingmate ? {} : { first_wingmate: { date: Date.now() } }) } },
       };
     });
   }, []);
@@ -2232,6 +2235,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
       };
       return {
         ...prev,
+        achievements: { ...prev.achievements, milestones: { ...(prev.achievements?.milestones || {}), ...(prev.achievements?.milestones?.first_station_built ? {} : { first_station_built: { system: prev.currentSystem.name, date: Date.now() } }) } },
         credits: prev.credits - (isSb ? 0 : STATION_BUILD_COST),
         ownedStations: [...(prev.ownedStations || []), station],
       };
@@ -2294,6 +2298,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
           deployed: false,
           pilotId: null,
         }],
+        achievements: { ...prev.achievements, milestones: { ...(prev.achievements?.milestones || {}), ...(prev.achievements?.milestones?.first_fighter ? {} : { first_fighter: { date: Date.now() } }) } },
       };
     });
   }, []);
@@ -2311,7 +2316,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
       } else {
         codex[speciesId] = { ...codex[speciesId], count: codex[speciesId].count + 1 };
       }
-      return { ...prev, exobiologyCodex: codex };
+      return { ...prev, exobiologyCodex: codex, achievements: { ...prev.achievements, milestones: { ...(prev.achievements?.milestones || {}), ...(prev.achievements?.milestones?.first_exobiology ? {} : { first_exobiology: { system: systemName, date: Date.now() } }) } } };
     });
   }, []);
 

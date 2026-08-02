@@ -40,6 +40,57 @@ The bottom status bar shows your current ship name, total jumps, and galaxy scal
         title: 'No Dead Ends',
         body: `Every screen in Dogstar Interstellar is reachable from every other screen via the navigation bar. You will never get stuck in a sub-menu with no way back. If a screen requires docking (Station, Market, Outfitting), simply navigate to the System view, dock at a station, and those options unlock.`,
       },
+      {
+        title: 'Quick Start',
+        body: `New commander? Follow this loop to get flying in minutes:
+
+1. SAVE — Pick Commander (standard) or Sandbox (unrestricted) from the main menu.
+2. DOCK — You start docked at a station. Open STATION SERVICES (Station menu) to refuel.
+3. TRADE — Open MARKET (Station > Market). Buy low, sell high across economy types (see Trading).
+4. MISSIONS — Accept a delivery or courier mission from COMMERCE > Missions. Destination systems are marked on the galaxy map.
+5. JUMP — Open the GALAXY MAP (Explore > Galaxy Map), tap a nearby star, and engage your FSD. Fuel costs 0.5 T per light year.
+6. EXPLORE — On arrival, run an FSS scan to discover bodies, then scan valuable ones and sell the data at Cartographics.
+7. UPGRADE — Earn credits, buy a bigger ship, outfit it, and eventually purchase a fleet carrier (5 billion CR).
+
+The bottom status bar tracks your ship, jumps, and lets you SAVE or trigger SELF-DESTRUCT at any time.`,
+      },
+      {
+        title: 'Controls & Keybindings',
+        body: `Dogstar Interstellar supports keyboard, mouse, touch, and gamepad navigation.
+
+MOUSE / TOUCH:
+• Drag to rotate 3D views (galaxy map, orrery). Pinch or scroll to zoom. Two-finger pan to move the camera.
+• Tap bodies, stars, and stations to select them. Tap buttons to confirm actions.
+
+KEYBOARD (default bindings, all rebindable):
+• ARROWS / WASD — Move focus between on-screen controls.
+• ENTER / SPACE — Activate the focused control.
+• ESC / BACKSPACE — Go back.
+• G — Galaxy Map · Q — System View · F — FSS Scanner · H — Station Services
+• M — Market · O — Outfitting · J — Missions · I — Mining · P — Ship
+• C — Codex · N — StarNet News · V — Fleet Carriers · L — Carrier Logistics · B — Carrier Command
+
+GAMEPAD:
+• D-pad / left stick — Navigate focus. A / Cross — Select. B / Circle — Back. Shoulder buttons cycle groups.
+
+REBINDING: Open Commander > System > Controller Config to rebind any key or gamepad button. Each action supports multiple bindings for multi-controller support. Conflicts are auto-resolved. Reset all to defaults with one button.
+
+The focus system highlights the active control — use it for full keyboard/controller play without a mouse.`,
+      },
+      {
+        title: 'Display & Accessibility',
+        body: `Settings (Commander > System > Settings) are organized into tabs:
+
+• DISPLAY — CRT effects, fullscreen, display scale, UI element sizing (celestial bodies list + navigation & menus), screen orientation lock, mini-screen mode.
+• COLOR — 8 color themes + a custom RGB override for the entire interface.
+• MONO — Grayscale mode with per-category color re-introduction (stars, planets, ships, stations, UI accent).
+• TYPE — Font family, global font size, and the independent Navigation & Menu text color (RGB).
+• AUDIO — Master toggle, SFX/music volumes, 6 music presets, per-screen track customization.
+• CONTROLS — Gesture sensitivity, display filters (invert, hue, saturation, contrast, flips).
+• DATA — Switch save, export/import save file, reset progress.
+
+Text brightness scales up to 600% for a glaring high-contrast glow that stays readable on black. Every font is resizable: the global font size covers the whole interface, while the Navigation & Menus slider sizes the nav bar and dropdowns independently. Each can have its own RGB text color (global Text RGB + Navigation & Menu Text Color).`,
+      },
     ],
   },
   {
@@ -1119,6 +1170,29 @@ Execute jumps one at a time, with tritium automatically deducted per jump. The c
 
 Access from the Fleet menu.`,
       },
+      {
+        title: 'Cabin, Aquarium, Garden & Genetics Lab',
+        body: `Personalize your fleet carrier's interior with four standalone lifestyle screens (Fleet > Cabin):
+
+• CABIN — Decorate your commander's cabin with customizable cockpit-style parts and surfaces.
+• ROOM MANAGER — Add, remove, and arrange rooms on a grid layout inside the carrier or a station you own.
+• AQUARIUM — Collect and display aquatic life specimens in tanks. Stock is limited by tank capacity.
+• GARDEN — Plant and grow flora with customizable colors; saved plants persist per carrier.
+• GENETICS LAB — Cross-breed collected specimens and flora to discover new variants.
+
+Each carrier keeps its own interior state. These screens are available whenever a carrier is present in your current system (Cabin requires it). They extend the carrier interior experience beyond the six core rooms (Bar, Quarters, Garden, Trophy Room, Command Deck, Observation Lounge).`,
+      },
+      {
+        title: 'Station Creator',
+        body: `The Station Creator (Industry > Station Creator) is a 3D builder for designing the visual appearance of stations you own — distinct from the Station Builder, which constructs the station and its economy.
+
+• MOUNT SLOTS — Select structural slots (hull, towers, landing pads, superstructure).
+• PART SELECTOR — Choose from station-scale parts.
+• CUSTOMIZATION — Resize, move, and rotate each part on all three axes.
+• APPLY — Save a design and apply it to any owned station; the custom model renders in the system orrery.
+
+In Sandbox mode all parts are unlocked. Share designs via encoded share codes, just like custom ships and carriers.`,
+      },
     ],
   },
   {
@@ -1201,6 +1275,16 @@ Events appear in the GalNet feed and expire after their duration. Participate be
 • RETREAT — Faction losing ground.
 
 Support factions (500K CR, +3 influence) or undermine rivals (1M CR, -5 influence) to shift the balance. States change automatically as influence crosses thresholds.`,
+      },
+      {
+        title: 'Canis Stella Corporation',
+        body: `Canis Stella is a galaxy-spanning megacorporation you can engage with for corporate progression and a unique endgame track (Commander > Status > Canis Stella).
+
+• REPUTATION — Complete Canis Stella-aligned activities and missions to gain reputation. Eight ranks lead from neutral hireling up to CEO.
+• CEO TRACK — Reach the top rank and you can declare your own corporate faction, naming it and staking a claim in the galactic economy.
+• STANCE — Your stance (neutral, allied, rival) shapes how the corporation and rival factions react to you.
+
+Canis Stella bridges the player-faction systems (BGS, Power Play, reputation) into a single corporate career ladder. In Sandbox mode you can skip straight to the top.`,
       },
     ],
   },
@@ -1387,13 +1471,14 @@ Check Commander > Public Holidays at any time to see what's active, what's upcom
 
 🎖️ COMMANDER PROGRESSION
 • 3 rank tracks: Exploration (14 tiers), Trade, Mining
-• 130+ achievements across first discoveries, milestones, and count progression
+• 140+ achievements across first discoveries, milestones, and count progression
 • Player titles earned from gameplay milestones
 • Commander profile with lifetime statistics
 • Power Play — pledge to 1 of 6 galactic powers for passive bonuses
 • Crew progression — hire and train crew with 5 levels
 • Player reputation with 5 factions (Federation, Empire, Alliance, Independent, Pirate Syndicates)
 • Background Simulation — faction influence, states (Boom, Bust, War, Expansion, Retreat)
+• Canis Stella corporate career track with CEO endgame
 • Badge maker with custom SVG designs and share codes
 • Company system with trade contracts and passive income
 • Player-owned station revenue
@@ -1401,17 +1486,19 @@ Check Commander > Public Holidays at any time to see what's active, what's upcom
 🎨 CUSTOMIZATION & DISPLAY
 • 8 CRT color themes (Elite Orange, Matrix Green, Amber, Ice Blue, Crimson, Violet, Monochrome, Sol Gold)
 • Adjustable CRT effects: scanlines, glow, flicker, vignette
-• Text brightness control (10%–200%)
-• Mini screen mode for compact displays (Moto Razr 50)
-• Procedural Web Audio API sound engine — all SFX and music synthesized at runtime
-• 6 music presets (Standard, Cinematic, Retro, Minimal, Intense, Ethereal)
-• Per-screen track customization
-• Screen-aware background music
+• Text brightness control (10%–600%)
+• Independent font sizing + RGB text color for navigation & menus
+• Full keyboard + gamepad rebinding (Controller Config)
 • Cabin decoration system with customizable cockpit
 • Room manager for carrier interior rooms
 • Virtual garden with plantable flora
 • Aquarium system
 • Genetics lab
+• Mini screen mode for compact displays (Moto Razr 50)
+• Procedural Web Audio API sound engine — all SFX and music synthesized at runtime
+• 6 music presets (Standard, Cinematic, Retro, Minimal, Intense, Ethereal)
+• Per-screen track customization
+• Screen-aware background music
 
 ⚙️ TECHNICAL FEATURES
 • Persistent game state via localStorage

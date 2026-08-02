@@ -191,6 +191,10 @@ export default function NavBar({ currentScreen, onNavigate, location }) {
   const [openSubfolder, setOpenSubfolder] = useState(null);
   const navRef = useRef(null);
   const { state } = useGameState();
+  const navTextRGB = state.settings?.navTextRGB || null;
+  const navShadow = navTextRGB
+    ? `0 0 3px rgba(${navTextRGB.r},${navTextRGB.g},${navTextRGB.b},0.8), 0 0 6px rgba(${navTextRGB.r},${navTextRGB.g},${navTextRGB.b},0.4)`
+    : undefined;
 
   useEffect(() => {
     if (!openGroup) return;
@@ -262,7 +266,7 @@ export default function NavBar({ currentScreen, onNavigate, location }) {
   };
 
   return (
-    <nav ref={navRef} className="relative z-[100] flex flex-wrap items-center gap-1 px-2 py-1.5 border-b border-orange-900/50 bg-black" style={{ zoom: (state.settings?.uiScale?.navPanel ?? 100) / 100 }}>
+    <nav ref={navRef} className="relative z-[100] flex flex-wrap items-center gap-1 px-2 py-1.5 border-b border-orange-900/50 bg-black" style={{ zoom: (state.settings?.uiScale?.navPanel ?? 100) / 100, textShadow: navShadow }}>
       {NAV_GROUPS.map((group) => {
         const Icon = group.icon;
         const allItems = getAllItems(group);

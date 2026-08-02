@@ -98,6 +98,7 @@ export function createInitialState() {
       scanlines: true,
       textBrightness: 100,
       textRGB: null,
+      navTextRGB: null,
       miniScreen: false,
       colorTheme: 'elite',
       customColor: null,

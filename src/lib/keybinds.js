@@ -74,7 +74,9 @@ export const KEYBIND_CATEGORIES = [
     actions: [
       { id: 'screen_ship', label: 'Ship', defaults: [{ type: 'key', code: 'KeyP' }] },
       { id: 'screen_fleet', label: 'Fleet Manager', defaults: [] },
-      { id: 'screen_carriers', label: 'Fleet Carriers', defaults: [] },
+      { id: 'screen_carriers', label: 'Fleet Carriers', defaults: [{ type: 'key', code: 'KeyV' }] },
+      { id: 'screen_carrierlogistics', label: 'Carrier Logistics', defaults: [{ type: 'key', code: 'KeyL' }] },
+      { id: 'screen_carriercommand', label: 'Carrier Command', defaults: [{ type: 'key', code: 'KeyB' }] },
       { id: 'screen_shipcreator', label: 'Ship Yard', defaults: [] },
       { id: 'screen_carriercreator', label: 'Carrier Yard', defaults: [] },
       { id: 'screen_carrierinterior', label: 'Carrier Interior', defaults: [] },
