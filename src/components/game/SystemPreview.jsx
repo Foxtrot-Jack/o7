@@ -24,7 +24,7 @@ export default function SystemPreview({ star, fullScreen = false }) {
     setStarCount(systemData.stars.length);
 
     const width = mountRef.current.clientWidth;
-    const height = fullScreen ? Math.max(200, mountRef.current.clientHeight || window.innerHeight - 60) : 160;
+    const height = fullScreen ? window.innerHeight - 44 : 160;
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x000000);
@@ -124,9 +124,10 @@ export default function SystemPreview({ star, fullScreen = false }) {
     const handleResize = () => {
       if (!mountRef.current) return;
       const w = mountRef.current.clientWidth;
-      camera.aspect = w / height;
+      const h = fullScreen ? window.innerHeight - 44 : 160;
+      camera.aspect = w / h;
       camera.updateProjectionMatrix();
-      renderer.setSize(w, height);
+      renderer.setSize(w, h);
     };
     window.addEventListener('resize', handleResize);
 
@@ -142,13 +143,17 @@ export default function SystemPreview({ star, fullScreen = false }) {
 
   if (!star) return null;
 
+  if (fullScreen) {
+    return <div ref={mountRef} className="w-full" style={{ height: 'calc(100vh - 44px)', touchAction: 'none' }} />;
+  }
+
   return (
     <div className="border border-orange-900 bg-black">
       <div className="text-orange-700 text-[9px] uppercase px-1 py-0.5 border-b border-orange-900 flex justify-between">
         <span>System Preview</span>
         <span>{starCount > 1 ? `${starCount} stars · ` : ''}{bodyCount ?? '?'} bodies</span>
       </div>
-      <div ref={mountRef} className="w-full" style={{ height: fullScreen ? 'calc(100vh - 60px)' : '160px', touchAction: 'none' }} />
+      <div ref={mountRef} className="w-full" style={{ height: '160px', touchAction: 'none' }} />
     </div>
   );
 }
