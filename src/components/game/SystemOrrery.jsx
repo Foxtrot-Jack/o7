@@ -10,6 +10,7 @@ import { buildCustomShipModel, buildCarrierModel, buildGenericCarrierModel } fro
 import { SHIP_MAP, SHIP_TYPES, getProbesRequired } from '@/lib/gameState';
 import { MODULES } from '@/lib/shipOutfitting';
 import CelestialBodyList from './CelestialBodyList';
+import MiningPanel from './MiningPanel';
 import { generateBodyDescription } from '@/lib/bodyDescriptions';
 
 export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate }) {
@@ -1124,7 +1125,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
               </>
             )}
           </div>
-          {/* Mining info & button — only shown when orbiting this body */}
+          {/* Mining panel — only shown when orbiting a minable body */}
           {(() => {
             const isMinable = selectedBody.type === BODY_TYPES.RING ||
               selectedBody.type === BODY_TYPES.BELT ||
@@ -1135,26 +1136,10 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
               ? orbitingBodyId === selectedBody.parent
               : orbitingBodyId === selectedBody.id;
             if (!inOrbit) return null;
-            return (
-              <div className="border-t border-orange-900 pt-1 space-y-1">
-                <div className="text-orange-700 text-[10px] uppercase mb-1">
-                  {selectedBody.type === BODY_TYPES.RING ? 'Ring Mining Locations' : selectedBody.type === BODY_TYPES.BELT ? 'Asteroid Materials' : 'Surface Materials'}
-                </div>
-                <div className="flex flex-wrap gap-1">
-                  {selectedBody.materials.slice(0, 8).map(m => (
-                    <span key={m.id} className="text-[10px] text-orange-500 border border-orange-900 px-1">
-                      {m.id} ({m.concentration.toFixed(1)}%)
-                    </span>
-                  ))}
-                </div>
-                <button
-                  onClick={() => onNavigate('mining')}
-                  className="w-full py-1.5 border border-orange-500 text-orange-300 hover:bg-orange-950/50 text-[10px] font-bold"
-                >
-                  ⛏ MINE — {selectedBody.materials.length} DEPOSITS
-                </button>
-              </div>
-            );
+            const miningBody = isRing
+              ? { ...selectedBody, _parentName: systemData.bodies.find(b => b.id === selectedBody.parent)?.designation }
+              : selectedBody;
+            return <MiningPanel body={miningBody} />;
           })()}
           <div className="flex items-center gap-2 pt-1">
             {isScanned ? (
