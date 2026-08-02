@@ -3,7 +3,7 @@
 import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import * as THREE from 'three';
 import { useGameState } from '@/lib/gameState';
-import { BODY_TYPES } from '@/lib/system';
+import { BODY_TYPES, GUARDIAN_BLUEPRINTS } from '@/lib/system';
 import { buildStationModel } from '@/lib/stationModelBuilder';
 import { buildShipModel } from '@/lib/shipModelBuilder';
 import { buildCustomShipModel, buildCarrierModel, buildGenericCarrierModel } from '@/lib/modelBuilder';
@@ -164,8 +164,10 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
       rs.focusX += (rs.targetFocusX - rs.focusX) * sFocus;
       rs.focusZ += (rs.targetFocusZ - rs.focusZ) * sFocus;
       if (focusBodyRef.current) {
-        rs.targetFocusX = focusBodyRef.current.group.position.x;
-        rs.targetFocusZ = focusBodyRef.current.group.position.z;
+        const fwp = new THREE.Vector3();
+        focusBodyRef.current.group.getWorldPosition(fwp);
+        rs.targetFocusX = fwp.x;
+        rs.targetFocusZ = fwp.z;
       }
       updateCameraPosition(camera, rs);
 
@@ -220,8 +222,10 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
       // Ship orbits its anchored body when not traveling
       if (!travelRef.current && shipMeshRef.current && orbitAnchorRef.current) {
         const anchor = orbitAnchorRef.current;
-        const ax = anchor.group.position.x;
-        const az = anchor.group.position.z;
+        const awp = new THREE.Vector3();
+        anchor.group.getWorldPosition(awp);
+        const ax = awp.x;
+        const az = awp.z;
         const orbitR = Math.max(1, (anchor.visualRadius || 1) * 2.5);
         const angle = now * 0.0003;
         const ox = ax + Math.cos(angle) * orbitR;
@@ -342,6 +346,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
     // Create bodies
     const allBodies = systemData.bodies;
     const center = { x: 0, y: 0, z: 0 };
+    const bodyGroupMap = {};
 
     for (const body of allBodies) {
       // Skip rings — rendered on their parent planet
@@ -412,6 +417,12 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
         });
         mesh = new THREE.Mesh(geom, mat);
         group.add(mesh);
+      } else if (body.type === BODY_TYPES.ALIEN_SITE) {
+        const radius = 0.4;
+        const geom = new THREE.OctahedronGeometry(radius, 1);
+        const mat = new THREE.MeshBasicMaterial({ color: 0xaa44ff, wireframe: true, transparent: true, opacity: 0.8 });
+        mesh = new THREE.Mesh(geom, mat);
+        group.add(mesh);
       }
 
       // Create orbit line
@@ -436,7 +447,10 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
         orbitLinesRef.current.push(orbitLine);
       }
 
-      scene.add(group);
+      // Add to parent's group for proper multi-star orbital hierarchy, or scene if root
+      const parentGroup = body.parent ? bodyGroupMap[body.parent] : null;
+      if (parentGroup) parentGroup.add(group); else scene.add(group);
+      bodyGroupMap[body.id] = group;
       const getVisualRadius = (b) => {
         if (b.type === BODY_TYPES.STAR) return Math.max(3, Math.min(10, b.radius * 1.2));
         if (b.type === BODY_TYPES.PLANET) {
@@ -539,7 +553,9 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
     setOrbitingBodyId(anchorBody?.body?.id || null);
     // Initial position — at the anchored body
     if (anchorBody) {
-      shipPosRef.current = { x: anchorBody.group.position.x, y: 0, z: anchorBody.group.position.z };
+      const swp = new THREE.Vector3();
+      anchorBody.group.getWorldPosition(swp);
+      shipPosRef.current = { x: swp.x, y: 0, z: swp.z };
     } else {
       shipPosRef.current = { x: 0, y: 0, z: 5 };
     }
@@ -1009,7 +1025,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
               return false;
             }).length}/{systemData.bodyCount}</div>
             {(() => {
-              const scannable = systemData.bodies.filter(b => b.type === 'star' || b.type === 'planet' || b.type === 'moon' || b.type === 'belt');
+              const scannable = systemData.bodies.filter(b => b.type === 'star' || b.type === 'planet' || b.type === 'moon' || b.type === 'belt' || b.type === 'alien_site');
               const fssCount = scannable.filter(b => state.fssDiscoveredBodies?.[b.id]).length;
               return <div className="text-cyan-600">FSS: {fssCount}/{scannable.length}</div>;
             })()}
@@ -1141,6 +1157,23 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
                 <div>ORBIT: <span className="text-orange-300">{selectedBody.orbitRadius.toFixed(1)} AU</span></div>
               </>
             )}
+            {selectedBody.type === BODY_TYPES.ALIEN_SITE && (
+              <>
+                <div className="col-span-2 text-purple-400 font-bold uppercase text-[10px]">{selectedBody.alienSubtype?.replace(/_/g, ' ') || 'Alien Remnant'}</div>
+                <div>BLUEPRINT: <span className="text-purple-300">{(GUARDIAN_BLUEPRINTS.find(b => b.id === selectedBody.guardianBlueprint) || {}).name || selectedBody.guardianBlueprint}</span></div>
+                <div>VALUE: <span className="text-orange-300">{selectedBody.scanValue?.toLocaleString()} CR</span></div>
+              </>
+            )}
+            {selectedBody.elementComposition?.length > 0 && (
+              <div className="col-span-2 border-t border-orange-900/50 pt-1 mt-1">
+                <div className="text-orange-700 uppercase text-[10px] mb-1">Elemental Composition</div>
+                <div className="flex flex-wrap gap-1">
+                  {selectedBody.elementComposition.map(el => (
+                    <span key={el.symbol} className="text-[9px] border border-orange-950 text-orange-500 px-1">{el.symbol} {el.percentage}%</span>
+                  ))}
+                </div>
+              </div>
+            )}
             {selectedBody.type === BODY_TYPES.RING && (
               <>
                 <div>TYPE: <span className="text-orange-300 capitalize">{selectedBody.ringType || 'rocky'} Ring</span></div>
@@ -1197,13 +1230,13 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
           )}
           <div className="flex items-center gap-2 pt-1">
             {isScanned ? (
-              <span className="text-green-500 text-[10px]">✓ SCANNED — VALUE: {selectedBody.scanValue?.toLocaleString()} CR</span>
-            ) : orbitingBodyId === selectedBody.id ? (
+              <span className={selectedBody.type === BODY_TYPES.ALIEN_SITE ? 'text-purple-400 text-[10px]' : 'text-green-500 text-[10px]'}>✓ SCANNED — VALUE: {selectedBody.scanValue?.toLocaleString()} CR{selectedBody.type === BODY_TYPES.ALIEN_SITE ? ` · BLUEPRINT: ${(GUARDIAN_BLUEPRINTS.find(b => b.id === selectedBody.guardianBlueprint) || {}).name || ''}` : ''}</span>
+            ) : orbitingBodyId === (selectedBody.type === BODY_TYPES.RING ? selectedBody.parent : selectedBody.id) ? (
               <button
                 onClick={handleScan}
-                className="px-3 py-1 border border-orange-500 text-orange-300 hover:bg-orange-950/50 text-[10px]"
+                className={`px-3 py-1 border ${selectedBody.type === BODY_TYPES.ALIEN_SITE ? 'border-purple-500 text-purple-300 hover:bg-purple-950/50' : 'border-orange-500 text-orange-300 hover:bg-orange-950/50'} text-[10px]`}
               >
-                SCAN BODY (+{selectedBody.scanValue?.toLocaleString()} CR)
+                {selectedBody.type === BODY_TYPES.ALIEN_SITE ? `⊕ SCAN — GUARDIAN BLUEPRINT (+${selectedBody.scanValue?.toLocaleString()} CR)` : `SCAN BODY (+${selectedBody.scanValue?.toLocaleString()} CR)`}
               </button>
             ) : (
               <span className="text-orange-700 text-[10px]">⚠ MUST BE IN ORBIT TO SCAN — TRAVEL TO THIS BODY FIRST</span>

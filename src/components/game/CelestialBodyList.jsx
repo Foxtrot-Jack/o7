@@ -10,6 +10,7 @@ const TYPE_SYMBOLS = {
   belt: '≡',
   asteroid: '⋅',
   ring: '○',
+  alien_site: '◈',
 };
 
 export default function CelestialBodyList({
@@ -130,6 +131,7 @@ function BodyNode({ node, depth, stations, selectedBody, selectedStation, onSele
   const isStar = body.type === BODY_TYPES.STAR;
   const isBelt = body.type === BODY_TYPES.BELT;
   const isRing = body.type === BODY_TYPES.RING;
+  const isAlien = body.type === BODY_TYPES.ALIEN_SITE;
   const symbol = TYPE_SYMBOLS[body.type] || '●';
   const indent = depth * 10;
 
@@ -157,7 +159,9 @@ function BodyNode({ node, depth, stations, selectedBody, selectedStation, onSele
                 ? 'border-transparent text-yellow-500 hover:border-orange-800'
                 : isRing
                   ? 'border-transparent text-amber-600 hover:border-orange-800'
-                  : 'border-transparent text-orange-400 hover:border-orange-800'
+                  : isAlien
+                    ? 'border-transparent text-purple-400 hover:border-purple-700'
+                    : 'border-transparent text-orange-400 hover:border-orange-800'
           }`}
         >
           <span className="flex-shrink-0" style={{ color: isStar ? '#ffcc44' : body.color || '#888' }}>{symbol}</span>

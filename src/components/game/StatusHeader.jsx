@@ -44,7 +44,7 @@ export default function StatusHeader() {
         <div className="flex flex-col">
           <span className="text-orange-700 text-[10px] uppercase">Location</span>
           <span className="text-orange-400">
-            {state.currentLocation === 'station' ? 'Docked' : 'In Supercruise'}
+            {state.currentLocation === 'station' ? `Docked — ${state.lastVisitedStation?.stationName || 'Station'}` : 'In Flight'}
           </span>
         </div>
       </div>

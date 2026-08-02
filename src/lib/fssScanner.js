@@ -25,6 +25,7 @@ const FREQUENCY_RANGES = {
   moon_metal_rich: { min: 34, max: 44, label: 'Metal-Rich' },
   moon_rocky_ice: { min: 58, max: 66, label: 'Transitional' },
   belt: { min: 92, max: 100, label: 'Belts' },
+  alien_site: { min: 96, max: 100, label: 'Anomalous' },
 };
 
 function getFrequencyForBody(body, index, total) {
@@ -33,6 +34,8 @@ function getFrequencyForBody(body, index, total) {
     range = FREQUENCY_RANGES.star;
   } else if (body.type === 'belt') {
     range = FREQUENCY_RANGES.belt;
+  } else if (body.type === 'alien_site') {
+    range = FREQUENCY_RANGES.alien_site;
   } else if (body.type === 'moon') {
     range = FREQUENCY_RANGES[`moon_${body.planetType}`] || FREQUENCY_RANGES.moon_rocky;
   } else {
@@ -48,7 +51,7 @@ export function generateFSSSignals(systemData) {
   const bodies = systemData?.bodies || [];
   // Only scannable bodies: stars, planets, moons, belts (not rings or individual asteroids)
   const scannable = bodies.filter(b =>
-    b.type === 'star' || b.type === 'planet' || b.type === 'moon' || b.type === 'belt'
+    b.type === 'star' || b.type === 'planet' || b.type === 'moon' || b.type === 'belt' || b.type === 'alien_site'
   );
   return scannable.map((body, i) => {
     const freq = getFrequencyForBody(body, i, scannable.length);

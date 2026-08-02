@@ -3,7 +3,7 @@
 import { makeRng, randInt, randFloat, pick, pickWeighted, shuffle } from './prng';
 import { generateBodyName, generateStationName, generateFactionName } from './names';
 import { ECONOMY_TYPES } from './commodities';
-import { STAR_CLASSES, SPECIAL_STARS, SOL_SEED } from './galaxy';
+import { STAR_CLASSES, SPECIAL_STARS, SOL_SEED, STARTING_SYSTEM, distanceFromBubble } from './galaxy';
 import { generateSolSystem } from './solSystem';
 
 const ALL_STAR_CLASSES_LOCAL = [...STAR_CLASSES, ...SPECIAL_STARS];
@@ -26,6 +26,7 @@ export const BODY_TYPES = {
   BELT: 'belt',
   ASTEROID: 'asteroid',
   RING: 'ring',
+  ALIEN_SITE: 'alien_site',
 };
 
 // Planet types (inspired by Elite Dangerous but legally distinct)
@@ -48,6 +49,16 @@ export const PLANET_TYPES = [
   { id: 'terracformed', name: 'Terraformed World', color: '#558855', habitable: true, weight: 2, rare: true },
   { id: 'lava', name: 'Lava World', color: '#cc4422', habitable: false, weight: 5 },
   { id: 'carbon', name: 'Carbon World', color: '#444444', habitable: false, weight: 4 },
+  { id: 'methane', name: 'Methane World', color: '#446655', habitable: false, weight: 3 },
+  { id: 'nitrogen', name: 'Nitrogen World', color: '#555577', habitable: false, weight: 3 },
+  { id: 'sulfur', name: 'Sulfur World', color: '#aa8833', habitable: false, weight: 2 },
+  { id: 'iron_silicate', name: 'Iron-Silicate Body', color: '#997755', habitable: false, weight: 5 },
+  { id: 'silicate_vapor', name: 'Silicate Vapor World', color: '#cc6644', habitable: false, weight: 1, rare: true },
+  { id: 'water_giant', name: 'Water Giant', color: '#3377aa', habitable: false, weight: 3 },
+  { id: 'ammonia_giant', name: 'Ammonia Giant', color: '#448855', habitable: false, weight: 2 },
+  { id: 'helium_gas_giant_ii', name: 'Class V Helium Gas Giant', color: '#b0a080', habitable: false, weight: 2, hasRings: true },
+  { id: 'rocky_ice_vapour', name: 'Rocky Ice Vapour World', color: '#a0b8c8', habitable: false, weight: 2 },
+  { id: 'high_metal_content_vapour', name: 'High Metal Content Vapor World', color: '#9a8070', habitable: false, weight: 2 },
 ];
 
 // Surface signal definitions — biological, geological, mineral
@@ -109,7 +120,7 @@ export function generateSurfaceSignals(bodyId, planetType) {
 }
 
 // Generate a complete system from a seed
-export function generateSystem(starSeed, parentStarClass, population = 0) {
+export function generateSystem(starSeed, parentStarClass, population = 0, starCoords = null) {
   if (starSeed === SOL_SEED) {
     return generateSolSystem();
   }
@@ -181,11 +192,15 @@ export function generateSystem(starSeed, parentStarClass, population = 0) {
 
     // Ensure initial orbit is well outside the star's visual radius (max 10 in orrery)
     const starVisualRadius = Math.max(3, Math.min(10, star.radius * 1.2));
-    let currentOrbitRadius = Math.max(15, starVisualRadius * 2 + randFloat(rng, 3, 8));
+    // Exclusion zone: keep first planets well outside the star's fuel-scooping corona.
+    // This zone is reserved for fuel-scoop orbits only — no planets spawn here.
+    let currentOrbitRadius = Math.max(22, starVisualRadius * 3 + randFloat(rng, 8, 15));
 
     for (let o = 1; o <= maxOrbits; o++) {
       // Orbital spacing increases with distance — minimum gap prevents overlap
-      const gap = Math.max(6, randFloat(rng, 6, 15) * (1 + o * 0.25));
+      // First 4 planets get wider spacing to reduce crowding near the star
+      const baseGap = o <= 4 ? randFloat(rng, 10, 20) : randFloat(rng, 6, 15);
+      const gap = Math.max(6, baseGap * (1 + o * 0.25));
       currentOrbitRadius += gap;
 
       // Determine if this orbit slot is a planet or a belt
@@ -226,6 +241,10 @@ export function generateSystem(starSeed, parentStarClass, population = 0) {
     }
   }
 
+  // Generate alien remnant sites (guardian technology ruins)
+  const alienSites = generateAlienSites(rng, starSeed, bodies, starCoords);
+  bodies.push(...alienSites);
+
   // Cap at 150 bodies
   const finalBodies = bodies.slice(0, 150);
 
@@ -247,9 +266,77 @@ export function generateSystem(starSeed, parentStarClass, population = 0) {
   };
 }
 
+// Convenience wrapper — generates system data from a star object with coordinates
+export function generateSystemFromStar(star) {
+  return generateSystem(star.seed, star.starClass, star.population, { x: star.x, y: star.y, z: star.z });
+}
+
 function require_starClassesSmaller(parentClass) {
   // Return classes with weight > 0, preferring smaller companion stars
   return ALL_STAR_CLASSES_LOCAL.filter(c => c.weight > 0);
+}
+
+// Guardian technology blueprints — obtained by scanning alien remnant sites
+export const GUARDIAN_BLUEPRINTS = [
+  { id: 'g_fsd_booster', name: 'Guardian FSD Booster' },
+  { id: 'g_hull_reinforcement', name: 'Guardian Hull Reinforcement' },
+  { id: 'g_shield_reinforcement', name: 'Guardian Shield Reinforcement' },
+  { id: 'g_module_reinforcement', name: 'Guardian Module Reinforcement' },
+  { id: 'g_plasma_charger', name: 'Guardian Plasma Charger' },
+  { id: 'g_shard_cannon', name: 'Guardian Shard Cannon' },
+  { id: 'g_gauss_cannon', name: 'Guardian Gauss Cannon' },
+  { id: 'g_point_defense', name: 'Guardian Point Defense' },
+];
+
+export const GUARDIAN_BLUEPRINT_IDS = GUARDIAN_BLUEPRINTS.map(b => b.id);
+
+// Chemical elements for planetary composition display
+const PERIODIC_ELEMENTS = [
+  { symbol: 'Fe', name: 'Iron' }, { symbol: 'Si', name: 'Silicon' }, { symbol: 'O', name: 'Oxygen' },
+  { symbol: 'Mg', name: 'Magnesium' }, { symbol: 'S', name: 'Sulphur' }, { symbol: 'Al', name: 'Aluminium' },
+  { symbol: 'Ca', name: 'Calcium' }, { symbol: 'Ni', name: 'Nickel' }, { symbol: 'Na', name: 'Sodium' },
+  { symbol: 'K', name: 'Potassium' }, { symbol: 'C', name: 'Carbon' }, { symbol: 'H', name: 'Hydrogen' },
+  { symbol: 'He', name: 'Helium' }, { symbol: 'Ti', name: 'Titanium' }, { symbol: 'Cr', name: 'Chromium' },
+  { symbol: 'Mn', name: 'Manganese' }, { symbol: 'Co', name: 'Cobalt' }, { symbol: 'N', name: 'Nitrogen' },
+  { symbol: 'Cl', name: 'Chlorine' }, { symbol: 'P', name: 'Phosphorus' },
+];
+
+function generateElementComposition(rng, planetTypeId) {
+  // Gas giants get H/He dominant; rocky get silicates/metals; icy get O/H
+  let pool;
+  if (planetTypeId.startsWith('gas_giant') || planetTypeId.startsWith('helium')) {
+    pool = ['H', 'He', 'C', 'N', 'O'];
+  } else if (planetTypeId === 'icy' || planetTypeId === 'rocky_ice') {
+    pool = ['O', 'H', 'C', 'N', 'Si', 'Mg'];
+  } else if (planetTypeId === 'carbon') {
+    pool = ['C', 'Fe', 'Si', 'Ni', 'Ti', 'O'];
+  } else if (planetTypeId === 'metal_rich' || planetTypeId === 'high_metal_content') {
+    pool = ['Fe', 'Ni', 'Si', 'Mg', 'Cr', 'Ti', 'Mn'];
+  } else if (planetTypeId === 'lava') {
+    pool = ['Fe', 'Si', 'S', 'Mg', 'O', 'Ca'];
+  } else {
+    pool = ['Fe', 'Si', 'O', 'Mg', 'Al', 'Ca', 'S', 'C'];
+  }
+  const count = randInt(rng, 4, 8);
+  const chosen = [];
+  const availElements = PERIODIC_ELEMENTS.filter(e => pool.includes(e.symbol));
+  const shuffled = [...availElements].sort(() => rng() - 0.5);
+  for (let i = 0; i < Math.min(count, shuffled.length); i++) {
+    chosen.push(shuffled[i]);
+  }
+  // Assign percentages that sum to ~100%
+  let remaining = 100;
+  const result = [];
+  for (let i = 0; i < chosen.length; i++) {
+    if (i === chosen.length - 1) {
+      result.push({ ...chosen[i], percentage: Math.max(1, Math.round(remaining)) });
+    } else {
+      const pct = Math.max(1, Math.round(remaining * (0.15 + rng() * 0.5)));
+      result.push({ ...chosen[i], percentage: pct });
+      remaining -= pct;
+    }
+  }
+  return result.sort((a, b) => b.percentage - a.percentage);
 }
 
 function generatePlanet(rng, parentId, rootLetter, orbitIndex, orbitRadius, parentStar) {
@@ -291,6 +378,7 @@ function generatePlanet(rng, parentId, rootLetter, orbitIndex, orbitRadius, pare
     volcanic: planetType.id === 'lava',
     terraformed: planetType.id === 'terracformed',
     materials: generatePlanetMaterials(rng, planetType),
+    elementComposition: generateElementComposition(rng, planetType.id),
     parent: parentId,
     scanValue: Math.round(scanValue),
     scanned: false,
@@ -316,7 +404,9 @@ function generateMoon(rng, parentPlanet, moonIndex, moonLetter) {
   };
 
   const radius = randFloat(rng, 0.05, 0.8);
-  const orbitRadius = randFloat(rng, 1, 8) * (parentPlanet.radius + 1);
+  // First 2 moons get wider spacing from the planet to reduce overlap
+  const moonSpacing = moonIndex < 2 ? randFloat(rng, 2.5, 10) : randFloat(rng, 1, 8);
+  const orbitRadius = moonSpacing * (parentPlanet.radius + 1.5);
 
   return {
     id: `${parentPlanet.id}_m${moonIndex}`,
@@ -557,6 +647,78 @@ function generateStations(rng, seed, bodies, population = 0) {
   }
 
   return stations;
+}
+
+// Generate alien remnant sites — derelict stations, crashed ships, destroyed vessels.
+// These contain Guardian technology blueprints. Sites only spawn beyond 1000 LY from
+// the populated bubble boundary, with a single static site in the starting system.
+function generateAlienSites(rng, starSeed, bodies, starCoords) {
+  const sites = [];
+
+  // Static site in the starting system (inside the bubble) — directs players via FSS
+  if (starSeed === STARTING_SYSTEM.seed) {
+    const landable = bodies.find(b => b.type === BODY_TYPES.PLANET && b.landable);
+    if (landable) {
+      sites.push({
+        id: `${starSeed}_alien_static`,
+        type: BODY_TYPES.ALIEN_SITE,
+        designation: 'Guardian Ruins',
+        name: 'Ancient Guardian Ruins',
+        alienSubtype: 'crashed_ship',
+        guardianBlueprint: 'g_fsd_booster',
+        parent: landable.id,
+        orbitRadius: 0,
+        scanValue: 50000,
+        scanned: false,
+        isStatic: true,
+      });
+    }
+  }
+
+  // Remote sites — only beyond 1000 LY from the bubble boundary
+  if (starCoords) {
+    const distFromBubble = distanceFromBubble(starCoords.x, starCoords.y, starCoords.z);
+    if (distFromBubble >= 1000) {
+      const chance = 0.02 + rng() * 0.03; // 2-5% per applicable location
+      const applicableLocations = bodies.filter(b =>
+        b.type === BODY_TYPES.PLANET && b.landable ||
+        b.type === BODY_TYPES.STAR ||
+        b.type === BODY_TYPES.BELT
+      );
+      for (const loc of applicableLocations) {
+        if (rng() < chance) {
+          const subtypes = ['derelict_station', 'crashed_ship', 'destroyed_vessel'];
+          const subtype = pick(rng, subtypes);
+          const blueprintId = pick(rng, GUARDIAN_BLUEPRINT_IDS);
+          const isSurface = subtype === 'crashed_ship';
+          const parent = isSurface ? loc.id : (loc.type === BODY_TYPES.STAR ? loc.id : loc.parent || loc.id);
+          sites.push({
+            id: `${starSeed}_alien_${sites.length}`,
+            type: BODY_TYPES.ALIEN_SITE,
+            designation: 'Alien Remnant',
+            name: alienSiteName(subtype),
+            alienSubtype: subtype,
+            guardianBlueprint: blueprintId,
+            parent,
+            orbitRadius: isSurface ? 0 : randFloat(rng, 10, 50),
+            scanValue: randInt(rng, 20000, 100000),
+            scanned: false,
+          });
+        }
+      }
+    }
+  }
+
+  return sites;
+}
+
+function alienSiteName(subtype) {
+  switch (subtype) {
+    case 'derelict_station': return 'Derelict Guardian Station';
+    case 'crashed_ship': return 'Crashed Guardian Vessel';
+    case 'destroyed_vessel': return 'Destroyed Guardian Ship';
+    default: return 'Guardian Remnant';
+  }
 }
 
 // Calculate total scan value of a system (for exploration data selling)

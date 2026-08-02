@@ -114,6 +114,18 @@ function getBubblePopulation(x, y, z) {
   return null;
 }
 
+// Distance from a point to the nearest populated bubble boundary.
+// Returns 0 if inside a bubble, otherwise the distance to the nearest bubble edge.
+export function distanceFromBubble(x, y, z) {
+  let minDist = Infinity;
+  for (const bubble of BUBBLE_CENTERS) {
+    const d = Math.sqrt((x - bubble.x) ** 2 + (y - bubble.y) ** 2 + (z - bubble.z) ** 2);
+    const edgeDist = d - bubble.radius;
+    if (edgeDist < minDist) minDist = edgeDist;
+  }
+  return Math.max(0, minDist);
+}
+
 // Generate stars in a single sector
 export function generateSectorStars(sx, sy, sz) {
   const sectorSeed = hashSeed(`sector:${sx},${sy},${sz}`);

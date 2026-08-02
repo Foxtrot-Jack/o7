@@ -6,7 +6,7 @@ import { STARTING_SYSTEM, distance3D, generateStarsInRange, SOL_SYSTEM } from '.
 import { GATE_CREDIT_COST, GATE_MATERIAL_COST } from './warpGates';
 import { computeCockpitCost } from './cockpitParts';
 import { SOL_CHEATS } from './solSystem';
-import { generateSystem } from './system';
+import { generateSystem, generateSystemFromStar } from './system';
 import { COMMODITIES, COMMODITY_MAP, COMMODITY_CATEGORIES } from './commodities';
 import { computeCustomShipStats } from './shipParts';
 import { getDefaultModules, computeShipStats } from './shipOutfitting';
@@ -219,9 +219,7 @@ function createInitialState() {
     carrierCurrentRoom: {},
     aquaticLife: { collected: [], tankIds: [], tankCapacity: 8 },
     floraCollection: { collected: [], displayIds: [], capacity: 8 },
-    lastVisitedStation: null,
-    rebuyPending: null,
-    createdAt: Date.now(),
+    lastVisitedStation: null, rebuyPending: null, guardianBlueprints: {}, galaxyFilters: { spectral: 'all', security: 'all', population: 'all', showParkedShips: true, showColonies: true, showMissions: true, explorationMode: false, showBubble: true, showRoute: true }, createdAt: Date.now(),
   };
 }
 
@@ -334,7 +332,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
           aquaticLife: parsed.aquaticLife || { collected: [], tankIds: [], tankCapacity: 8 },
           floraCollection: parsed.floraCollection || { collected: [], displayIds: [], capacity: 8 },
           lastVisitedStation: parsed.lastVisitedStation || null,
-          rebuyPending: parsed.rebuyPending || null,
+          rebuyPending: parsed.rebuyPending || null, guardianBlueprints: parsed.guardianBlueprints || {}, galaxyFilters: { ...prev.galaxyFilters, ...(parsed.galaxyFilters || {}) },
           ship: validateShip({ ...prev.ship, ...(parsed.ship || {}), cockpitDecoration: parsed.ship?.cockpitDecoration || { parts: {} } }, prev.ship),
           saveMode: saveSlot,
           lightYearsTraveled: parsed.lightYearsTraveled || 0,
@@ -344,7 +342,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
         };
           // Regenerate system data for the current system (not persisted since it's large)
           if (merged.currentSystem) {
-            merged.currentSystemData = generateSystem(merged.currentSystem.seed, merged.currentSystem.starClass, merged.currentSystem.population);
+            merged.currentSystemData = generateSystemFromStar(merged.currentSystem);
           }
           return merged;
         });
@@ -352,7 +350,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
         // No save — generate initial system data
         setState(prev => ({
           ...prev,
-          currentSystemData: generateSystem(prev.currentSystem.seed, prev.currentSystem.starClass, prev.currentSystem.population),
+          currentSystemData: generateSystemFromStar(prev.currentSystem),
         }));
       }
     } catch (e) {
@@ -436,14 +434,14 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
         stateRef.current.currentSystemData.seed === system.seed) {
       return stateRef.current.currentSystemData;
     }
-    const data = generateSystem(system.seed, system.starClass, system.population);
+    const data = generateSystemFromStar(system);
     return data;
   }, []);
 
   // Set current system and generate its data
   const setCurrentSystem = useCallback((system) => {
     soundEngine.play('jump');
-    const systemData = generateSystem(system.seed, system.starClass, system.population);
+    const systemData = generateSystemFromStar(system);
     setState(prev => {
       const dist = distance3D(prev.currentSystem, system);
       const isNeutron = system.starClass?.class === 'NS';
@@ -838,8 +836,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
       return {
         ...prev,
         scannedBodies: { ...prev.scannedBodies, [body.id]: { scanType: 'detailed', value: body.scanValue, date: Date.now(), originCoords: { x: prev.currentSystem.x, y: prev.currentSystem.y, z: prev.currentSystem.z } } },
-        achievements: ach,
-        records,
+        achievements: ach, records, guardianBlueprints: body.type === 'alien_site' && body.guardianBlueprint ? { ...prev.guardianBlueprints, [body.guardianBlueprint]: { count: (prev.guardianBlueprints?.[body.guardianBlueprint]?.count || 0) + 1, highestTier: Math.max(prev.guardianBlueprints?.[body.guardianBlueprint]?.highestTier || 0, Math.floor(1 + Math.sqrt((prev.guardianBlueprints?.[body.guardianBlueprint]?.count || 0)))) } } : prev.guardianBlueprints,
       };
     });
   }, []);

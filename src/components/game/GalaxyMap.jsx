@@ -29,12 +29,12 @@ export default function GalaxyMap({ onJumpToSystem }) {
   const raycasterRef = useRef(new THREE.Raycaster());
   const animationIdRef = useRef(null);
 
-  const { state, setCurrentSystem, addBookmark, removeBookmark, plotRoute } = useGameState();
+  const { state, setCurrentSystem, addBookmark, removeBookmark, plotRoute, update } = useGameState();
   const [selectedStar, setSelectedStar] = useState(null);
   const [stars, setStars] = useState([]);
   const [loading, setLoading] = useState(true);
   const [hoveredStar, setHoveredStar] = useState(null);
-  const [filters, setFilters] = useState({ spectral: 'all', security: 'all', population: 'all', showParkedShips: true, showColonies: true, showMissions: true, explorationMode: false });
+  const [filters, setFilters] = useState(state.galaxyFilters || { spectral: 'all', security: 'all', population: 'all', showParkedShips: true, showColonies: true, showMissions: true, explorationMode: false, showBubble: true, showRoute: true });
   const [showFilterPanel, setShowFilterPanel] = useState(false);
   const [showBookmarks, setShowBookmarks] = useState(false);
   const [showTrail, setShowTrail] = useState(true);
@@ -49,6 +49,10 @@ export default function GalaxyMap({ onJumpToSystem }) {
   const brightnessRef = useRef({ star: 100, trail: 40, overview: 80 });
   brightnessRef.current = { star: starBrightness, trail: trailBrightness, overview: overviewBrightness };
   const [galaxyViewMode, setGalaxyViewMode] = useState(false);
+  // Sync filters to state for persistence across map close/reopen
+  useEffect(() => { update({ galaxyFilters: filters }); }, [filters]);
+  const bubbleCloudsRef = useRef(null);
+  const routeLineRef = useRef(null);
   const galaxyViewModeRef = useRef(false);
   galaxyViewModeRef.current = galaxyViewMode;
   const galaxyPlayerRef = useRef(null);
@@ -477,6 +481,49 @@ export default function GalaxyMap({ onJumpToSystem }) {
     if (overviewRef.current) overviewRef.current.material.opacity = 0.8 * (overviewBrightness / 100);
   }, [overviewBrightness]);
 
+  // Render populated bubble clouds — semi-transparent wireframe spheres around inhabited regions
+  useEffect(() => {
+    const scene = sceneRef.current;
+    if (!scene) return;
+    if (bubbleCloudsRef.current) { scene.remove(bubbleCloudsRef.current); bubbleCloudsRef.current.traverse(c => { if (c.geometry) c.geometry.dispose(); if (c.material) c.material.dispose(); }); bubbleCloudsRef.current = null; }
+    if (!filters.showBubble) return;
+    const center = state.currentSystem;
+    const group = new THREE.Group();
+    for (const bubble of BUBBLE_CENTERS) {
+      const dist = distance3D(center, bubble);
+      if (dist > 250) continue;
+      const geom = new THREE.SphereGeometry(bubble.radius, 16, 12);
+      const mat = new THREE.MeshBasicMaterial({ color: 0x0088cc, transparent: true, opacity: 0.06, wireframe: true });
+      const sphere = new THREE.Mesh(geom, mat);
+      sphere.position.set(bubble.x - center.x, bubble.y - center.y, bubble.z - center.z);
+      group.add(sphere);
+    }
+    scene.add(group);
+    bubbleCloudsRef.current = group;
+  }, [stars, filters.showBubble, state.currentSystem]);
+
+  // Render plotted route — teal line through jump waypoints, replaceable when new route set
+  useEffect(() => {
+    const scene = sceneRef.current;
+    if (!scene) return;
+    if (routeLineRef.current) { scene.remove(routeLineRef.current); routeLineRef.current.geometry.dispose(); routeLineRef.current.material.dispose(); routeLineRef.current = null; }
+    if (!filters.showRoute || !state.plottedRoute || state.plottedRoute.length === 0) return;
+    const center = state.currentSystem;
+    const positions = new Float32Array((state.plottedRoute.length + 1) * 3);
+    positions[0] = 0; positions[1] = 0; positions[2] = 0;
+    state.plottedRoute.forEach((jump, i) => {
+      positions[(i + 1) * 3] = jump.x - center.x;
+      positions[(i + 1) * 3 + 1] = jump.y - center.y;
+      positions[(i + 1) * 3 + 2] = jump.z - center.z;
+    });
+    const geom = new THREE.BufferGeometry();
+    geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    const mat = new THREE.LineBasicMaterial({ color: 0x00ccaa, transparent: true, opacity: 0.7 });
+    const line = new THREE.Line(geom, mat);
+    scene.add(line);
+    routeLineRef.current = line;
+  }, [state.plottedRoute, filters.showRoute, state.currentSystem]);
+
   // Toggle galaxy view marker visibility without rebuilding geometry
   useEffect(() => {
     if (galaxyPlayerRef.current) galaxyPlayerRef.current.visible = galaxyViewMode;
@@ -867,6 +914,8 @@ export default function GalaxyMap({ onJumpToSystem }) {
             <button onClick={() => setFilters({...filters, showParkedShips: !filters.showParkedShips})} className={`flex-1 py-0.5 border ${filters.showParkedShips ? 'border-cyan-600 text-cyan-400' : 'border-orange-900 text-orange-800'}`}>⚓ SHIPS</button>
             <button onClick={() => setFilters({...filters, showColonies: !filters.showColonies})} className={`flex-1 py-0.5 border ${filters.showColonies ? 'border-purple-600 text-purple-400' : 'border-orange-900 text-orange-800'}`}>★ COLONIES</button>
             <button onClick={() => setFilters({...filters, showMissions: !filters.showMissions})} className={`flex-1 py-0.5 border ${filters.showMissions ? 'border-yellow-600 text-yellow-400' : 'border-orange-900 text-orange-800'}`}>◉ MISSIONS</button>
+            <button onClick={() => setFilters({...filters, showBubble: !filters.showBubble})} className={`flex-1 py-0.5 border ${filters.showBubble ? 'border-blue-500 text-blue-400' : 'border-orange-900 text-orange-800'}`}>◎ BUBBLE</button>
+            <button onClick={() => setFilters({...filters, showRoute: !filters.showRoute})} className={`flex-1 py-0.5 border ${filters.showRoute ? 'border-teal-500 text-teal-400' : 'border-orange-900 text-orange-800'}`}>~ ROUTE</button>
             </div>
             <button onClick={() => setFilters({...filters, explorationMode: !filters.explorationMode})} className={`w-full py-0.5 border mt-1 ${filters.explorationMode ? 'border-green-600 text-green-400 bg-green-950/20' : 'border-orange-900 text-orange-800'}`}>◎ EXPLORATION MODE {filters.explorationMode ? 'ON' : 'OFF'}</button>
             {filters.explorationMode && <div className="text-[9px] text-orange-700 text-center">Explored = <span className="text-green-500">GREEN</span> · Unexplored = <span className="text-red-500">RED</span></div>}
