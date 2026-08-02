@@ -9,6 +9,7 @@ import { computeShipStats, getDefaultModules } from '@/lib/shipOutfitting';
 import { calculateRoute } from '@/lib/routeCalculator';
 import SystemPreview from './SystemPreview';
 import GalaxyOrreryViewer from './GalaxyOrreryViewer';
+import { colorEnabledFor, monoUIActive, desaturateColor, effectiveTheme } from '@/lib/monoColor';
 
 export default function GalaxyMap({ onJumpToSystem }) {
   const mountRef = useRef(null);
@@ -30,6 +31,10 @@ export default function GalaxyMap({ onJumpToSystem }) {
   const animationIdRef = useRef(null);
 
   const { state, setCurrentSystem, addBookmark, removeBookmark, plotRoute, update } = useGameState();
+  const settings = state.settings || {};
+  const effTheme = effectiveTheme(state);
+  const monoUI = monoUIActive(settings);
+  const starColorsOn = colorEnabledFor('stars', effTheme, settings.monoOverrides);
   const [selectedStar, setSelectedStar] = useState(null);
   const [stars, setStars] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -100,7 +105,7 @@ export default function GalaxyMap({ onJumpToSystem }) {
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
     renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     mountRef.current.appendChild(renderer.domElement);
 
     sceneRef.current = scene;
@@ -135,18 +140,24 @@ export default function GalaxyMap({ onJumpToSystem }) {
     scene.add(gridGroup);
     gridRef.current = gridGroup;
 
-    // Animation loop
+    // Animation loop — frame-rate-independent smoothing for consistent motion at any refresh rate
+    let lastFrame = performance.now();
     const animate = () => {
       animationIdRef.current = requestAnimationFrame(animate);
+      const now = performance.now();
+      const dt = Math.min(0.1, (now - lastFrame) / 1000);
+      lastFrame = now;
 
-      // Smooth rotation interpolation
+      // Smooth rotation interpolation (delta-time based so 60/120/144Hz all feel identical)
       const rs = rotState.current;
-      rs.azimuth += (rs.targetAzimuth - rs.azimuth) * 0.1;
-      rs.polar += (rs.targetPolar - rs.polar) * 0.1;
-      rs.distance += (rs.targetDistance - rs.distance) * 0.1;
-      rs.panX += (rs.targetPanX - rs.panX) * 0.1;
-      rs.panZ += (rs.targetPanZ - rs.panZ) * 0.1;
-      rs.panY += (rs.targetPanY - rs.panY) * 0.1;
+      const sRot = 1 - Math.exp(-dt * 8);
+      const sPan = 1 - Math.exp(-dt * 6);
+      rs.azimuth += (rs.targetAzimuth - rs.azimuth) * sRot;
+      rs.polar += (rs.targetPolar - rs.polar) * sRot;
+      rs.distance += (rs.targetDistance - rs.distance) * sRot;
+      rs.panX += (rs.targetPanX - rs.panX) * sPan;
+      rs.panZ += (rs.targetPanZ - rs.panZ) * sPan;
+      rs.panY += (rs.targetPanY - rs.panY) * sPan;
       updateCameraPosition(camera, rs);
 
       // Pulse player marker
@@ -247,6 +258,7 @@ export default function GalaxyMap({ onJumpToSystem }) {
       } else {
         if (isVisited) color.lerp(new THREE.Color(0x00ff66), 0.4);
       }
+      if (!starColorsOn) desaturateColor(color);
       if (!passesFilter(star)) color.multiplyScalar(0.05);
       colors[i * 3] = color.r;
       colors[i * 3 + 1] = color.g;
@@ -468,7 +480,7 @@ export default function GalaxyMap({ onJumpToSystem }) {
 
     // Set initial zoom to show a good range
     rotState.current.targetDistance = 120;
-  }, [stars, state.currentSystem, filters, state.discoveredSystems, state.ownedShips, state.colonies, state.activeMissions, showTrail, state.flightLog, state.bookmarkedSystems]);
+  }, [stars, state.currentSystem, filters, state.discoveredSystems, state.ownedShips, state.colonies, state.activeMissions, showTrail, state.flightLog, state.bookmarkedSystems, starColorsOn]);
 
   // Apply brightness changes without regenerating geometry
   useEffect(() => {
@@ -801,6 +813,9 @@ export default function GalaxyMap({ onJumpToSystem }) {
     <div className="relative w-full h-full bg-black">
       <div ref={mountRef} className="w-full h-full" style={{ touchAction: 'none', transform: galaxyFlip ? 'scaleY(-1)' : 'none' }} />
 
+      {/* UI overlays — greyscaled in monochrome; the 3D canvas keeps its color */}
+      <div className={`crt-overlays absolute inset-0 z-20 ${monoUI ? 'crt-mono-ui' : ''}`}>
+
       {/* Loading indicator */}
       {loading && (
         <div className="absolute inset-0 flex items-center justify-center bg-black">
@@ -919,6 +934,9 @@ export default function GalaxyMap({ onJumpToSystem }) {
             </div>
             <button onClick={() => setFilters({...filters, explorationMode: !filters.explorationMode})} className={`w-full py-0.5 border mt-1 ${filters.explorationMode ? 'border-green-600 text-green-400 bg-green-950/20' : 'border-orange-900 text-orange-800'}`}>◎ EXPLORATION MODE {filters.explorationMode ? 'ON' : 'OFF'}</button>
             {filters.explorationMode && <div className="text-[9px] text-orange-700 text-center">Explored = <span className="text-green-500">GREEN</span> · Unexplored = <span className="text-red-500">RED</span></div>}
+            {effTheme === 'mono' && (
+              <button onClick={() => update({ settings: { ...settings, monoOverrides: { ...(settings.monoOverrides || {}), stars: !settings.monoOverrides?.stars } } })} className={`w-full py-0.5 border mt-1 ${settings.monoOverrides?.stars ? 'border-cyan-500 text-cyan-300 bg-cyan-950/20' : 'border-orange-900 text-orange-800'}`}>★ STAR COLORS {settings.monoOverrides?.stars ? 'ON' : 'OFF'}</button>
+            )}
             <button onClick={() => setShowTrail(!showTrail)} className={`w-full py-0.5 border mt-1 ${showTrail ? 'border-green-600 text-green-400' : 'border-orange-900 text-orange-800'}`}>~ FLIGHT TRAIL ({state.flightLog?.length || 0})</button>
             <div className="border-t border-orange-900 pt-1.5 space-y-1.5">
               <div>
@@ -1056,6 +1074,7 @@ export default function GalaxyMap({ onJumpToSystem }) {
       {showOrrery && selectedStar && (
         <GalaxyOrreryViewer star={selectedStar} onClose={() => setShowOrrery(false)} />
       )}
+      </div>
     </div>
   );
 }

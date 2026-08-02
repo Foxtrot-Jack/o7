@@ -17,7 +17,6 @@ export default function CRTFrame({ children, enabled = true, brightness = 100, t
   if (display.saturation != null && display.saturation !== 100) filters.push(`saturate(${display.saturation}%)`);
   if (display.contrast != null && display.contrast !== 100) filters.push(`contrast(${display.contrast}%)`);
   if (!customColor) {
-    if (t.grayscale) filters.push('grayscale(1)');
     if (t.hueRotate) filters.push(`hue-rotate(${t.hueRotate}deg)`);
   }
   const transforms = [];

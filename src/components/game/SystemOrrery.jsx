@@ -15,6 +15,7 @@ import RadioChatter from './RadioChatter';
 import ShipCopilot from './ShipCopilot';
 import { generateBodyDescription } from '@/lib/bodyDescriptions';
 import { COMMODITY_MAP } from '@/lib/commodities';
+import { colorEnabledFor, monoUIActive, desaturateColor, desaturateObject3D, effectiveTheme } from '@/lib/monoColor';
 
 export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate }) {
   const mountRef = useRef(null);
@@ -35,12 +36,21 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
   const npcShipsRef = useRef([]);
   const carrierMeshesRef = useRef([]);
   const tempVecRef = useRef(new THREE.Vector3());
+  const focusWorldPosRef = useRef(new THREE.Vector3());
+  const orbitWorldPosRef = useRef(new THREE.Vector3());
   const lastTravelPctRef = useRef(-1);
   const orbitAnchorRef = useRef(null);
   const lastTimeRef = useRef(0);
   const gridRef = useRef(null);
 
   const { state, getSystemData, scanBody, dockAtStation, fssScanSystem, mapBody, landOnBody, refuel, addCargo, addMaterial } = useGameState();
+  const settings = state.settings || {};
+  const effTheme = effectiveTheme(state);
+  const monoUI = monoUIActive(settings);
+  const starColorsOn = colorEnabledFor('stars', effTheme, settings.monoOverrides);
+  const planetColorsOn = colorEnabledFor('planets', effTheme, settings.monoOverrides);
+  const shipColorsOn = colorEnabledFor('ships', effTheme, settings.monoOverrides);
+  const stationColorsOn = colorEnabledFor('stations', effTheme, settings.monoOverrides);
   const [selectedBody, setSelectedBody] = useState(null);
   const [hoveredBody, setHoveredBody] = useState(null);
   const [bodiesCollapsed, setBodiesCollapsed] = useState(state.settings?.miniScreen || false);
@@ -166,7 +176,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
       rs.focusX += (rs.targetFocusX - rs.focusX) * sFocus;
       rs.focusZ += (rs.targetFocusZ - rs.focusZ) * sFocus;
       if (focusBodyRef.current) {
-        const fwp = new THREE.Vector3();
+        const fwp = focusWorldPosRef.current;
         focusBodyRef.current.group.getWorldPosition(fwp);
         rs.targetFocusX = fwp.x;
         rs.targetFocusZ = fwp.z;
@@ -229,7 +239,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
       // Ship orbits its anchored body when not traveling
       if (!travelRef.current && shipMeshRef.current && orbitAnchorRef.current) {
         const anchor = orbitAnchorRef.current;
-        const awp = new THREE.Vector3();
+        const awp = orbitWorldPosRef.current;
         anchor.group.getWorldPosition(awp);
         const ax = awp.x;
         const az = awp.z;
@@ -369,8 +379,10 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
         // Star — glowing wireframe sphere (much larger than planets)
         const radius = Math.max(3, Math.min(10, body.radius * 1.2));
         const geom = new THREE.SphereGeometry(radius, 16, 12);
+        const starColor = new THREE.Color(body.color);
+        if (!starColorsOn) desaturateColor(starColor);
         const mat = new THREE.MeshBasicMaterial({
-          color: new THREE.Color(body.color),
+          color: starColor,
           wireframe: true,
         });
         mesh = new THREE.Mesh(geom, mat);
@@ -378,8 +390,10 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
 
         // Glow sprite
         const glowGeom = new THREE.SphereGeometry(radius * 1.5, 8, 6);
+        const glowColor = new THREE.Color(body.color);
+        if (!starColorsOn) desaturateColor(glowColor);
         const glowMat = new THREE.MeshBasicMaterial({
-          color: new THREE.Color(body.color),
+          color: glowColor,
           transparent: true,
           opacity: 0.15,
         });
@@ -392,8 +406,10 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
             ? Math.max(1, Math.min(3, body.radius * 0.12))
             : Math.max(0.3, Math.min(1.2, body.radius * 0.4));
         const geom = new THREE.SphereGeometry(radius, 12, 8);
+        const planetColor = new THREE.Color(body.color);
+        if (!planetColorsOn) desaturateColor(planetColor);
         const mat = new THREE.MeshBasicMaterial({
-          color: new THREE.Color(body.color),
+          color: planetColor,
           wireframe: true,
         });
         mesh = new THREE.Mesh(geom, mat);
@@ -402,8 +418,10 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
         // Rings
         if (body.hasRings) {
           const ringGeom = new THREE.RingGeometry(radius * 1.4, radius * 2.2, 24);
+          const ringColor = new THREE.Color(0x8a7a5a);
+          if (!planetColorsOn) desaturateColor(ringColor);
           const ringMat = new THREE.MeshBasicMaterial({
-            color: 0x8a7a5a,
+            color: ringColor,
             wireframe: true,
             side: THREE.DoubleSide,
             transparent: true,
@@ -418,8 +436,10 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
       } else if (body.type === BODY_TYPES.ASTEROID) {
         const radius = Math.max(0.1, body.radius * 2);
         const geom = new THREE.OctahedronGeometry(radius, 0);
+        const astColor = new THREE.Color(body.valuable ? 0xffaa44 : 0x554433);
+        if (!planetColorsOn) desaturateColor(astColor);
         const mat = new THREE.MeshBasicMaterial({
-          color: body.valuable ? 0xffaa44 : 0x554433,
+          color: astColor,
           wireframe: true,
         });
         mesh = new THREE.Mesh(geom, mat);
@@ -427,7 +447,9 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
       } else if (body.type === BODY_TYPES.ALIEN_SITE) {
         const radius = 0.4;
         const geom = new THREE.OctahedronGeometry(radius, 1);
-        const mat = new THREE.MeshBasicMaterial({ color: 0xaa44ff, wireframe: true, transparent: true, opacity: 0.8 });
+        const alienColor = new THREE.Color(0xaa44ff);
+        if (!planetColorsOn) desaturateColor(alienColor);
+        const mat = new THREE.MeshBasicMaterial({ color: alienColor, wireframe: true, transparent: true, opacity: 0.8 });
         mesh = new THREE.Mesh(geom, mat);
         group.add(mesh);
       }
@@ -487,6 +509,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
       if (!parentEntry) continue;
 
       const stationModel = buildStationModel(station.type);
+      if (!stationColorsOn) desaturateObject3D(stationModel);
       const isGasGiant = parentBody.planetType?.startsWith('gas_giant') || parentBody.planetType?.startsWith('helium');
       const planetVisualRadius = parentBody.type === BODY_TYPES.MOON
         ? Math.max(0.1, Math.min(0.4, parentBody.radius * 0.4))
@@ -542,6 +565,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
       const shipClass = shipType?.class || 1;
       shipModel = buildShipModel(shipClass);
     }
+    if (!shipColorsOn) desaturateObject3D(shipModel);
     shipModel.scale.setScalar(0.25);
     scene.add(shipModel);
     shipMeshRef.current = shipModel;
@@ -582,6 +606,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
     for (let i = 0; i < numNpc; i++) {
       const npcType = npcShipTypes[Math.floor(Math.random() * npcShipTypes.length)] || SHIP_TYPES[0];
       const npcModel = buildShipModel(npcType.class);
+      if (!shipColorsOn) desaturateObject3D(npcModel);
       npcModel.scale.setScalar(0.2);
       scene.add(npcModel);
       npcShipsRef.current.push({
@@ -605,6 +630,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
       const carrierModel = carrier.design
         ? buildCarrierModel(carrier.design, 0xff8800)
         : buildGenericCarrierModel(0xff8800);
+      if (!shipColorsOn) desaturateObject3D(carrierModel);
       carrierModel.scale.setScalar(carrier.isGuilded ? 1.5 : 0.5);
       scene.add(carrierModel);
       carrierMeshesRef.current.push({
@@ -629,7 +655,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
 
     // Auto-fit camera to system
     rotState.current.targetDistance = maxOrbit * 2.5;
-  }, [systemData, state.ship?.type, state.ship?.customShipId, state.fleetCarriers?.filter(c => c.systemSeed === state.currentSystem?.seed).length, state.fssDiscoveredBodies]);
+  }, [systemData, state.ship?.type, state.ship?.customShipId, state.fleetCarriers?.filter(c => c.systemSeed === state.currentSystem?.seed).length, state.fssDiscoveredBodies, starColorsOn, planetColorsOn, shipColorsOn, stationColorsOn]);
 
   // Pointer interaction
   useEffect(() => {
@@ -959,6 +985,9 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
   return (
     <div className="relative w-full h-full bg-black">
       <div ref={mountRef} className="w-full h-full" style={{ touchAction: 'none' }} />
+
+      {/* UI overlays — greyscaled in monochrome; the 3D canvas keeps its color */}
+      <div className={`crt-overlays absolute inset-0 z-20 ${monoUI ? 'crt-mono-ui' : ''}`}>
 
       {/* FSS scan prompt */}
       {state.currentLocation !== 'station' && !state.fssScannedSystems?.[state.currentSystem?.seed] && !selectedBody && fssDismissedSeed !== state.currentSystem?.seed && (
@@ -1396,6 +1425,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
           })()}
         </div>
       )}
+      </div>
     </div>
   );
 }

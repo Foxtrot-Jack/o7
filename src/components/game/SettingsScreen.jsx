@@ -1,17 +1,19 @@
 // Settings — restructured into intuitive tabbed categories
 import React, { useState } from 'react';
 import { useGameState } from '@/lib/gameState';
-import { Settings, Monitor, Palette, Type, Volume2, Hand, Database, Download, Upload, RotateCcw, ArrowLeftRight, Lock, Unlock, Smartphone, Maximize } from 'lucide-react';
+import { Settings, Monitor, Palette, Type, Volume2, Hand, Database, Download, Upload, RotateCcw, ArrowLeftRight, Lock, Unlock, Smartphone, Maximize, Contrast } from 'lucide-react';
 import { THEME_LIST } from '@/lib/themes';
 import TextBrightnessSettings from '@/components/game/TextBrightnessSettings';
 import SoundSettings from '@/components/game/SoundSettings';
 import GestureDisplaySettings from '@/components/game/GestureDisplaySettings';
 import ColorCustomizer from '@/components/game/ColorCustomizer';
 import FontSelector from '@/components/game/FontSelector';
+import MonoThemeSettings from '@/components/game/MonoThemeSettings';
 
 const TABS = [
   { id: 'display', label: 'Display', icon: Monitor },
   { id: 'color', label: 'Color', icon: Palette },
+  { id: 'mono', label: 'Mono', icon: Contrast },
   { id: 'type', label: 'Type', icon: Type },
   { id: 'audio', label: 'Audio', icon: Volume2 },
   { id: 'controls', label: 'Controls', icon: Hand },
@@ -153,6 +155,7 @@ export default function SettingsScreen() {
           </>
         )}
 
+        {tab === 'mono' && <MonoThemeSettings />}
         {tab === 'type' && <FontSelector />}
         {tab === 'audio' && <SoundSettings />}
         {tab === 'controls' && <GestureDisplaySettings />}

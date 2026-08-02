@@ -207,3 +207,18 @@ input[type="number"] {
     transform-origin: top left;
   }
 }
+
+/* Monochrome — per-layer grayscale so 3D canvases can keep color while UI greys */
+.crt-mono-ui { filter: grayscale(1); }
+
+/* Overlay wrapper for 3D screens — covers the canvas but doesn't block it.
+   Interactive children re-enable pointer events; scrollable panels stay scrollable. */
+.crt-overlays { pointer-events: none; }
+.crt-overlays button,
+.crt-overlays input,
+.crt-overlays select,
+.crt-overlays textarea,
+.crt-overlays a,
+.crt-overlays .overflow-y-auto,
+.crt-overlays .overflow-auto,
+.crt-overlays [data-interactive] { pointer-events: auto; }
