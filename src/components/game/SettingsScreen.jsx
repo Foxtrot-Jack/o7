@@ -33,10 +33,10 @@ export default function SettingsScreen() {
           <h3 className="text-orange-400 text-sm font-bold uppercase">Text Brightness</h3>
         </div>
         <div className="flex items-center gap-3">
-          <input type="range" min="50" max="150" value={s.textBrightness || 100} onChange={e => set('textBrightness', parseInt(e.target.value))} className="flex-1" />
+          <input type="range" min="50" max="600" value={s.textBrightness || 100} onChange={e => set('textBrightness', parseInt(e.target.value))} className="flex-1" />
           <span className="text-orange-300 text-xs w-12">{s.textBrightness || 100}%</span>
         </div>
-        <div className="text-orange-700 text-[10px]">Increase for dimmed screens. 100% is default; 150% maxes out visibility.</div>
+        <div className="text-orange-700 text-[10px]">Increase for dim screens. 100% is default. Up to 600% for a glaring high-contrast glow that remains readable on black.</div>
       </div>
 
       <div className="border border-orange-900 p-4 space-y-2">

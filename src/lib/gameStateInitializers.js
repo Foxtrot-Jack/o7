@@ -50,6 +50,7 @@ export function createInitialState() {
     scannedBodies: {},
     soldExplorationData: [],
     activeMissions: [],
+    acceptedMissionIds: [],
     colonies: [],
     rank: {
       exploration: { rank: 0, name: 'Aimless', points: 0 },

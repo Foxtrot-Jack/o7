@@ -73,6 +73,11 @@ export default function MissionsScreen() {
   const systemData = getSystemData();
   const station = systemData?.stations.find(s => s.id === state.currentStationId);
 
+  // Mission board refresh bucket — 10-minute window. Used as part of the
+  // deterministic mission ID so the same mission keeps the same ID across
+  // remounts (prevents re-acceptance after navigating away and back).
+  const timeBucket = Math.floor(Date.now() / 600000);
+
   const playerJumpRange = useMemo(() => {
     if (state.ship?.type === 'custom' && state.ship?.customShipId) {
       const design = (state.customShips || []).find(s => s.id === state.ship.customShipId);
@@ -84,7 +89,7 @@ export default function MissionsScreen() {
   // Generate available missions
   const availableMissions = useMemo(() => {
     if (!station || !systemData) return [];
-    const rng = makeRng(systemData.seed + ':missions:' + station.id + ':' + Math.floor(Date.now() / 600000));
+    const rng = makeRng(systemData.seed + ':missions:' + station.id + ':' + timeBucket);
     const count = randInt(rng, 4, 8);
     const missions = [];
 
@@ -134,8 +139,8 @@ export default function MissionsScreen() {
         .replace('{destination}', destination);
 
       missions.push({
-        id: `mission_${i}_${Date.now()}`,
-        type,
+      id: `mission_${systemData.seed}_${station.id}_${i}_${timeBucket}`,
+      type,
         name: template.name,
         description: desc,
         commodity: noCargo ? null : commodity.id,
@@ -151,7 +156,7 @@ export default function MissionsScreen() {
     }
 
     return missions;
-  }, [station, systemData, state.currentSystem]);
+  }, [station, systemData, state.currentSystem, timeBucket]);
 
   const handleAccept = (mission) => {
     // Passenger missions require sufficient cabin capacity
@@ -171,6 +176,9 @@ export default function MissionsScreen() {
       }
     }
     addMission(mission);
+    // Track the accepted mission ID so it stays hidden from the board even
+    // after completion/cancellation (within the same refresh window).
+    update({ acceptedMissionIds: [...(state.acceptedMissionIds || []), mission.id].slice(-100) });
     if (mission.type === MISSION_TYPES.SURFACE_SCAN && mission.destinationSystem?.seed) {
       lockSurfaceMap(mission.id, mission.destinationSystem.seed);
     }
@@ -227,6 +235,10 @@ export default function MissionsScreen() {
     if (days > 0) return `${days}d ${hours % 24}h`;
     return `${hours}h`;
   };
+
+  // Hide missions that have already been accepted from the available board.
+  const acceptedIds = state.acceptedMissionIds || [];
+  const visibleMissions = availableMissions.filter(m => !acceptedIds.includes(m.id));
 
   if (!station) {
     return (
@@ -294,7 +306,7 @@ export default function MissionsScreen() {
           <button
             onClick={() => setAcceptedFilter(false)}
             className={`px-2 py-1 text-[10px] border ${!acceptedFilter ? 'border-orange-500 text-orange-300' : 'border-orange-900 text-orange-700'}`}
-          >AVAILABLE ({availableMissions.length})</button>
+          >AVAILABLE ({visibleMissions.length})</button>
           <button
             onClick={() => setAcceptedFilter(true)}
             className={`px-2 py-1 text-[10px] border ${acceptedFilter ? 'border-orange-500 text-orange-300' : 'border-orange-900 text-orange-700'}`}
@@ -303,7 +315,13 @@ export default function MissionsScreen() {
       </div>
 
       <div className="flex-1 overflow-y-auto p-3 space-y-2">
-        {!acceptedFilter && availableMissions.map(mission => {
+        {!acceptedFilter && visibleMissions.length === 0 && (
+          <div className="text-center text-orange-700 py-8">
+            <ClipboardList className="w-8 h-8 mx-auto mb-2 opacity-50" />
+            <p>No contracts available. Check back later.</p>
+          </div>
+        )}
+        {!acceptedFilter && visibleMissions.map(mission => {
           const template = MISSION_TEMPLATES[mission.type];
           const Icon = template.icon;
           const isAccepted = state.activeMissions.some(m => m.id === mission.id);

@@ -115,6 +115,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
           bountyMissions: parsed.bountyMissions || [],
           wingmates: parsed.wingmates || [],
           passengerMissions: parsed.passengerMissions || [],
+          acceptedMissionIds: parsed.acceptedMissionIds || [],
           activeCombat: parsed.activeCombat || null,
           crewRoles: parsed.crewRoles || { pilot: null, gunner: null, shield: null, engineer: null },
           ownedStations: parsed.ownedStations || [],
