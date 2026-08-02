@@ -219,6 +219,8 @@ function createInitialState() {
     carrierCurrentRoom: {},
     aquaticLife: { collected: [], tankIds: [], tankCapacity: 8 },
     floraCollection: { collected: [], displayIds: [], capacity: 8 },
+    lastVisitedStation: null,
+    rebuyPending: null,
     createdAt: Date.now(),
   };
 }
@@ -498,11 +500,22 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
   // Dock at a station
   const dockAtStation = useCallback((stationId) => {
     soundEngine.play('dock');
-    setState(prev => ({
-      ...prev,
-      currentLocation: 'station',
-      currentStationId: stationId,
-    }));
+    setState(prev => {
+      const sysData = prev.currentSystemData;
+      const station = sysData?.stations?.find(s => s.id === stationId);
+      return {
+        ...prev,
+        currentLocation: 'station',
+        currentStationId: stationId,
+        lastVisitedStation: {
+          systemSeed: prev.currentSystem.seed,
+          stationId,
+          systemName: prev.currentSystem.name,
+          stationName: station?.name || 'Station',
+          system: prev.currentSystem,
+        },
+      };
+    });
   }, []);
 
   // Leave station
@@ -1965,6 +1978,141 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
       return { ...prev, carrierRoomGrid: { ...prev.carrierRoomGrid, [carrierId]: newCg } };
     });
   }, []);
+
+  // ===== REBUY & SELF-DESTRUCT =====
+  const getRebuyCost = useCallback((shipTypeId) => {
+    const shipType = SHIP_MAP[shipTypeId];
+    if (!shipType) return 0;
+    return Math.max(1000, Math.round(shipType.cost * 0.05));
+  }, []);
+
+  const selfDestruct = useCallback(() => {
+    setState(prev => {
+      const rebuyCost = prev.ship.type === 'custom' ? 0 : getRebuyCost(prev.ship.type);
+      const canAfford = prev.saveMode === 'sandbox' || prev.credits >= rebuyCost;
+      // Lose all cargo and cartographic data, keep materials
+      return {
+        ...prev,
+        ship: { ...prev.ship, cargo: [], integrity: 0 },
+        scannedBodies: {},
+        surfaceMaps: {},
+        surfaceDiscoveries: {},
+        fssDiscoveredBodies: {},
+        fssScannedSystems: {},
+        rebuyPending: { shipTypeId: prev.ship.type, rebuyCost, canAfford, cause: 'self-destruct' },
+      };
+    });
+  }, [getRebuyCost]);
+
+  const handleCombatDeath = useCallback(() => {
+    setState(prev => {
+      const rebuyCost = prev.ship.type === 'custom' ? 0 : getRebuyCost(prev.ship.type);
+      const canAfford = prev.saveMode === 'sandbox' || prev.credits >= rebuyCost;
+      return {
+        ...prev,
+        ship: { ...prev.ship, cargo: [], integrity: 0 },
+        scannedBodies: {},
+        surfaceMaps: {},
+        surfaceDiscoveries: {},
+        fssDiscoveredBodies: {},
+        fssScannedSystems: {},
+        activeCombat: null,
+        rebuyPending: { shipTypeId: prev.ship.type, rebuyCost, canAfford, cause: 'combat' },
+      };
+    });
+  }, [getRebuyCost]);
+
+  const rebuyShip = useCallback(() => {
+    setState(prev => {
+      if (!prev.rebuyPending) return prev;
+      const { shipTypeId, rebuyCost, canAfford } = prev.rebuyPending;
+      if (!canAfford) return prev;
+      const isSb = prev.saveMode === 'sandbox';
+      const shipType = SHIP_MAP[shipTypeId];
+      if (!shipType) return prev;
+      const newMods = getDefaultModules(shipTypeId);
+      const newStats = computeShipStats(shipTypeId, newMods);
+      const lastStation = prev.lastVisitedStation;
+      let systemData = null;
+      let currentSystem = prev.currentSystem;
+      let currentStationId = null;
+      if (lastStation?.system) {
+        currentSystem = lastStation.system;
+        systemData = generateSystem(currentSystem.seed, currentSystem.starClass, currentSystem.population);
+        currentStationId = lastStation.stationId;
+      }
+      return {
+        ...prev,
+        credits: prev.credits - (isSb ? 0 : rebuyCost),
+        ship: {
+          type: shipTypeId,
+          name: shipType.name,
+          cargo: [],
+          fuel: newStats.fuelCapacity,
+          fuelCapacity: newStats.fuelCapacity,
+          cargoCapacity: newStats.cargoCapacity,
+          modules: newMods,
+          integrity: 100,
+          moduleWear: 0,
+          cockpitDecoration: { parts: {} },
+        },
+        currentSystem,
+        currentSystemData: systemData,
+        currentLocation: currentStationId ? 'station' : 'system',
+        currentStationId,
+        activeCombat: null,
+        rebuyPending: null,
+      };
+    });
+  }, []);
+
+  const respawnWithStarter = useCallback(() => {
+    setState(prev => {
+      const shipType = SHIP_MAP['sidewinder'];
+      const newMods = getDefaultModules('sidewinder');
+      const newStats = computeShipStats('sidewinder', newMods);
+      const lastStation = prev.lastVisitedStation;
+      let systemData = null;
+      let currentSystem = prev.currentSystem;
+      let currentStationId = null;
+      if (lastStation?.system) {
+        currentSystem = lastStation.system;
+        systemData = generateSystem(currentSystem.seed, currentSystem.starClass, currentSystem.population);
+        currentStationId = lastStation.stationId;
+      }
+      return {
+        ...prev,
+        ship: {
+          type: 'sidewinder',
+          name: 'Sparrowhawk Mk-I',
+          cargo: [],
+          fuel: newStats.fuelCapacity,
+          fuelCapacity: newStats.fuelCapacity,
+          cargoCapacity: newStats.cargoCapacity,
+          modules: newMods,
+          integrity: 100,
+          moduleWear: 0,
+          cockpitDecoration: { parts: {} },
+        },
+        currentSystem,
+        currentSystemData: systemData,
+        currentLocation: currentStationId ? 'station' : 'system',
+        currentStationId,
+        activeCombat: null,
+        rebuyPending: null,
+      };
+    });
+  }, []);
+
+  const manualSave = useCallback(() => {
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(stateRef.current));
+      return true;
+    } catch (e) {
+      console.error('Manual save failed:', e);
+      return false;
+    }
+  }, [storageKey]);
 
   const isSandbox = state.saveMode === 'sandbox';
 
