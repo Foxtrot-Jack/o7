@@ -18,23 +18,27 @@ export default function MonoThemeSettings() {
   const isMono = s.colorTheme === 'mono';
   const overrides = s.monoOverrides || {};
 
+  const prevTheme = s.preMonoTheme || 'elite';
+  const activate = () => update({ settings: { ...s, preMonoTheme: s.colorTheme || 'elite', colorTheme: 'mono' } });
+  const deactivate = () => update({ settings: { ...s, colorTheme: prevTheme } });
   const setOverride = (key, val) => update({ settings: { ...s, monoOverrides: { ...overrides, [key]: val } } });
   const setAll = (val) => update({ settings: { ...s, monoOverrides: { stars: val, planets: val, ships: val, stations: val, uiAccent: val } } });
 
   return (
     <div className="space-y-3">
-      <div className={`border p-4 space-y-1 ${isMono ? 'border-orange-700' : 'border-orange-900'}`}>
+      <div className={`border p-4 space-y-2 ${isMono ? 'border-orange-700' : 'border-orange-900'}`}>
         <div className="flex items-center gap-2">
           <Palette className="w-4 h-4 text-orange-500" />
           <h3 className="text-orange-400 text-sm font-bold uppercase">Monochrome Mode</h3>
           <span className={`ml-auto px-2 py-0.5 border text-[10px] ${isMono ? 'border-orange-500 bg-orange-950/40 text-orange-300' : 'border-orange-900 text-orange-700'}`}>{isMono ? 'ACTIVE' : 'INACTIVE'}</span>
         </div>
-        <p className="text-orange-700 text-[10px]">Monochrome strips all color for a pure phosphor look. Switch on individual categories below to bring them back one at a time. Select the Monochrome theme in the Color tab to enable.</p>
+        <p className="text-orange-700 text-[10px]">Monochrome strips all color for a pure phosphor look. Activate to switch to the monochrome theme; deactivate reverts to your previous theme ({prevTheme}). Switch on individual categories below to bring colors back one at a time.</p>
+        {isMono ? (
+          <button onClick={deactivate} className="w-full py-1.5 border border-orange-500 text-orange-300 hover:bg-orange-950/30 text-xs font-bold">DEACTIVATE — REVERT TO {prevTheme.toUpperCase()}</button>
+        ) : (
+          <button onClick={activate} className="w-full py-1.5 border border-orange-500 text-orange-300 hover:bg-orange-950/30 text-xs font-bold">ACTIVATE MONOCHROME</button>
+        )}
       </div>
-
-      {!isMono && (
-        <div className="text-orange-700 text-[10px] border border-orange-900 p-3">Enable the Monochrome theme in the Color tab to use these toggles.</div>
-      )}
 
       {TOGGLES.map(t => {
         const Icon = t.icon;
