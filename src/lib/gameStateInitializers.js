@@ -97,6 +97,7 @@ export function createInitialState() {
       crtEffect: true,
       scanlines: true,
       textBrightness: 100,
+      textRGB: null,
       miniScreen: false,
       colorTheme: 'elite',
       customColor: null,

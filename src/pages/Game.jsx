@@ -343,7 +343,7 @@ function GameContent() {
 
   return (
     <div className={`w-full h-screen bg-black flex flex-col overflow-hidden ${state.settings?.miniScreen ? 'mini-screen' : ''} ${state.settings?.orientationLocked ? (state.settings?.screenOrientation === 'portrait' ? 'force-portrait' : 'force-landscape') : ''}`} style={state.settings?.displayScale && state.settings.displayScale !== 100 ? { zoom: state.settings.displayScale / 100 } : undefined}>
-      <CRTFrame enabled={state.settings.crtEffect} brightness={state.settings.textBrightness || 100} theme={state.cheats?.unlocked && state.cheats?.active?.golden_theme ? 'sol_gold' : (state.settings.colorTheme || 'elite')} customColor={state.settings.customColor} fontFamily={state.settings.fontFamily} fontScale={state.settings.fontScale} display={display}>
+      <CRTFrame enabled={state.settings.crtEffect} brightness={state.settings.textBrightness || 100} theme={state.cheats?.unlocked && state.cheats?.active?.golden_theme ? 'sol_gold' : (state.settings.colorTheme || 'elite')} customColor={state.settings.customColor} textRGB={state.settings.textRGB} fontFamily={state.settings.fontFamily} fontScale={state.settings.fontScale} display={display}>
         <div className="flex flex-col h-full">
           <StatusHeader />
           <NavBar

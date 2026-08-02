@@ -3,9 +3,12 @@ import React from 'react';
 import { THEMES, buildCustomTheme } from '@/lib/themes';
 import { FONTS } from '@/lib/fonts';
 
-export default function CRTFrame({ children, enabled = true, brightness = 100, theme = 'elite', customColor = null, fontFamily = 'courier', fontScale = 100, display = {} }) {
+export default function CRTFrame({ children, enabled = true, brightness = 100, theme = 'elite', customColor = null, textRGB = null, fontFamily = 'courier', fontScale = 100, display = {} }) {
   const baseTheme = THEMES[theme] || THEMES.elite;
   const t = customColor ? buildCustomTheme(customColor) : baseTheme;
+  // Text color override — takes priority over theme/custom color for the text glow only
+  const shadow = textRGB ? `rgba(${textRGB.r},${textRGB.g},${textRGB.b},0.8)` : t.shadow;
+  const shadowDim = textRGB ? `rgba(${textRGB.r},${textRGB.g},${textRGB.b},0.2)` : t.shadowDim;
   const font = FONTS[fontFamily] || FONTS.courier;
   const rootFontSize = Math.round(16 * (fontScale / 100));
   const filters = [`brightness(${brightness}%)`];
@@ -44,7 +47,7 @@ export default function CRTFrame({ children, enabled = true, brightness = 100, t
       <style>{`
         ${rootStyle}
         @keyframes crtFlicker { 0% { opacity: 0.9; } 50% { opacity: 1; } 100% { opacity: 0.95; } }
-        .crt-container { font-family: 'Courier New', monospace; text-shadow: 0 0 3px ${t.shadow}, 0 0 6px ${t.shadowDim}; }
+        .crt-container { font-family: 'Courier New', monospace; text-shadow: 0 0 3px ${shadow}, 0 0 6px ${shadowDim}; }
         .crt-container * { text-shadow: inherit; }
         .crt-container::before { content: ''; position: absolute; inset: 0; z-index: 30; pointer-events: none; background: linear-gradient(180deg, ${t.gradient} 0%, transparent 50%, ${t.gradient} 100%); }
       `}</style>
