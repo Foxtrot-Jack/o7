@@ -7,7 +7,7 @@ import MaterialsLocker from './MaterialsLocker';
 import ShipModelViewer from './ShipModelViewer';
 
 export default function ShipPanel({ onNavigate }) {
-  const { state, buyShip, addCredits, removeCargo, refuel, switchShip, transferShip, renameShip, getRebuyCost } = useGameState();
+  const { state, buyShip, addCredits, removeCargo, refuel, switchShip, transferShip, renameShip, getRebuyCost, update } = useGameState();
   const [tab, setTab] = useState('overview');
   const currentShip = SHIP_MAP[state.ship?.type] || SHIP_MAP['sidewinder'];
 
@@ -59,7 +59,7 @@ export default function ShipPanel({ onNavigate }) {
       </div>
 
       <div className="flex-1 overflow-y-auto p-4">
-        {tab === 'overview' && <ShipOverview ship={state.ship || {}} shipType={currentShip} customShips={state.customShips || []} />}
+        {tab === 'overview' && <ShipOverview ship={state.ship || {}} shipType={currentShip} customShips={state.customShips || []} showShipComms={state.settings?.shipComms !== false} onToggleShipComms={() => update({ settings: { ...state.settings, shipComms: !(state.settings?.shipComms !== false) } })} />}
         {tab === 'cargo' && <CargoHold cargo={state.ship?.cargo || []} onJettison={(id, qty) => removeCargo(id, qty)} />}
         {tab === 'materials' && <MaterialsLocker />}
         {tab === 'shipyard' && (
@@ -101,7 +101,7 @@ export default function ShipPanel({ onNavigate }) {
   );
 }
 
-function ShipOverview({ ship, shipType, customShips }) {
+function ShipOverview({ ship, shipType, customShips, showShipComms, onToggleShipComms }) {
   const stats = [
     { label: 'Manufacturer', value: shipType?.manufacturer },
     { label: 'Ship Class', value: `Class ${shipType?.class}` },
@@ -131,6 +131,23 @@ function ShipOverview({ ship, shipType, customShips }) {
       <div className="border border-orange-900 p-2">
         <div className="text-orange-700 text-[9px] uppercase mb-1 text-center">Wireframe Model — Drag to Rotate · Pinch to Zoom</div>
         <ShipModelViewer ship={ship} customShips={customShips} />
+      </div>
+
+      {/* Cockpit HUD settings */}
+      <div className="border border-orange-900 p-4 space-y-2">
+        <h3 className="text-orange-500 text-sm font-bold uppercase">Cockpit HUD</h3>
+        <div className="flex items-center justify-between text-xs">
+          <div>
+            <div className="text-orange-300">Ship AI Copilot &amp; Comms</div>
+            <div className="text-orange-700 text-[10px]">Show the copilot advice and comms channel above the body info panel in the system orrery.</div>
+          </div>
+          <button
+            onClick={onToggleShipComms}
+            className={`px-3 py-1 border text-[10px] font-bold ${showShipComms ? 'border-green-600 text-green-400' : 'border-orange-900 text-orange-700'}`}
+          >
+            {showShipComms ? 'ON' : 'OFF'}
+          </button>
+        </div>
       </div>
     </div>
   );

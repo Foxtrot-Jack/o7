@@ -52,6 +52,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
   const shipColorsOn = colorEnabledFor('ships', effTheme, settings.monoOverrides);
   const stationColorsOn = colorEnabledFor('stations', effTheme, settings.monoOverrides);
   const bodyListScale = (settings.uiScale?.bodyList ?? 100) / 100;
+  const showShipComms = settings.shipComms !== false;
   const [selectedBody, setSelectedBody] = useState(null);
   const [hoveredBody, setHoveredBody] = useState(null);
   const [bodiesCollapsed, setBodiesCollapsed] = useState(state.settings?.miniScreen || false);
@@ -1096,15 +1097,18 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
       </div>
       )}
 
-      {/* Ship AI copilot + radio chatter */}
-      <div className="absolute bottom-2 right-44 sm:right-56 w-40 sm:w-48 z-20 space-y-1">
-        <ShipCopilot />
-        <RadioChatter />
-      </div>
+      {/* Ship AI copilot + radio chatter — stacked above the info panel */}
+      <div className="absolute bottom-2 left-2 right-44 sm:right-56 z-20 flex flex-col gap-1 max-h-[85vh] overflow-y-auto">
+      {showShipComms && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 shrink-0">
+          <ShipCopilot />
+          <RadioChatter />
+        </div>
+      )}
 
       {/* Station docking panel — shown when in supercruise */}
       {state.currentLocation !== 'station' && systemData.stations.length > 0 && !selectedBody && !selectedStation && (
-        <div className="absolute bottom-2 left-2 right-44 sm:right-56 border border-green-800 bg-black/95 p-3 text-xs space-y-2">
+        <div className="border border-green-800 bg-black/95 p-3 text-xs space-y-2 shrink-0">
           <div className="text-green-500 font-bold uppercase text-[10px] border-b border-green-900 pb-1">
             Available Stations — Request Docking
           </div>
@@ -1136,7 +1140,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
 
       {/* Selected station info - bottom */}
       {selectedStation && (
-        <div className="absolute bottom-2 left-2 right-44 sm:right-56 border border-green-700 bg-black/95 p-3 text-xs space-y-2">
+        <div className="border border-green-700 bg-black/95 p-3 text-xs space-y-2 shrink-0">
           <div className="flex items-center justify-between border-b border-green-900 pb-1">
             <span className="text-green-300 font-bold">{selectedStation.name}</span>
             <button onClick={() => setSelectedStation(null)} className="text-green-700 hover:text-green-400 text-[10px]">✕</button>
@@ -1165,7 +1169,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
 
       {/* Selected body info - bottom */}
       {selectedBody && (
-        <div className="absolute bottom-2 left-2 right-44 sm:right-56 border border-orange-700 bg-black/95 p-3 text-xs space-y-2">
+        <div className="border border-orange-700 bg-black/95 p-3 text-xs space-y-2 shrink-0">
           <div className="flex items-center justify-between border-b border-orange-900 pb-1">
             <span className="text-orange-300 font-bold">
               {selectedBody.name || selectedBody.designation}
@@ -1426,6 +1430,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
           })()}
         </div>
       )}
+      </div>
       </div>
     </div>
   );
