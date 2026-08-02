@@ -8,6 +8,7 @@ import { buildStationModel } from '@/lib/stationModelBuilder';
 import { buildShipModel } from '@/lib/shipModelBuilder';
 import { buildCustomShipModel, buildCarrierModel, buildGenericCarrierModel } from '@/lib/modelBuilder';
 import { SHIP_MAP, SHIP_TYPES, getProbesRequired } from '@/lib/gameState';
+import { MODULES } from '@/lib/shipOutfitting';
 import CelestialBodyList from './CelestialBodyList';
 import { generateBodyDescription } from '@/lib/bodyDescriptions';
 
@@ -43,6 +44,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
   const [travelInfo, setTravelInfo] = useState(null);
   const [orbitingBodyId, setOrbitingBodyId] = useState(null);
   const [fssDismissedSeed, setFssDismissedSeed] = useState(null);
+  const [scoopActive, setScoopActive] = useState(false);
 
   // Player-owned colonies and stations in this system — shown in the body list
   const playerStructures = useMemo(() => {
@@ -859,6 +861,55 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
 
   const isScanned = selectedBody && state.scannedBodies[selectedBody.id];
 
+  // ---- FUEL SCOOPING ----
+  // Scoopable main-sequence star classes (not brown dwarfs, neutron stars, white dwarfs, black holes)
+  const SCOOPABLE_STARS = ['O', 'B', 'A', 'F', 'G', 'K', 'M', 'RG'];
+
+  // Find equipped fuel scoop module
+  const fuelScoopModule = useMemo(() => {
+    const modules = state.ship?.modules || {};
+    for (const [key, modId] of Object.entries(modules)) {
+      if (!key.startsWith('opt_')) continue;
+      const mod = MODULES[modId];
+      if (mod && mod.type === 'fuel_scoop') return mod;
+    }
+    return null;
+  }, [state.ship?.modules]);
+
+  // Effective scoop rate in T/s — scaled from module scoopRate so bigger tanks take meaningful time
+  const scoopRatePerSec = fuelScoopModule ? fuelScoopModule.scoopRate * 0.15 : 0;
+
+  // Is the orbiting body a scoopable star?
+  const orbitingScoopableStar = useMemo(() => {
+    if (!orbitingBodyId || !systemData) return null;
+    const body = systemData.bodies.find(b => b.id === orbitingBodyId);
+    if (body && body.type === BODY_TYPES.STAR && SCOOPABLE_STARS.includes(body.starClass?.class)) return body;
+    return null;
+  }, [orbitingBodyId, systemData]);
+
+  const fuelFull = (state.ship?.fuel ?? 0) >= (state.ship?.fuelCapacity ?? 0);
+  const canFuelScoop = !!(fuelScoopModule && orbitingScoopableStar && !fuelFull && !travelInfo);
+
+  // Fuel scoop ticking — adds fuel incrementally while active
+  useEffect(() => {
+    if (!scoopActive) return;
+    if (!fuelScoopModule || !orbitingScoopableStar) { setScoopActive(false); return; }
+    const TICK_MS = 100;
+    const fuelPerTick = scoopRatePerSec * (TICK_MS / 1000);
+    const interval = setInterval(() => {
+      const cur = stateRef.current.ship?.fuel ?? 0;
+      const cap = stateRef.current.ship?.fuelCapacity ?? 0;
+      if (cur >= cap) { setScoopActive(false); return; }
+      refuel(fuelPerTick);
+    }, TICK_MS);
+    return () => clearInterval(interval);
+  }, [scoopActive, fuelScoopModule, orbitingScoopableStar, scoopRatePerSec, refuel]);
+
+  // Stop scooping if we leave orbit or travel
+  useEffect(() => {
+    if (scoopActive && (!orbitingScoopableStar || travelInfo)) setScoopActive(false);
+  }, [orbitingScoopableStar, travelInfo, scoopActive]);
+
   if (!systemData) {
     return <div className="w-full h-full flex items-center justify-center text-orange-500">LOADING SYSTEM DATA...</div>;
   }
@@ -1101,25 +1152,23 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
               <span className="text-orange-700 text-[10px]">⚠ MUST BE IN ORBIT TO SCAN — TRAVEL TO THIS BODY FIRST</span>
             )}
           </div>
-          {selectedBody.type !== BODY_TYPES.STAR && (
-            (() => {
-              const isRing = selectedBody.type === BODY_TYPES.RING;
-              const inOrbit = isRing
-                ? orbitingBodyId === selectedBody.parent
-                : orbitingBodyId === selectedBody.id;
-              return inOrbit ? (
-                <div className="w-full py-1.5 border border-cyan-800 text-cyan-500 text-[10px] text-center">✓ IN ORBIT</div>
-              ) : (
-                <button
-                  onClick={() => handleTravelToBody(selectedBody)}
-                  disabled={!!travelInfo}
-                  className="w-full py-1.5 border border-cyan-500 text-cyan-300 hover:bg-cyan-950/30 text-[10px] font-bold disabled:opacity-50"
-                >
-                  {travelInfo ? `TRAVELING — ${Math.round(travelInfo.progress * 100)}%` : '⚡ TRAVEL TO BODY'}
-                </button>
-              );
-            })()
-          )}
+          {(() => {
+            const isRing = selectedBody.type === BODY_TYPES.RING;
+            const inOrbit = isRing
+              ? orbitingBodyId === selectedBody.parent
+              : orbitingBodyId === selectedBody.id;
+            return inOrbit ? (
+              <div className="w-full py-1.5 border border-cyan-800 text-cyan-500 text-[10px] text-center">✓ IN ORBIT</div>
+            ) : (
+              <button
+                onClick={() => handleTravelToBody(selectedBody)}
+                disabled={!!travelInfo}
+                className="w-full py-1.5 border border-cyan-500 text-cyan-300 hover:bg-cyan-950/30 text-[10px] font-bold disabled:opacity-50"
+              >
+                {travelInfo ? `TRAVELING — ${Math.round(travelInfo.progress * 100)}%` : '⚡ TRAVEL TO BODY'}
+              </button>
+            );
+          })()}
           {/* Mining button for minable bodies with materials */}
           {(() => {
             const isMinable = selectedBody.type === BODY_TYPES.RING ||
@@ -1138,6 +1187,71 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
               >
                 ⛏ MINE — {selectedBody.materials.length} DEPOSITS
               </button>
+            );
+          })()}
+          {/* Fuel scoop panel — shown when orbiting a scoopable star with a fuel scoop equipped */}
+          {selectedBody.type === BODY_TYPES.STAR && orbitingBodyId === selectedBody.id && (() => {
+            const starClass = selectedBody.starClass?.class;
+            const isScoopable = SCOOPABLE_STARS.includes(starClass);
+            const currentFuel = state.ship?.fuel ?? 0;
+            const fuelCap = state.ship?.fuelCapacity ?? 0;
+            const fuelPct = fuelCap > 0 ? Math.min(100, (currentFuel / fuelCap) * 100) : 0;
+            if (!fuelScoopModule) {
+              return (
+                <div className="border-t border-orange-900 pt-1 space-y-1">
+                  <div className="text-orange-700 text-[10px] uppercase">Fuel Scoop</div>
+                  <div className="text-orange-800 text-[10px] text-center py-1">⚠ NO FUEL SCOOP EQUIPPED — VISIT OUTFITTING</div>
+                </div>
+              );
+            }
+            if (!isScoopable) {
+              return (
+                <div className="border-t border-orange-900 pt-1 space-y-1">
+                  <div className="text-orange-700 text-[10px] uppercase">Fuel Scoop</div>
+                  <div className="text-red-700 text-[10px] text-center py-1">✗ {starClass}-CLASS STAR NOT SCOOPABLE</div>
+                </div>
+              );
+            }
+            return (
+              <div className="border-t border-orange-900 pt-1 space-y-1">
+                <div className="flex items-center justify-between text-[10px]">
+                  <span className="text-orange-500 uppercase">Fuel Scoop — {fuelScoopModule.name}</span>
+                  <span className="text-orange-600">{scoopRatePerSec.toFixed(1)} T/s</span>
+                </div>
+                {/* Fuel level bar */}
+                <div className="w-full h-3 bg-black border border-orange-950 relative">
+                  <div
+                    className={`h-full transition-all ${scoopActive ? 'bg-green-600' : 'bg-orange-600'}`}
+                    style={{ width: `${fuelPct}%` }}
+                  />
+                  <span className="absolute inset-0 flex items-center justify-center text-[9px] text-orange-300">
+                    {currentFuel.toFixed(1)} / {fuelCap} T
+                  </span>
+                </div>
+                {scoopActive ? (
+                  <>
+                    <div className="flex items-center justify-between text-[10px]">
+                      <span className="text-green-500 animate-pulse">◉ SCOOPING — {scoopRatePerSec.toFixed(1)} T/s</span>
+                      <span className="text-green-600">{((fuelCap - currentFuel) / scoopRatePerSec).toFixed(0)}s to full</span>
+                    </div>
+                    <button
+                      onClick={() => setScoopActive(false)}
+                      className="w-full py-1.5 border border-red-700 text-red-400 hover:bg-red-950/30 text-[10px] font-bold"
+                    >
+                      ■ STOP SCOOPING
+                    </button>
+                  </>
+                ) : fuelFull ? (
+                  <div className="text-green-500 text-[10px] text-center py-1.5">✓ FUEL TANK FULL</div>
+                ) : (
+                  <button
+                    onClick={() => setScoopActive(true)}
+                    className="w-full py-1.5 border border-green-500 text-green-300 hover:bg-green-950/30 text-[10px] font-bold"
+                  >
+                    ⛽ START FUEL SCOOPING
+                  </button>
+                )}
+              </div>
             );
           })()}
           {selectedBody.landable && state.fssDiscoveredBodies?.[selectedBody.id] && (() => {

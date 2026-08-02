@@ -132,8 +132,8 @@ export default function StationScreen({ onNavigate }) {
         </div>
       </div>
 
-      {/* === TOP ROW: Refuel / Repair / Refit side by side === */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+      {/* === TOP BAR: Refuel / Repair / Refit side by side === */}
+      <div className="grid grid-cols-3 gap-2">
         {/* Refuel */}
         <div className="border border-orange-900 p-3 bg-black space-y-2">
           <div className="flex items-center gap-2">
