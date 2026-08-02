@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useGameState } from '@/lib/gameState';
 import { BODY_TYPES } from '@/lib/system';
+import SurfaceScannerMinigame from './SurfaceScannerMinigame';
 import { Rocket, Dna, Mountain, Gem, CheckCircle, Radio, MapPin } from 'lucide-react';
 
 const SIGNAL_ICONS = {
@@ -20,6 +21,7 @@ const SIGNAL_COLORS = {
 export default function SurfaceSurvey({ onNavigate }) {
   const { state, getSystemData, collectSurfaceDiscovery, departSurface } = useGameState();
   const [scanning, setScanning] = useState(null);
+  const [scanMinigame, setScanMinigame] = useState(null);
   const systemData = getSystemData();
 
   if (!systemData || !state.currentSurfaceBody) {
@@ -43,11 +45,14 @@ export default function SurfaceSurvey({ onNavigate }) {
   const handleSurvey = (signal) => {
     const key = `${body.id}:${signal.id}`;
     if (discoveries[key]) return;
-    setScanning(signal.id);
-    setTimeout(() => {
-      collectSurfaceDiscovery(body.id, signal);
-      setScanning(null);
-    }, 800);
+    setScanMinigame(signal);
+  };
+
+  const handleScanComplete = (success) => {
+    if (success && scanMinigame) {
+      collectSurfaceDiscovery(body.id, scanMinigame);
+    }
+    setScanMinigame(null);
   };
 
   const collectedCount = signals.filter(s => discoveries[`${body.id}:${s.id}`]).length;
@@ -130,6 +135,14 @@ export default function SurfaceSurvey({ onNavigate }) {
       >
         ↑ DEPART FROM SURFACE — RETURN TO ORBIT
       </button>
+
+      {scanMinigame && (
+        <SurfaceScannerMinigame
+          bodyName={body.name || body.designation}
+          onClose={() => setScanMinigame(null)}
+          onComplete={handleScanComplete}
+        />
+      )}
     </div>
   );
 }

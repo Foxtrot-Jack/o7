@@ -24,36 +24,13 @@ import { getHolidayFuelMultiplier } from './publicHolidays';
 import { useCanisStellaFunctions } from './canisStellaFunctions';
 import { DEFAULT_GESTURE_SETTINGS, DEFAULT_DISPLAY_SETTINGS } from './screenSettings';
 import { CANIS_STELLA_RANKS, CEO_TITLE, MISSION_REP_REWARD } from './canisStella';
+import { CURRENT_SAVE_VERSION, validateShip, createInitialState, createSandboxState } from './gameStateInitializers';
+import { updateRank, getProbesRequired, hasCarrierVendor, getAvailableShipsAtStation, getOutfittingLevel, OUTFITTING_LEVELS } from './gameStateHelpers';
+// Re-export helpers that other modules import from gameState
+export { getProbesRequired, hasCarrierVendor, getAvailableShipsAtStation, getOutfittingLevel, OUTFITTING_LEVELS };
 
 const STORAGE_KEY = 'starfarer_save_v1';
 const STORAGE_KEY_SANDBOX = 'starfarer_sandbox_v1';
-
-// Current save schema version. Bump when adding fields or changing structure.
-// The migration guard in loadState() uses this to run version-specific fixes.
-const CURRENT_SAVE_VERSION = 2;
-
-// Validates the ship object after save loading — fills in any missing or
-// invalid fields from the defaults so components can safely access
-// state.ship.* without null checks. This is the post-merge guard that
-// prevents the most common legacy-save crash (undefined ship properties).
-function validateShip(ship, defaultShip) {
-  if (!ship || typeof ship !== 'object' || Array.isArray(ship)) {
-    return { ...defaultShip };
-  }
-  const v = { ...ship };
-  if (typeof v.type !== 'string') v.type = defaultShip.type;
-  if (typeof v.name !== 'string') v.name = defaultShip.name;
-  if (!Array.isArray(v.cargo)) v.cargo = [];
-  if (typeof v.fuel !== 'number' || isNaN(v.fuel)) v.fuel = defaultShip.fuel;
-  if (typeof v.fuelCapacity !== 'number' || isNaN(v.fuelCapacity)) v.fuelCapacity = defaultShip.fuelCapacity;
-  if (typeof v.cargoCapacity !== 'number' || isNaN(v.cargoCapacity)) v.cargoCapacity = defaultShip.cargoCapacity;
-  if (!v.modules || typeof v.modules !== 'object' || Array.isArray(v.modules)) v.modules = defaultShip.modules;
-  if (typeof v.integrity !== 'number' || isNaN(v.integrity)) v.integrity = 100;
-  if (typeof v.moduleWear !== 'number' || isNaN(v.moduleWear)) v.moduleWear = 0;
-  if (!v.cockpitDecoration || typeof v.cockpitDecoration !== 'object') v.cockpitDecoration = { parts: {} };
-  if (!v.cockpitDecoration.parts || typeof v.cockpitDecoration.parts !== 'object') v.cockpitDecoration.parts = {};
-  return v;
-}
 
 // Ship definitions — base roster moved to shipRoster.js
 export { SHIP_TYPES };
@@ -71,178 +48,6 @@ export const MISSION_TYPES = {
   COLONIZATION_SUPPLY: 'colonization_supply',
   SURFACE_SCAN: 'surface_scan', TOURISM: 'tourism',
 };
-
-function createInitialState() {
-  return {
-    version: CURRENT_SAVE_VERSION,
-    saveMode: 'normal',
-    credits: 100000,
-    ship: {
-      type: 'sidewinder',
-      name: 'Sparrowhawk Mk-I',
-      cargo: [], // [{commodity, qty}]
-      fuel: 8,
-      fuelCapacity: 8,
-      cargoCapacity: 4,
-      modules: getDefaultModules('sidewinder'),
-      integrity: 100,
-      moduleWear: 0,
-      cockpitDecoration: { parts: {} },
-    },
-    currentSystem: STARTING_SYSTEM,
-    currentLocation: 'station', // 'system' | 'station'
-    currentStationId: 'station_0',
-    // Cached system data
-    currentSystemData: null,
-    // Discovery data
-    discoveredSystems: {}, // seed -> { name, firstDiscovered, scanValue, bodyCount }
-    scannedBodies: {}, // bodyId -> { scanType, value, date }
-    soldExplorationData: [], // list of sold data entries
-    // Missions
-    activeMissions: [],
-    // Colonization
-    colonies: [],
-    // Stats
-    rank: {
-      exploration: { rank: 0, name: 'Aimless', points: 0 },
-      trade: { rank: 0, name: 'Penniless', points: 0 },
-      mining: { rank: 0, name: 'Defendant', points: 0 },
-    },
-    totalJumps: 0,
-    totalProfit: 0,
-    lightYearsTraveled: 0,
-    lifetimeEarnings: 0,
-    shipsPurchased: 0,
-    // Refinery (mining yields)
-    refinery: [], // [{materialId, qty}]
-    refineryCapacity: 4,
-    // Ship locker (materials)
-    materials: {}, // materialId -> qty
-    // Navigation
-    plottedRoute: null,
-    // Flight log (last 50 visited systems for trail display)
-    flightLog: [],
-    // Bookmarks
-    bookmarkedSystems: [],
-    // FSS & Surface scanning
-    fssScannedSystems: {},
-    fssDiscoveredBodies: {},
-    probeProgress: {},
-    mappedBodies: {},
-    surfaceDiscoveries: {},
-    currentSurfaceBody: null,
-    // Fleet
-    ownedShips: [],
-    fleetCarriers: [],
-    // Custom ships
-    customShips: [],
-    shipyard: null,
-    // Company (passive income)
-    company: null,
-    // Cheats (unlocked by finding Sol)
-    cheats: {
-      unlocked: false,
-      active: {},
-    },
-    // Achievements
-    achievements: {
-      firstDiscoveries: {},
-      milestones: {},
-      scannedSystemSeeds: [],
-      systemsScanned: 0,
-      totalBodiesScanned: 0,
-    },
-    // Leaderboard records
-    records: {},
-    // Player badge (personal icon)
-    playerBadge: null,
-    // Saved badge designs gallery
-    savedBadges: [],
-    // Custom carrier designs
-    customCarrierDesigns: [],
-    // Custom station designs
-    customStationDesigns: [],
-    // Last body orbited (for returning from surface to correct orbit)
-    lastOrbitBodyId: null,
-    // Settings
-    settings: {
-      crtEffect: true,
-      scanlines: true,
-      textBrightness: 100,
-      miniScreen: false,
-      colorTheme: 'elite',
-      customColor: null,
-      fontFamily: 'courier',
-      fontScale: 100,
-      screenOrientation: 'landscape',
-      orientationLocked: false,
-      sound: {
-        enabled: true,
-        sfxVolume: 0.7,
-        musicVolume: 0.4,
-        musicPreset: 'standard',
-        customTracks: {},
-      },
-      gestures: DEFAULT_GESTURE_SETTINGS,
-      display: DEFAULT_DISPLAY_SETTINGS,
-    },
-    crew: [],
-    powerPlay: null,
-    communityGoals: [],
-    lastGoalRefresh: Date.now(),
-    fsdBoost: false,
-    heatSinkCharges: 0,
-    shieldCellCharges: 0,
-    activeEncounter: null,
-    crime: { notoriety: 0, bounty: 0, crimes: [], lastCrime: 0 },
-    bountyMissions: [],
-    wingmates: [],
-    passengerMissions: [],
-    activeCombat: null,
-    crewRoles: { pilot: null, gunner: null, shield: null, engineer: null },
-    ownedStations: [],
-    fighters: [],
-    exobiologyCodex: {},
-    missionChains: [],
-    factionRep: {},
-    loadoutPresets: [],
-    timeEvents: [],
-    playerTitle: null,
-    notebook: '',
-    surfaceMaps: {},
-    minedDeposits: {},
-    warpGates: [],
-    eventCooldownUntil: 0,
-    canisStella: { stance: 'neutral', reputation: 0, isCEO: false, ownFactionName: null },
-    carrierRooms: {},
-    carrierRoomGrid: {},
-    carrierCurrentRoom: {},
-    aquaticLife: { collected: [], tankIds: [], tankCapacity: 8 },
-    floraCollection: { collected: [], displayIds: [], capacity: 8 },
-    lastVisitedStation: null, rebuyPending: null, guardianBlueprints: {}, galaxyFilters: { spectral: 'all', security: 'all', population: 'all', showParkedShips: true, showColonies: true, showMissions: true, explorationMode: false, showBubble: true, showRoute: true }, createdAt: Date.now(),
-  };
-}
-
-function createSandboxState() {
-  const base = createInitialState();
-  return {
-    ...base,
-    saveMode: 'sandbox',
-    credits: 1000000000,
-    ship: {
-      type: 'anaconda',
-      name: 'Roc',
-      cargo: [],
-      fuel: 64,
-      fuelCapacity: 64,
-      cargoCapacity: 114,
-      modules: getDefaultModules('anaconda'),
-      integrity: 100,
-      moduleWear: 0,
-      cockpitDecoration: { parts: {} },
-    },
-  };
-}
 
 const GameStateContext = createContext(null);
 
@@ -2274,8 +2079,25 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
         credits: prev.credits + (outcome.creditsChange || 0),
         lifetimeEarnings: (prev.lifetimeEarnings || 0) + (outcome.creditsChange > 0 ? outcome.creditsChange : 0),
         materials: newMaterials,
+        activeMissions: outcome.stolenMission ? [...prev.activeMissions, outcome.stolenMission] : prev.activeMissions,
       };
     });
+    if (outcome.crimeFlag) {
+      setState(prev => {
+        const crimeDef = CRIME_TYPES[outcome.crimeFlag];
+        if (!crimeDef) return prev;
+        const crime = prev.crime || { notoriety: 0, bounty: 0, crimes: [], lastCrime: 0 };
+        return {
+          ...prev,
+          crime: {
+            notoriety: crime.notoriety + crimeDef.notoriety,
+            bounty: crime.bounty + crimeDef.baseBounty,
+            lastCrime: Date.now(),
+            crimes: [...(crime.crimes || []), { type: crimeDef.label, date: Date.now(), bounty: crimeDef.baseBounty }].slice(-20),
+          },
+        };
+      });
+    }
   }, []);
 
   // ===== ENGINEERING =====
@@ -2626,77 +2448,8 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
   );
 }
 
-function updateRank(currentRank, points) {
-  const RANKS = [
-    { name: 'Aimless', threshold: 0 },
-    { name: 'Mostly Aimless', threshold: 1000 },
-    { name: 'Scout', threshold: 5000 },
-    { name: 'Surveyor', threshold: 15000 },
-    { name: 'Trailblazer', threshold: 50000 },
-    { name: 'Pathfinder', threshold: 150000 },
-    { name: 'Ranger', threshold: 400000 },
-    { name: 'Pioneer', threshold: 900000 },
-    { name: 'Elite', threshold: 2000000 },
-    { name: 'Elite I', threshold: 5000000 },
-    { name: 'Elite II', threshold: 10000000 },
-    { name: 'Elite III', threshold: 25000000 },
-    { name: 'Elite IV', threshold: 50000000 },
-    { name: 'Elite V', threshold: 100000000 },
-  ];
-
-  const newPoints = currentRank.points + points;
-  let newRankIdx = 0;
-  for (let i = 0; i < RANKS.length; i++) {
-    if (newPoints >= RANKS[i].threshold) newRankIdx = i;
-  }
-  return { rank: newRankIdx, name: RANKS[newRankIdx].name, points: newPoints };
-}
-
 export function useGameState() {
   const ctx = useContext(GameStateContext);
   if (!ctx) throw new Error('useGameState must be used within GameStateProvider');
   return ctx;
 }
-
-export function getProbesRequired(body) {
-  if (!body || body.type === 'star' || body.type === 'belt' || body.type === 'asteroid' || body.type === 'ring') return 0;
-  const r = body.radius || 1;
-  if (body.planetType && (body.planetType.startsWith('gas_giant') || body.planetType.startsWith('helium'))) {
-    return Math.max(3, Math.min(8, Math.ceil(r / 3)));
-  }
-  return Math.max(1, Math.min(5, Math.ceil(r * 1.5)));
-}
-
-export function hasCarrierVendor(system) {
-  return system && (system.population || 0) > 1000000000;
-}
-
-// Determine which ships are in stock at a station based on system population
-export function getAvailableShipsAtStation(system, isSandbox = false) {
-  if (isSandbox) return new Set(SHIP_TYPES.map(s => s.id));
-  const pop = system?.population || 0;
-  const maxCost = pop > 1e10 ? 1e12 : pop > 1e9 ? 3e8 : pop > 1e8 ? 8e7 : pop > 1e7 ? 2.5e7 : pop > 1e6 ? 5e6 : pop > 1e5 ? 1e6 : 1e5;
-  return new Set(SHIP_TYPES.filter(s => s.cost <= maxCost).map(s => s.id));
-}
-
-// Determine outfitting/engineering level based on system stats
-export function getOutfittingLevel(system, systemData, isSandbox = false) {
-  if (isSandbox) return 5;
-  const pop = system?.population || 0;
-  const economy = (systemData?.economy?.name || '').toLowerCase();
-  let level = 1;
-  if (pop > 100000) level = 2;
-  if (pop > 1000000) level = 3;
-  if (pop > 100000000) level = 4;
-  if (pop > 1000000000) level = 5;
-  if (economy.includes('high tech') || economy.includes('tech') || economy.includes('industrial')) level = Math.min(5, level + 1);
-  return level;
-}
-
-export const OUTFITTING_LEVELS = [
-  { name: 'Basic', desc: 'Core modules only. No engineering.' },
-  { name: 'Standard', desc: 'Common modules. Basic engineering.' },
-  { name: 'Advanced', desc: 'Improved modules. Standard engineering.' },
-  { name: 'Premium', desc: 'High-grade modules. Advanced engineering.' },
-  { name: 'Elite', desc: 'Full stock. Experimental engineering.' },
-];

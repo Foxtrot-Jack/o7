@@ -134,6 +134,30 @@ export default function BlackMarketScreen() {
           );
         })}
       </div>
+
+      {hacking && (
+        <HackingMinigame
+          target={station.name}
+          difficulty={1 + Math.floor((state.currentSystem.population || 0) / 1e9)}
+          onClose={() => setHacking(false)}
+          onComplete={(success) => {
+            if (success) {
+              const reward = 50000 + randInt(makeRng(state.currentSystem.seed + ':hack'), 0, 100000);
+              const matReward = randInt(makeRng(state.currentSystem.seed + ':hackmat'), 2, 8);
+              addCredits(reward);
+              const mats = ['phosphorus', 'chromium', 'germanium', 'mercury', 'platinum', 'palladium'];
+              for (let i = 0; i < matReward; i++) {
+                addMaterial(mats[Math.floor(Math.random() * mats.length)], 1);
+              }
+              setHackResult({ success: true, reward, materials: matReward });
+            } else {
+              addCrime('hacking');
+              setHackResult({ success: false });
+            }
+            setHacking(false);
+          }}
+        />
+      )}
     </div>
   );
 }

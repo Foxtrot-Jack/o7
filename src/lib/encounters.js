@@ -69,6 +69,17 @@ export const ENCOUNTER_TYPES = [
       { id: 'avoid', label: 'Avoid', desc: 'Steer clear' },
     ],
   },
+  {
+    id: 'intercepted_comms',
+    name: 'Intercepted Transmission',
+    icon: 'radio',
+    description: 'Your wake scanner catches a fragment of encrypted mission data from a departing vessel. The coordinates and contract details are partially readable.',
+    securityWeight: { anarchy: 2, low: 2, medium: 1, high: 1 },
+    options: [
+      { id: 'steal', label: 'Steal Mission', desc: 'Decode and claim the contract for yourself' },
+      { id: 'ignore', label: 'Discard', desc: 'Delete the data — not worth the risk' },
+    ],
+  },
 ];
 
 const CONTRABAND_GOODS = ['narcotics', 'performance_enhancers', 'pathogen_culture', 'encrypted_data', 'combat_drones'];
@@ -235,6 +246,31 @@ export function resolveEncounter(encounter, optionId, gameState) {
         }
       } else {
         outcome.message = 'You steer clear of the anomaly and continue safely.';
+      }
+      break;
+    }
+    case 'intercepted_comms': {
+      if (optionId === 'steal') {
+        const types = ['delivery', 'courier', 'mining', 'salvage'];
+        const stolenType = types[Math.floor(Math.random() * types.length)];
+        const reward = Math.floor(Math.random() * 150000) + 50000;
+        const stolenMission = {
+          id: `stolen_${Date.now()}`,
+          type: stolenType,
+          reward,
+          destinationSystem: { name: gameState.currentSystem.name, seed: gameState.currentSystem.seed },
+          stolen: true,
+          desc: 'Intercepted contract — origin unknown.',
+          accepted: true,
+        };
+        outcome.message = `You decode the transmission and claim the contract. A ${stolenType} mission worth ${reward.toLocaleString()} CR is now yours.`;
+        outcome.stolenMission = stolenMission;
+        if (Math.random() < 0.2) {
+          outcome.crimeFlag = 'hacking';
+          outcome.message += ' Your interception was traced — notoriety increased.';
+        }
+      } else {
+        outcome.message = 'You purge the intercepted data and continue on your way.';
       }
       break;
     }

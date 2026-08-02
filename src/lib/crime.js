@@ -5,6 +5,7 @@ export const CRIME_TYPES = {
   piracy: { id: 'piracy', label: 'Piracy', notoriety: 2, baseBounty: 2000 },
   murder: { id: 'murder', label: 'Ship Destruction', notoriety: 4, baseBounty: 10000 },
   refusal: { id: 'refusal', label: 'Scan Refusal', notoriety: 1, baseBounty: 1000 },
+  hacking: { id: 'hacking', label: 'Data Theft', notoriety: 2, baseBounty: 3000 },
 };
 
 export const NOTORIETY_LEVELS = [
