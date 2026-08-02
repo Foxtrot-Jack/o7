@@ -8,6 +8,7 @@ import { getHolidayFuelMultiplier } from '@/lib/publicHolidays';
 import { computeShipStats, getDefaultModules } from '@/lib/shipOutfitting';
 import { calculateRoute } from '@/lib/routeCalculator';
 import SystemPreview from './SystemPreview';
+import GalaxyOrreryViewer from './GalaxyOrreryViewer';
 
 export default function GalaxyMap({ onJumpToSystem }) {
   const mountRef = useRef(null);
@@ -1001,17 +1002,9 @@ export default function GalaxyMap({ onJumpToSystem }) {
         </div>
       )}
 
-      {/* Full-screen orrery preview */}
+      {/* Full-screen orrery viewer */}
       {showOrrery && selectedStar && (
-        <div className="fixed inset-0 z-50 bg-black flex flex-col">
-          <div className="flex items-center justify-between border-b border-orange-700 bg-black/90 px-3 py-2">
-            <span className="text-orange-300 font-bold text-sm">{selectedStar.name} — System Orrery</span>
-            <button onClick={() => setShowOrrery(false)} className="px-3 py-1 border border-orange-500 text-orange-300 hover:bg-orange-950/50 text-xs font-bold">← BACK TO GALAXY</button>
-          </div>
-          <div className="flex-1 overflow-hidden">
-            <SystemPreview star={selectedStar} fullScreen />
-          </div>
-        </div>
+        <GalaxyOrreryViewer star={selectedStar} onClose={() => setShowOrrery(false)} />
       )}
     </div>
   );
