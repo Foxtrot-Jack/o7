@@ -11,6 +11,7 @@ import FontSelector from '@/components/game/FontSelector';
 import MonoThemeSettings from '@/components/game/MonoThemeSettings';
 import NavTextRGBControl from '@/components/game/NavTextRGBControl';
 import StatusHeaderStyleControl from '@/components/game/StatusHeaderStyleControl';
+import UITextStyleSettings from '@/components/game/UITextStyleSettings';
 
 const TABS = [
   { id: 'display', label: 'Display', icon: Monitor },
@@ -132,6 +133,8 @@ export default function SettingsScreen() {
               <NavTextRGBControl />
               <StatusHeaderStyleControl />
             </div>
+
+            <UITextStyleSettings />
 
             <div className="border border-orange-900 p-4 space-y-2">
               <div className="flex items-center gap-2">

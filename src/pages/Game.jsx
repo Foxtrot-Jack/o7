@@ -80,6 +80,7 @@ import SelfDestructScreen from '@/components/game/SelfDestructScreen';
 import { inputSystem } from '@/lib/inputSystem';
 import { soundEngine } from '@/lib/soundEngine';
 import { SCREEN_CONTEXTS } from '@/lib/soundPresets';
+import { getScreenTextStyle } from '@/lib/uiTextCategories';
 
 function GameContent() {
   const { state, manualSave } = useGameState();
@@ -358,7 +359,9 @@ function GameContent() {
             />
           </div>
           <div data-game-content className={`flex-1 relative z-0 ${isFullScreen ? 'overflow-hidden' : 'overflow-auto'} ${!isFullScreen && monoUI ? 'crt-mono-ui' : ''}`}>
-            {renderScreen()}
+            <div style={getScreenTextStyle(state.settings?.uiTextStyles, screen) || undefined} className="w-full h-full">
+              {renderScreen()}
+            </div>
           </div>
           {state.activeEncounter && <EncounterScreen />}
           {/* Self-destruct overlay */}
