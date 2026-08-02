@@ -6,6 +6,14 @@ import { getActiveHolidays, getNextHoliday } from '@/lib/publicHolidays';
 
 export default function StatusHeader() {
   const { state } = useGameState();
+  const statusRGB = state.settings?.statusTextRGB || null;
+  const statusShadow = statusRGB
+    ? `0 0 3px rgba(${statusRGB.r},${statusRGB.g},${statusRGB.b},0.8), 0 0 6px rgba(${statusRGB.r},${statusRGB.g},${statusRGB.b},0.4)`
+    : undefined;
+  const headerStyle = {
+    zoom: (state.settings?.uiScale?.statusHeader ?? 100) / 100,
+    textShadow: statusShadow,
+  };
 
   const cargoUsed = (state.ship?.cargo || []).reduce((sum, c) => sum + c.qty, 0);
   const systemsVisited = Object.keys(state.discoveredSystems || {}).length;
@@ -30,7 +38,7 @@ export default function StatusHeader() {
   const nextHoliday = getNextHoliday();
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-3 py-2 border-b border-orange-900/50 bg-black text-xs">
+    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-3 py-2 border-b border-orange-900/50 bg-black text-xs" style={headerStyle}>
       <div className="flex items-center gap-4">
         <div className="flex flex-col">
           <span className="text-orange-700 text-[10px] uppercase">Credits</span>

@@ -10,6 +10,7 @@ import ColorCustomizer from '@/components/game/ColorCustomizer';
 import FontSelector from '@/components/game/FontSelector';
 import MonoThemeSettings from '@/components/game/MonoThemeSettings';
 import NavTextRGBControl from '@/components/game/NavTextRGBControl';
+import StatusHeaderStyleControl from '@/components/game/StatusHeaderStyleControl';
 
 const TABS = [
   { id: 'display', label: 'Display', icon: Monitor },
@@ -129,6 +130,7 @@ export default function SettingsScreen() {
               <div className="text-orange-700 text-[10px]">Resize these panels independently. The bodies list anchors to the right edge and scrolls; the nav panel wraps to extra rows. Nothing moves permanently off-screen.</div>
 
               <NavTextRGBControl />
+              <StatusHeaderStyleControl />
             </div>
 
             <div className="border border-orange-900 p-4 space-y-2">
