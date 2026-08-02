@@ -146,10 +146,10 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
 
       // Update body positions FIRST so camera focus tracks current positions (reduces jitter)
       for (const bm of bodyMeshesRef.current) {
-        if (bm.body.orbitRadius > 0) {
+        if (bm.visualOrbitRadius > 0) {
           const angle = t * bm.invSqrtOrbit + bm.phaseOffset;
-          bm.group.position.x = Math.cos(angle) * bm.body.orbitRadius;
-          bm.group.position.z = Math.sin(angle) * bm.body.orbitRadius;
+          bm.group.position.x = Math.cos(angle) * bm.visualOrbitRadius;
+          bm.group.position.z = Math.sin(angle) * bm.visualOrbitRadius;
           bm.group.position.y = 0;
         }
         if (bm.mesh) {
@@ -203,7 +203,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
         if (travel.targetType === 'station') {
           travel.stationModel.getWorldPosition(targetPos);
         } else if (travel.targetType === 'body') {
-          targetPos.copy(travel.bodyEntry.group.position);
+          travel.bodyEntry.group.getWorldPosition(targetPos);
         }
         const sp = shipPosRef.current;
         const dx = targetPos.x - sp.x;
@@ -366,6 +366,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
     const allBodies = systemData.bodies;
     const center = { x: 0, y: 0, z: 0 };
     const bodyGroupMap = {};
+    const moonSlotByPlanet = {};
 
     for (const body of allBodies) {
       // Skip rings — rendered on their parent planet
@@ -456,32 +457,13 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
         group.add(mesh);
       }
 
-      // Create orbit line
-      if (body.orbitRadius > 0 && body.type !== BODY_TYPES.RING) {
-        const orbitGeom = new THREE.BufferGeometry();
-        const segments = 64;
-        const orbitPositions = new Float32Array((segments + 1) * 3);
-        for (let i = 0; i <= segments; i++) {
-          const a = (i / segments) * Math.PI * 2;
-          orbitPositions[i * 3] = Math.cos(a) * body.orbitRadius;
-          orbitPositions[i * 3 + 1] = 0;
-          orbitPositions[i * 3 + 2] = Math.sin(a) * body.orbitRadius;
-        }
-        orbitGeom.setAttribute('position', new THREE.BufferAttribute(orbitPositions, 3));
-        const orbitMat = new THREE.LineBasicMaterial({
-          color: body.type === BODY_TYPES.STAR ? 0x553300 : 0x332200,
-          transparent: true,
-          opacity: 0.4,
-        });
-        const orbitLine = new THREE.Line(orbitGeom, orbitMat);
-        scene.add(orbitLine);
-        orbitLinesRef.current.push(orbitLine);
-      }
-
-      // Add to parent's group for proper multi-star orbital hierarchy, or scene if root
+      // Attach to parent's group first so the orbital hierarchy is correct
+      // (moons orbit their planet, planets orbit their star) and the parent group
+      // is available to attach the orbit line to.
       const parentGroup = body.parent ? bodyGroupMap[body.parent] : null;
       if (parentGroup) parentGroup.add(group); else scene.add(group);
       bodyGroupMap[body.id] = group;
+
       const getVisualRadius = (b) => {
         if (b.type === BODY_TYPES.STAR) return Math.max(3, Math.min(10, b.radius * 1.2));
         if (b.type === BODY_TYPES.PLANET) {
@@ -492,14 +474,54 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
         if (b.type === BODY_TYPES.ASTEROID) return Math.max(0.1, b.radius * 2);
         return 1;
       };
+      const visualRadius = getVisualRadius(body);
+
+      // Visual orbit radius is parent-relative so distances look realistic:
+      // moons hug their planet, planets keep their generated distance from the star,
+      // and asteroids scatter near their belt.
+      const parentEntry = body.parent ? bodyMeshesRef.current.find(bm => bm.body.id === body.parent) : null;
+      let visualOrbitRadius = 0;
+      if (body.orbitRadius > 0) {
+        if (parentEntry && parentEntry.body.type === BODY_TYPES.PLANET) {
+          const slot = moonSlotByPlanet[body.parent] = (moonSlotByPlanet[body.parent] || 0) + 1;
+          visualOrbitRadius = Math.max(parentEntry.visualRadius * 1.6, parentEntry.visualRadius * (1.5 + slot * 0.7));
+        } else if (parentEntry && parentEntry.body.type === BODY_TYPES.BELT) {
+          visualOrbitRadius = (Math.random() - 0.5) * 4;
+        } else {
+          visualOrbitRadius = body.orbitRadius;
+        }
+      }
+
+      // Orbit line drawn around the parent so a moon's ring follows its planet, not the star.
+      if (visualOrbitRadius > 0 && body.type !== BODY_TYPES.RING && body.type !== BODY_TYPES.ASTEROID) {
+        const orbitGeom = new THREE.BufferGeometry();
+        const segments = 64;
+        const orbitPositions = new Float32Array((segments + 1) * 3);
+        for (let i = 0; i <= segments; i++) {
+          const a = (i / segments) * Math.PI * 2;
+          orbitPositions[i * 3] = Math.cos(a) * visualOrbitRadius;
+          orbitPositions[i * 3 + 1] = 0;
+          orbitPositions[i * 3 + 2] = Math.sin(a) * visualOrbitRadius;
+        }
+        orbitGeom.setAttribute('position', new THREE.BufferAttribute(orbitPositions, 3));
+        const orbitMat = new THREE.LineBasicMaterial({
+          color: body.type === BODY_TYPES.STAR ? 0x553300 : 0x332200,
+          transparent: true,
+          opacity: 0.4,
+        });
+        const orbitLine = new THREE.Line(orbitGeom, orbitMat);
+        (parentGroup || scene).add(orbitLine);
+        orbitLinesRef.current.push(orbitLine);
+      }
 
       bodyMeshesRef.current.push({
         body,
         group,
         mesh,
-        visualRadius: getVisualRadius(body),
+        visualRadius,
+        visualOrbitRadius,
         phaseOffset: Math.random() * Math.PI * 2,
-        invSqrtOrbit: body.orbitRadius > 0 ? 1 / Math.sqrt(body.orbitRadius) : 0,
+        invSqrtOrbit: visualOrbitRadius > 0 ? 1 / Math.sqrt(visualOrbitRadius) : 0,
       });
     }
 
@@ -864,7 +886,23 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
   const getShipSpeed = () => {
     const shipType = SHIP_MAP[state.ship?.type];
     const shipClass = shipType?.class || (state.ship?.type === 'custom' ? 2 : 1);
-    return Math.max(4, 12 - shipClass * 2);
+    // Base cruise speed — drastically reduced so in-system travel takes time,
+    // giving a real reason to upgrade thrusters and apply Dirty Drive engineering.
+    const baseByClass = { 1: 3.0, 2: 2.6, 3: 2.2, 4: 1.8, 5: 1.5, 6: 1.2 };
+    let speed = baseByClass[shipClass] ?? 1.8;
+    // Thruster module quality: A-grade (~2x class E) and pre-engineered drives push speed up.
+    const thrModId = state.ship?.modules?.core_thr;
+    const thrMod = MODULES[thrModId];
+    if (thrMod && thrMod.thrust) {
+      const stockThrust = (thrMod.size || 4) * 10 * 0.7;
+      speed *= Math.max(0.5, thrMod.thrust / stockThrust);
+    }
+    // Dirty Drive engineering adds up to +50% thrust at grade 5.
+    const eng = state.ship?.modules?.__engineering?.core_thr;
+    if (eng && eng.blueprint === 'dirty_drive') {
+      speed *= (1 + (eng.level || 0) * 0.1);
+    }
+    return Math.max(0.4, speed);
   };
 
   const handleTravelToStation = useCallback((station) => {
@@ -896,7 +934,9 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
     const lookupId = body.type === BODY_TYPES.RING ? body.parent : body.id;
     const entry = bodyMeshesRef.current.find(bm => bm.body.id === lookupId);
     if (!entry) return;
-    const dist = Math.hypot(entry.group.position.x - shipPosRef.current.x, entry.group.position.z - shipPosRef.current.z);
+    const worldPos = new THREE.Vector3();
+    entry.group.getWorldPosition(worldPos);
+    const dist = Math.hypot(worldPos.x - shipPosRef.current.x, worldPos.z - shipPosRef.current.z);
     if (dist < 0.8) return;
     setOrbitingBodyId(null);
     travelRef.current = {
