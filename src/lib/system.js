@@ -385,6 +385,17 @@ function generateAsteroid(rng, parentId, rootLetter, orbitIndex, orbitRadius) {
 }
 
 function generateRing(rng, parentId) {
+  const scanValue = Math.round(randInt(rng, 2000, 15000));
+  const ringType = pick(rng, ['rocky', 'icy', 'metallic']);
+  const materials = generatePlanetMaterials(rng, { id: 'rocky' });
+  // Generate 1-3 mining hotspots using separate RNG (doesn't affect system generation)
+  const hsRng = makeRng(`${parentId}_ring:hotspots`);
+  const hotspotCount = randInt(hsRng, 1, 3);
+  const shuffled = [...materials].sort(() => hsRng() - 0.5);
+  const hotspots = shuffled.slice(0, Math.min(hotspotCount, shuffled.length)).map(m => ({
+    id: `${parentId}_ring_hs_${m.id}`,
+    materialId: m.id,
+  }));
   return {
     id: `${parentId}_ring`,
     type: BODY_TYPES.RING,
@@ -394,11 +405,12 @@ function generateRing(rng, parentId) {
     radius: 0,
     orbitRadius: 0,
     parent: parentId,
-    scanValue: Math.round(randInt(rng, 2000, 15000)),
+    scanValue,
     scanned: false,
     discovered: false,
-    ringType: pick(rng, ['rocky', 'icy', 'metallic']),
-    materials: generatePlanetMaterials(rng, { id: 'rocky' }),
+    ringType,
+    materials,
+    hotspots,
   };
 }
 

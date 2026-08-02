@@ -1,6 +1,7 @@
 // CelestialBodyList — hierarchical tree of all system bodies
 import React, { useState } from 'react';
 import { BODY_TYPES } from '@/lib/system';
+import { COMMODITY_MAP } from '@/lib/commodities';
 
 const TYPE_SYMBOLS = {
   star: '★',
@@ -101,7 +102,8 @@ function BodyNode({ node, depth, stations, selectedBody, selectedStation, onSele
   const [collapsed, setCollapsed] = useState(body.type === BODY_TYPES.BELT);
 
   const isPrimaryStar = body.type === BODY_TYPES.STAR && body.parent === null;
-  const discovered = isPrimaryStar || fssDiscoveredBodies?.[body.id];
+  const parentScanned = body.type === BODY_TYPES.RING && body.parent && scannedBodies?.[body.parent];
+  const discovered = isPrimaryStar || fssDiscoveredBodies?.[body.id] || parentScanned;
 
   // Undiscovered body — show "?" placeholder, don't reveal children
   if (!discovered) {
@@ -122,7 +124,8 @@ function BodyNode({ node, depth, stations, selectedBody, selectedStation, onSele
   const isMapped = probeState?.complete;
 
   const bodyStations = stations.filter(s => s.parentId === body.id);
-  const hasChildren = children.length > 0 || bodyStations.length > 0;
+  const ringHotspots = (body.type === BODY_TYPES.RING && body.hotspots) || [];
+  const hasChildren = children.length > 0 || bodyStations.length > 0 || ringHotspots.length > 0;
   const isStar = body.type === BODY_TYPES.STAR;
   const isBelt = body.type === BODY_TYPES.BELT;
   const isRing = body.type === BODY_TYPES.RING;
@@ -215,6 +218,18 @@ function BodyNode({ node, depth, stations, selectedBody, selectedStation, onSele
               playerStructures={playerStructures}
               onSelectPlayerStructure={onSelectPlayerStructure}
             />
+          ))}
+          {/* Ring mining hotspots — revealed when parent planet is scanned */}
+          {ringHotspots.map(hs => (
+            <button
+              key={hs.id}
+              onClick={() => onSelectBody(body)}
+              className="w-full text-left flex items-center gap-1 py-0.5 text-[10px] border border-transparent text-amber-600 hover:text-amber-400 hover:border-amber-900"
+              style={{ paddingLeft: indent + 16 }}
+            >
+              <span className="text-amber-800">💎</span>
+              <span className="truncate">{COMMODITY_MAP[hs.materialId]?.name || hs.materialId} — Hotspot</span>
+            </button>
           ))}
         </div>
       )}

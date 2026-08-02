@@ -12,6 +12,7 @@ import { MODULES } from '@/lib/shipOutfitting';
 import CelestialBodyList from './CelestialBodyList';
 import MiningPanel from './MiningPanel';
 import { generateBodyDescription } from '@/lib/bodyDescriptions';
+import { COMMODITY_MAP } from '@/lib/commodities';
 
 export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate }) {
   const mountRef = useRef(null);
@@ -1124,7 +1125,13 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
             {selectedBody.type === BODY_TYPES.RING && (
               <>
                 <div>TYPE: <span className="text-orange-300 capitalize">{selectedBody.ringType || 'rocky'} Ring</span></div>
-                <div>DEPOSITS: <span className="text-orange-300">{selectedBody.materials?.length || 0} mining locations</span></div>
+                <div>HOTSPOTS: <span className="text-orange-300">{selectedBody.hotspots?.length || 0}</span></div>
+                {selectedBody.hotspots?.map(hs => (
+                  <div key={hs.id} className="text-amber-500 flex items-center gap-1">
+                    <span>💎</span>
+                    <span>{COMMODITY_MAP[hs.materialId]?.name || hs.materialId} — Hotspot</span>
+                  </div>
+                ))}
               </>
             )}
           </div>
