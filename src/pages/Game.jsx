@@ -75,13 +75,17 @@ import StationCreator from '@/components/game/StationCreator';
 import GameErrorBoundary from '@/components/game/GameErrorBoundary';
 import ControllerConfigScreen from '@/components/game/ControllerConfigScreen';
 import CanisStellaScreen from '@/components/game/CanisStellaScreen';
+import RebuyScreen from '@/components/game/RebuyScreen';
+import SelfDestructScreen from '@/components/game/SelfDestructScreen';
 import { inputSystem } from '@/lib/inputSystem';
 import { soundEngine } from '@/lib/soundEngine';
 import { SCREEN_CONTEXTS } from '@/lib/soundPresets';
 
 function GameContent() {
-  const { state } = useGameState();
+  const { state, manualSave } = useGameState();
   const [screen, setScreen] = useState('system');
+  const [showSelfDestruct, setShowSelfDestruct] = useState(false);
+  const [saveFlash, setSaveFlash] = useState(false);
 
   // Refs for input system — avoids stale closures in the useEffect[] subscription
   const screenRef = useRef(screen);
@@ -351,10 +355,27 @@ function GameContent() {
             {renderScreen()}
           </div>
           {state.activeEncounter && <EncounterScreen />}
+          {/* Self-destruct overlay */}
+          {showSelfDestruct && <SelfDestructScreen onCancel={() => setShowSelfDestruct(false)} />}
+          {/* Rebuy screen overlay (ship destroyed) */}
+          {state.rebuyPending && <RebuyScreen />}
           {/* Footer status bar */}
           <div className="border-t border-orange-900/50 px-3 py-1 flex items-center justify-between text-[10px] text-orange-800 bg-black">
             <span>o7 v1.0 · {state.ship?.name || '---'}</span>
-            <span className="hidden sm:inline">GALAXY: 4,000,000,000+ SYSTEMS</span>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => { const ok = manualSave(); if (ok) { setSaveFlash(true); setTimeout(() => setSaveFlash(false), 1500); } }}
+                className={`hover:text-orange-400 ${saveFlash ? 'text-green-500' : ''}`}
+              >
+                {saveFlash ? '✓ SAVED' : '💾 SAVE'}
+              </button>
+              <button
+                onClick={() => setShowSelfDestruct(true)}
+                className="text-red-700 hover:text-red-500"
+              >
+                ⚠ SELF-DESTRUCT
+              </button>
+            </div>
             <span>JUMPS: {state.totalJumps}</span>
           </div>
         </div>

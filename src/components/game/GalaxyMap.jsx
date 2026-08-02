@@ -30,7 +30,7 @@ export default function GalaxyMap({ onJumpToSystem }) {
   const [stars, setStars] = useState([]);
   const [loading, setLoading] = useState(true);
   const [hoveredStar, setHoveredStar] = useState(null);
-  const [filters, setFilters] = useState({ spectral: 'all', security: 'all', population: 'all', showParkedShips: true, showColonies: true, showMissions: true });
+  const [filters, setFilters] = useState({ spectral: 'all', security: 'all', population: 'all', showParkedShips: true, showColonies: true, showMissions: true, explorationMode: false });
   const [showFilterPanel, setShowFilterPanel] = useState(false);
   const [showBookmarks, setShowBookmarks] = useState(false);
   const [showTrail, setShowTrail] = useState(true);
@@ -228,7 +228,13 @@ export default function GalaxyMap({ onJumpToSystem }) {
 
       const isVisited = !!visited[star.seed];
       const color = new THREE.Color(getStarColor(star.starClass));
-      if (isVisited) color.lerp(new THREE.Color(0x00ff66), 0.4);
+      if (filters.explorationMode) {
+        // Exploration mode: explored = bright green, unexplored = red
+        if (isVisited) color.set(0x00ff44);
+        else color.set(0xff2222);
+      } else {
+        if (isVisited) color.lerp(new THREE.Color(0x00ff66), 0.4);
+      }
       if (!passesFilter(star)) color.multiplyScalar(0.05);
       colors[i * 3] = color.r;
       colors[i * 3 + 1] = color.g;
@@ -844,6 +850,8 @@ export default function GalaxyMap({ onJumpToSystem }) {
             <button onClick={() => setFilters({...filters, showColonies: !filters.showColonies})} className={`flex-1 py-0.5 border ${filters.showColonies ? 'border-purple-600 text-purple-400' : 'border-orange-900 text-orange-800'}`}>★ COLONIES</button>
             <button onClick={() => setFilters({...filters, showMissions: !filters.showMissions})} className={`flex-1 py-0.5 border ${filters.showMissions ? 'border-yellow-600 text-yellow-400' : 'border-orange-900 text-orange-800'}`}>◉ MISSIONS</button>
             </div>
+            <button onClick={() => setFilters({...filters, explorationMode: !filters.explorationMode})} className={`w-full py-0.5 border mt-1 ${filters.explorationMode ? 'border-green-600 text-green-400 bg-green-950/20' : 'border-orange-900 text-orange-800'}`}>◎ EXPLORATION MODE {filters.explorationMode ? 'ON' : 'OFF'}</button>
+            {filters.explorationMode && <div className="text-[9px] text-orange-700 text-center">Explored = <span className="text-green-500">GREEN</span> · Unexplored = <span className="text-red-500">RED</span></div>}
             <button onClick={() => setShowTrail(!showTrail)} className={`w-full py-0.5 border mt-1 ${showTrail ? 'border-green-600 text-green-400' : 'border-orange-900 text-orange-800'}`}>~ FLIGHT TRAIL ({state.flightLog?.length || 0})</button>
             <div className="border-t border-orange-900 pt-1.5 space-y-1.5">
               <div>

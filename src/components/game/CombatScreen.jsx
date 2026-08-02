@@ -124,7 +124,31 @@ export default function CombatScreen({ enemy, context, missionId, bonds, onEnd }
       contributeCombatKill();
     }
     setResult(outcome);
-    setTimeout(() => onEnd({ [outcome]: true, bounty: outcome === 'victory' ? enemy.bounty : 0, bonds }), 2000);
+    // On defeat, trigger ship destruction / rebuy flow instead of just escaping
+    if (outcome === 'defeat') {
+      setTimeout(() => {
+        update(prev => {
+          const shipTypeId = prev.ship.type;
+          const shipType = SHIP_MAP[shipTypeId];
+          const rebuyCost = shipType ? Math.max(1000, Math.round(shipType.cost * 0.05)) : 0;
+          const canAfford = prev.saveMode === 'sandbox' || prev.credits >= rebuyCost;
+          return {
+            ...prev,
+            ship: { ...prev.ship, cargo: [], integrity: 0 },
+            scannedBodies: {},
+            surfaceMaps: {},
+            surfaceDiscoveries: {},
+            fssDiscoveredBodies: {},
+            fssScannedSystems: {},
+            activeCombat: null,
+            rebuyPending: { shipTypeId, rebuyCost, canAfford, cause: 'combat' },
+          };
+        });
+        onEnd({ [outcome]: true, bounty: 0, bonds, destroyed: true });
+      }, 2500);
+    } else {
+      setTimeout(() => onEnd({ [outcome]: true, bounty: outcome === 'victory' ? enemy.bounty : 0, bonds }), 2000);
+    }
   };
 
   if (!playerStats) return <div className="p-4 text-orange-500">INITIALIZING COMBAT...</div>;

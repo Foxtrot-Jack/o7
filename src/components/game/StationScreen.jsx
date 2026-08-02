@@ -1,12 +1,14 @@
-// Station Screen — docking services overview
+// Station Screen — docking services overview (reworked layout)
+// Refuel/Repair/Refit at top, starport services below
 import React, { useState } from 'react';
 import { useGameState, getOutfittingLevel, OUTFITTING_LEVELS } from '@/lib/gameState';
-import { Home, Fuel, Wrench, ShoppingCart, Ship as ShipIcon, Telescope, Map, Pickaxe, Rocket, LogOut, ClipboardList, Settings as SettingsIcon, ArrowLeftRight, FlaskConical, Users, Skull, Crosshair, UserCheck, ScrollText } from 'lucide-react';
+import { Home, Fuel, Wrench, ShoppingCart, Ship as ShipIcon, Telescope, Map, Pickaxe, Rocket, LogOut, ClipboardList, Settings as SettingsIcon, ArrowLeftRight, FlaskConical, Users, Skull, Crosshair, UserCheck, ScrollText, Save } from 'lucide-react';
 import { soundEngine } from '@/lib/soundEngine';
 
 export default function StationScreen({ onNavigate }) {
-  const { state, getSystemData, leaveStation, refuel, addCredits, repairShip } = useGameState();
+  const { state, getSystemData, leaveStation, refuel, addCredits, repairShip, manualSave } = useGameState();
   const [refuelAmount, setRefuelAmount] = useState(0);
+  const [saveFlash, setSaveFlash] = useState(false);
   const systemData = getSystemData();
   const station = systemData?.stations.find(s => s.id === state.currentStationId);
 
@@ -45,6 +47,13 @@ export default function StationScreen({ onNavigate }) {
     if (!isSandbox) addCredits(-fullRefuelCost);
   };
 
+  const handleManualSave = () => {
+    const ok = manualSave();
+    soundEngine.play(ok ? 'confirm' : 'error');
+    setSaveFlash(true);
+    setTimeout(() => setSaveFlash(false), 1500);
+  };
+
   const stationTypeNames = {
     coriolis: 'Coriolis Starport',
     orbis: 'Orbis Starport',
@@ -53,6 +62,55 @@ export default function StationScreen({ onNavigate }) {
     megaship: 'Megaship',
     asteroid: 'Asteroid Base',
   };
+
+  // Integrity for repair
+  const integrity = state.ship?.integrity ?? 100;
+  const damage = 100 - integrity;
+  const repairCost = isSandbox ? 0 : Math.ceil(damage * 10000);
+  const intColor = integrity > 70 ? 'text-green-500' : integrity > 30 ? 'text-yellow-500' : 'text-red-500';
+  const barColor = integrity > 70 ? 'bg-green-600' : integrity > 30 ? 'bg-yellow-600' : 'bg-red-600';
+
+  // Starport services grouped
+  const serviceGroups = [
+    {
+      label: 'Trade & Missions',
+      services: [
+        { icon: ShoppingCart, label: 'Commodity Market', available: station.services.market, nav: 'market' },
+        { icon: ClipboardList, label: 'Mission Board', available: station.services.missions, nav: 'missions' },
+        { icon: Crosshair, label: 'Bounty Board', available: true, nav: 'bountyboard' },
+        { icon: UserCheck, label: 'Passenger Lounge', available: true, nav: 'passengers' },
+        { icon: Skull, label: 'Black Market', available: state.currentSystem?.security === 'anarchy', nav: 'blackmarket' },
+      ],
+    },
+    {
+      label: 'Ships & Outfitting',
+      services: [
+        { icon: ShipIcon, label: 'Shipyard', available: true, nav: 'ship' },
+        { icon: Wrench, label: 'Outfitting', available: true, nav: 'outfitting' },
+        { icon: FlaskConical, label: 'Engineering', available: true, nav: 'engineering' },
+        { icon: ArrowLeftRight, label: 'Material Trader', available: true, nav: 'materialtrader' },
+        { icon: FlaskConical, label: 'Synthesis', available: true, nav: 'synthesis' },
+      ],
+    },
+    {
+      label: 'Crew & Support',
+      services: [
+        { icon: Users, label: 'Crew Quarters', available: true, nav: 'crew' },
+        { icon: Users, label: 'Multi-Crew', available: true, nav: 'multicrew' },
+        { icon: ScrollText, label: 'Cartographics', available: station.services.cartographics, nav: 'cartography' },
+        { icon: Telescope, label: 'Exploration', available: true, nav: 'exploration' },
+        { icon: Pickaxe, label: 'Refinery & Mining', available: true, nav: 'mining' },
+        { icon: Rocket, label: 'Colonization', available: true, nav: 'colonization' },
+      ],
+    },
+    {
+      label: 'Navigation',
+      services: [
+        { icon: Map, label: 'Galaxy Map', available: true, nav: 'galaxy' },
+        { icon: Home, label: 'System Map', available: true, nav: 'system' },
+      ],
+    },
+  ];
 
   return (
     <div className="w-full h-full overflow-y-auto p-4 space-y-4">
@@ -74,121 +132,111 @@ export default function StationScreen({ onNavigate }) {
         </div>
       </div>
 
-      {/* Services grid */}
-      <div>
-        <h3 className="text-orange-500 text-sm font-bold mb-2 uppercase">Station Services</h3>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-          <ServiceButton icon={ShoppingCart} label="Commodity Market" available={station.services.market} onClick={() => onNavigate('market')} />
-          <ServiceButton icon={ClipboardList} label="Mission Board" available={station.services.missions} onClick={() => onNavigate('missions')} />
-          <ServiceButton icon={ShipIcon} label="Shipyard" available={true} onClick={() => onNavigate('ship')} />
-          <ServiceButton icon={Wrench} label="Outfitting" available={true} onClick={() => onNavigate('outfitting')} />
-          <ServiceButton icon={Telescope} label="Cartographics" available={station.services.cartographics} onClick={() => onNavigate('exploration')} />
-          <ServiceButton icon={Map} label="Galaxy Map" available={true} onClick={() => onNavigate('galaxy')} />
-          <ServiceButton icon={Pickaxe} label="Refinery & Mining" available={true} onClick={() => onNavigate('mining')} />
-          <ServiceButton icon={Rocket} label="Colonization Office" available={true} onClick={() => onNavigate('colonization')} />
-          <ServiceButton icon={Home} label="System Map" available={true} onClick={() => onNavigate('system')} />
-          <ServiceButton icon={ArrowLeftRight} label="Material Trader" available={true} onClick={() => onNavigate('materialtrader')} />
-          <ServiceButton icon={FlaskConical} label="Synthesis" available={true} onClick={() => onNavigate('synthesis')} />
-          <ServiceButton icon={Users} label="Crew Quarters" available={true} onClick={() => onNavigate('crew')} />
-          <ServiceButton icon={FlaskConical} label="Engineering" available={true} onClick={() => onNavigate('engineering')} />
-          <ServiceButton icon={Skull} label="Black Market" available={state.currentSystem?.security === 'anarchy'} onClick={() => onNavigate('blackmarket')} />
-          <ServiceButton icon={Crosshair} label="Bounty Board" available={true} onClick={() => onNavigate('bountyboard')} />
-          <ServiceButton icon={UserCheck} label="Passenger Lounge" available={true} onClick={() => onNavigate('passengers')} />
-          <ServiceButton icon={ScrollText} label="Cartographics" available={true} onClick={() => onNavigate('cartography')} />
-          <ServiceButton icon={Users} label="Multi-Crew" available={true} onClick={() => onNavigate('multicrew')} />
-        </div>
-      </div>
-
-      {/* Outfitting capability */}
-      <div className="border border-orange-900 p-3 bg-black">
-        <div className="flex items-center gap-2 mb-2">
-          <Wrench className="w-4 h-4 text-orange-500" />
-          <h3 className="text-orange-400 text-sm font-bold uppercase">Outfitting & Engineering</h3>
-        </div>
-        <div className="text-xs space-y-1">
-          <div className="text-orange-600">TECH LEVEL: <span className="text-orange-300">{outfittingLevel.name} ({outfittingLevelIndex + 1}/5)</span></div>
-          <div className="text-orange-700 text-[10px]">{outfittingLevel.desc}</div>
-          <div className="text-orange-600 mt-1">SHIPYARD STOCK: <span className="text-orange-300">{(state.currentSystem?.population || 0) > 1000000000 ? 'Full Catalogue' : (state.currentSystem?.population || 0) > 1000000 ? 'Standard Range' : (state.currentSystem?.population || 0) > 0 ? 'Limited Selection' : 'Basic Vessels Only'}</span></div>
-        </div>
-      </div>
-
-      {/* Refuel panel */}
-      {station.services.refuel && (
-        <div className="border border-orange-900 p-3 bg-black">
-          <div className="flex items-center gap-2 mb-2">
+      {/* === TOP ROW: Refuel / Repair / Refit side by side === */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+        {/* Refuel */}
+        <div className="border border-orange-900 p-3 bg-black space-y-2">
+          <div className="flex items-center gap-2">
             <Fuel className="w-4 h-4 text-orange-500" />
-            <h3 className="text-orange-400 text-sm font-bold uppercase">Refueling Service</h3>
+            <h3 className="text-orange-400 text-xs font-bold uppercase">Refuel</h3>
           </div>
-          <div className="flex items-center gap-3 text-xs">
-            <div className="text-orange-600">FUEL: <span className="text-orange-300">{(state.ship?.fuel ?? 0).toFixed(1)}/{state.ship?.fuelCapacity ?? 0}</span></div>
-            <div className="text-orange-600">COST: <span className="text-orange-300">50 CR/T</span></div>
+          <div className="text-[10px] text-orange-600">
+            FUEL: <span className="text-orange-300">{(state.ship?.fuel ?? 0).toFixed(1)}/{state.ship?.fuelCapacity ?? 0}</span>
           </div>
-          <div className="flex items-center gap-2 mt-2">
-            <input
-              type="range"
-              min="0"
-              max={fuelNeeded}
-              step="0.5"
-              value={refuelAmount}
-              onChange={(e) => setRefuelAmount(parseFloat(e.target.value))}
-              className="flex-1 accent-orange-600"
-            />
-            <span className="text-orange-400 text-xs w-16 text-right">{refuelAmount.toFixed(1)} T</span>
-            <button
-              onClick={() => setRefuelAmount(fuelNeeded)}
-              className="text-[10px] px-2 py-1 border border-orange-800 text-orange-500 hover:bg-orange-950/50"
-            >MAX</button>
-            <button
-              onClick={handleRefuel}
-              disabled={refuelAmount <= 0 || (!isSandbox && refuelCost > state.credits)}
-              className="text-xs px-3 py-1 border border-orange-500 text-orange-300 hover:bg-orange-950/50 disabled:opacity-30"
-            >{isSandbox ? 'REFUEL (FREE)' : `REFUEL (${refuelCost} CR)`}</button>
-          </div>
-          {fuelNeeded > 0 && (
-            <button
-              onClick={handleFullRefuel}
-              disabled={!isSandbox && fullRefuelCost > state.credits}
-              className="mt-2 w-full text-xs py-1.5 border border-orange-700 text-orange-400 hover:bg-orange-950/30 disabled:opacity-30"
-            >
-              {isSandbox ? 'FULL REFUEL — FREE' : `FULL REFUEL — ${fullRefuelCost} CR`}
-            </button>
+          {fuelNeeded > 0 ? (
+            <>
+              <input
+                type="range" min="0" max={fuelNeeded} step="0.5"
+                value={refuelAmount}
+                onChange={(e) => setRefuelAmount(parseFloat(e.target.value))}
+                className="w-full"
+              />
+              <div className="flex items-center justify-between text-[10px]">
+                <span className="text-orange-400">{refuelAmount.toFixed(1)} T</span>
+                <span className="text-orange-600">{isSandbox ? 'FREE' : `${refuelCost} CR`}</span>
+              </div>
+              <div className="flex gap-1">
+                <button onClick={() => setRefuelAmount(fuelNeeded)} className="flex-1 text-[9px] px-1 py-1 border border-orange-800 text-orange-500 hover:bg-orange-950/50">MAX</button>
+                <button onClick={handleRefuel} disabled={refuelAmount <= 0 || (!isSandbox && refuelCost > state.credits)} className="flex-1 text-[9px] px-1 py-1 border border-orange-500 text-orange-300 hover:bg-orange-950/50 disabled:opacity-30">REFUEL</button>
+              </div>
+              <button onClick={handleFullRefuel} disabled={!isSandbox && fullRefuelCost > state.credits} className="w-full text-[9px] py-1 border border-orange-700 text-orange-400 hover:bg-orange-950/30 disabled:opacity-30">
+                {isSandbox ? 'FULL (FREE)' : `FULL — ${fullRefuelCost} CR`}
+              </button>
+            </>
+          ) : (
+            <p className="text-green-500 text-[10px]">Fuel tank full.</p>
           )}
         </div>
-      )}
 
-      {/* Repair panel */}
-      {station.services.repair && (() => {
-        const integrity = state.ship?.integrity ?? 100;
-        const damage = 100 - integrity;
-        const repairCost = isSandbox ? 0 : Math.ceil(damage * 10000);
-        const intColor = integrity > 70 ? 'text-green-500' : integrity > 30 ? 'text-yellow-500' : 'text-red-500';
-        const barColor = integrity > 70 ? 'bg-green-600' : integrity > 30 ? 'bg-yellow-600' : 'bg-red-600';
-        return (
-          <div className="border border-orange-900 p-3 bg-black">
-            <div className="flex items-center gap-2 mb-2">
-              <Wrench className="w-4 h-4 text-orange-500" />
-              <h3 className="text-orange-400 text-sm font-bold uppercase">Maintenance & Repair</h3>
-            </div>
-            <div className="text-xs space-y-1">
-              <div>SHIP INTEGRITY: <span className={intColor}>{integrity.toFixed(1)}%</span></div>
-              <div className="w-full h-2 bg-black border border-orange-900">
-                <div className={`h-full ${barColor} transition-all`} style={{ width: `${integrity}%` }} />
-              </div>
-              {damage > 0 ? (
-                <button
-                  onClick={() => { soundEngine.play('confirm'); repairShip(damage); if (!isSandbox) addCredits(-repairCost); }}
-                  disabled={!isSandbox && state.credits < repairCost}
-                  className="mt-2 w-full py-1.5 border border-orange-500 text-orange-300 hover:bg-orange-950/50 text-xs font-bold disabled:opacity-30"
-                >
-                  {isSandbox ? 'FULL REPAIR — FREE' : `FULL REPAIR — ${repairCost.toLocaleString()} CR`}
-                </button>
-              ) : (
-                <p className="text-green-500 text-[10px] mt-1">All systems nominal. No repairs needed.</p>
-              )}
-            </div>
+        {/* Repair */}
+        <div className="border border-orange-900 p-3 bg-black space-y-2">
+          <div className="flex items-center gap-2">
+            <Wrench className="w-4 h-4 text-orange-500" />
+            <h3 className="text-orange-400 text-xs font-bold uppercase">Repair</h3>
           </div>
-        );
-      })()}
+          <div className="text-[10px]">
+            HULL: <span className={intColor}>{integrity.toFixed(1)}%</span>
+          </div>
+          <div className="w-full h-2 bg-black border border-orange-900">
+            <div className={`h-full ${barColor} transition-all`} style={{ width: `${integrity}%` }} />
+          </div>
+          {damage > 0 ? (
+            <button
+              onClick={() => { soundEngine.play('confirm'); repairShip(damage); if (!isSandbox) addCredits(-repairCost); }}
+              disabled={!isSandbox && state.credits < repairCost}
+              className="w-full text-[9px] py-1.5 border border-orange-500 text-orange-300 hover:bg-orange-950/50 disabled:opacity-30 font-bold"
+            >
+              {isSandbox ? 'FULL REPAIR (FREE)' : `REPAIR — ${repairCost.toLocaleString()} CR`}
+            </button>
+          ) : (
+            <p className="text-green-500 text-[10px]">All systems nominal.</p>
+          )}
+        </div>
+
+        {/* Refit / Outfitting quick access */}
+        <div className="border border-orange-900 p-3 bg-black space-y-2">
+          <div className="flex items-center gap-2">
+            <ShipIcon className="w-4 h-4 text-orange-500" />
+            <h3 className="text-orange-400 text-xs font-bold uppercase">Refit</h3>
+          </div>
+          <div className="text-[10px] text-orange-600">
+            TECH: <span className="text-orange-300">{outfittingLevel.name}</span>
+          </div>
+          <div className="text-[9px] text-orange-700">{outfittingLevel.desc}</div>
+          <button onClick={() => onNavigate('outfitting')} className="w-full text-[9px] py-1.5 border border-orange-500 text-orange-300 hover:bg-orange-950/50 font-bold">
+            OUTFITTING
+          </button>
+          <button onClick={() => onNavigate('ship')} className="w-full text-[9px] py-1.5 border border-orange-700 text-orange-400 hover:bg-orange-950/30">
+            SHIPYARD
+          </button>
+        </div>
+      </div>
+
+      {/* Manual Save button */}
+      <button
+        onClick={handleManualSave}
+        className={`w-full py-2 border flex items-center justify-center gap-2 text-xs font-bold transition-all ${saveFlash ? 'border-green-600 text-green-400 bg-green-950/30' : 'border-cyan-800 text-cyan-400 hover:bg-cyan-950/30'}`}
+      >
+        <Save className="w-4 h-4" />
+        {saveFlash ? '✓ GAME SAVED' : 'SAVE GAME'}
+      </button>
+
+      {/* === STARPORT SERVICES below === */}
+      <div>
+        <h3 className="text-orange-500 text-sm font-bold mb-2 uppercase">Starport Services</h3>
+        <div className="space-y-3">
+          {serviceGroups.map(group => (
+            <div key={group.label}>
+              <div className="text-orange-700 text-[10px] uppercase mb-1 border-b border-orange-950 pb-0.5">{group.label}</div>
+              <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-1.5">
+                {group.services.map(svc => (
+                  <ServiceButton key={svc.nav} icon={svc.icon} label={svc.label} available={svc.available} onClick={() => onNavigate(svc.nav)} />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
 
       {/* Undock */}
       <button
@@ -207,15 +255,15 @@ function ServiceButton({ icon: Icon, label, available, onClick }) {
     <button
       onClick={available ? () => { soundEngine.play('click'); onClick(); } : undefined}
       disabled={!available}
-      className={`flex flex-col items-center gap-2 p-3 border transition-all ${
+      className={`flex flex-col items-center gap-1 p-2 border transition-all ${
         available
           ? 'border-orange-800 text-orange-400 hover:border-orange-500 hover:bg-orange-950/30'
           : 'border-gray-900 text-gray-700 cursor-not-allowed'
       }`}
     >
-      <Icon className="w-5 h-5" />
-      <span className="text-[10px] text-center leading-tight">{label}</span>
-      {!available && <span className="text-[9px] text-gray-800">UNAVAILABLE</span>}
+      <Icon className="w-4 h-4" />
+      <span className="text-[9px] text-center leading-tight">{label}</span>
+      {!available && <span className="text-[8px] text-gray-800">N/A</span>}
     </button>
   );
 }
