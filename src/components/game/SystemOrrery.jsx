@@ -782,7 +782,9 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
   const handleSelectBody = useCallback((body) => {
     setSelectedBody(body);
     setSelectedStation(null);
-    const entry = bodyMeshesRef.current.find(bm => bm.body.id === body.id);
+    // Rings have no mesh — focus on their parent planet instead
+    const lookupId = body.type === BODY_TYPES.RING ? body.parent : body.id;
+    const entry = bodyMeshesRef.current.find(bm => bm.body.id === lookupId);
     focusBodyRef.current = entry || null;
     if (entry && entry.visualRadius) {
       rotState.current.targetDistance = Math.max(entry.visualRadius * 5, 3);
@@ -831,7 +833,9 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
   }, [dockAtStation, state.ship?.type]);
 
   const handleTravelToBody = useCallback((body) => {
-    const entry = bodyMeshesRef.current.find(bm => bm.body.id === body.id);
+    // Rings have no mesh — travel to the parent planet instead
+    const lookupId = body.type === BODY_TYPES.RING ? body.parent : body.id;
+    const entry = bodyMeshesRef.current.find(bm => bm.body.id === lookupId);
     if (!entry) return;
     const dist = Math.hypot(entry.group.position.x - shipPosRef.current.x, entry.group.position.z - shipPosRef.current.z);
     if (dist < 0.8) return;
@@ -1062,10 +1066,18 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
                 <div>ORBIT: <span className="text-orange-300">{selectedBody.orbitRadius.toFixed(1)} AU</span></div>
               </>
             )}
+            {selectedBody.type === BODY_TYPES.RING && (
+              <>
+                <div>TYPE: <span className="text-orange-300 capitalize">{selectedBody.ringType || 'rocky'} Ring</span></div>
+                <div>DEPOSITS: <span className="text-orange-300">{selectedBody.materials?.length || 0} mining locations</span></div>
+              </>
+            )}
           </div>
-          {selectedBody.materials && selectedBody.materials.length > 0 && isScanned && (
+          {selectedBody.materials && selectedBody.materials.length > 0 && (isScanned || selectedBody.type === BODY_TYPES.RING || selectedBody.type === BODY_TYPES.BELT) && (
             <div className="border-t border-orange-900 pt-1">
-              <div className="text-orange-700 text-[10px] uppercase mb-1">Surface Materials</div>
+              <div className="text-orange-700 text-[10px] uppercase mb-1">
+                {selectedBody.type === BODY_TYPES.RING ? 'Ring Mining Locations' : selectedBody.type === BODY_TYPES.BELT ? 'Asteroid Materials' : 'Surface Materials'}
+              </div>
               <div className="flex flex-wrap gap-1">
                 {selectedBody.materials.slice(0, 8).map(m => (
                   <span key={m.id} className="text-[10px] text-orange-500 border border-orange-900 px-1">
@@ -1090,18 +1102,44 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
             )}
           </div>
           {selectedBody.type !== BODY_TYPES.STAR && (
-            orbitingBodyId === selectedBody.id ? (
-              <div className="w-full py-1.5 border border-cyan-800 text-cyan-500 text-[10px] text-center">✓ IN ORBIT</div>
-            ) : (
-              <button
-                onClick={() => handleTravelToBody(selectedBody)}
-                disabled={!!travelInfo}
-                className="w-full py-1.5 border border-cyan-500 text-cyan-300 hover:bg-cyan-950/30 text-[10px] font-bold disabled:opacity-50"
-              >
-                {travelInfo ? `TRAVELING — ${Math.round(travelInfo.progress * 100)}%` : '⚡ TRAVEL TO BODY'}
-              </button>
-            )
+            (() => {
+              const isRing = selectedBody.type === BODY_TYPES.RING;
+              const inOrbit = isRing
+                ? orbitingBodyId === selectedBody.parent
+                : orbitingBodyId === selectedBody.id;
+              return inOrbit ? (
+                <div className="w-full py-1.5 border border-cyan-800 text-cyan-500 text-[10px] text-center">✓ IN ORBIT</div>
+              ) : (
+                <button
+                  onClick={() => handleTravelToBody(selectedBody)}
+                  disabled={!!travelInfo}
+                  className="w-full py-1.5 border border-cyan-500 text-cyan-300 hover:bg-cyan-950/30 text-[10px] font-bold disabled:opacity-50"
+                >
+                  {travelInfo ? `TRAVELING — ${Math.round(travelInfo.progress * 100)}%` : '⚡ TRAVEL TO BODY'}
+                </button>
+              );
+            })()
           )}
+          {/* Mining button for minable bodies with materials */}
+          {(() => {
+            const isMinable = selectedBody.type === BODY_TYPES.RING ||
+              selectedBody.type === BODY_TYPES.BELT ||
+              (selectedBody.type === BODY_TYPES.PLANET && selectedBody.landable);
+            if (!isMinable || !selectedBody.materials || selectedBody.materials.length === 0) return null;
+            const isRing = selectedBody.type === BODY_TYPES.RING;
+            const inOrbit = isRing
+              ? orbitingBodyId === selectedBody.parent
+              : orbitingBodyId === selectedBody.id;
+            if (!inOrbit) return null;
+            return (
+              <button
+                onClick={() => onNavigate('mining')}
+                className="w-full py-1.5 border border-orange-500 text-orange-300 hover:bg-orange-950/50 text-[10px] font-bold"
+              >
+                ⛏ MINE — {selectedBody.materials.length} DEPOSITS
+              </button>
+            );
+          })()}
           {selectedBody.landable && state.fssDiscoveredBodies?.[selectedBody.id] && (() => {
             const probeState = state.probeProgress?.[selectedBody.id];
             const required = probeState?.required || getProbesRequired(selectedBody);

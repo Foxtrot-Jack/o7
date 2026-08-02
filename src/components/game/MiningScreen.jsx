@@ -1,6 +1,5 @@
-// Mining Screen — prospect and mine asteroids for raw materials
-// Prospecting is deterministic per body; depleted deposits persist in game state.
-// Mined materials fill cargo (sellable at stations) and the materials locker.
+// Mining Screen — lists minable bodies in the system (requires FSS discovery)
+// Players select a body to prospect, then mine deposits via the mini-game.
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 
 // Deposits regenerate after this cooldown (5 minutes)
@@ -9,10 +8,10 @@ import { useGameState } from '@/lib/gameState';
 import { BODY_TYPES } from '@/lib/system';
 import { COMMODITY_MAP } from '@/lib/commodities';
 import { makeRng, randInt, randFloat, pick } from '@/lib/prng';
-import { Pickaxe, Gem, Loader, Package, Zap, AlertTriangle } from 'lucide-react';
+import { Pickaxe, Gem, Loader, Package, Zap, AlertTriangle, Radio } from 'lucide-react';
 import { soundEngine } from '@/lib/soundEngine';
 
-export default function MiningScreen() {
+export default function MiningScreen({ onNavigate }) {
   const { state, getSystemData, addCargo, addMaterial, markDepositMined } = useGameState();
   const systemData = getSystemData();
   const [selectedProspect, setSelectedProspect] = useState(null);
@@ -31,18 +30,28 @@ export default function MiningScreen() {
   const cargoCapacity = state.ship?.cargoCapacity ?? 0;
   const cargoFull = cargoUsed >= cargoCapacity;
 
-  // Get minable bodies in the system
+  const systemSeed = state.currentSystem?.seed;
+  const fssScanned = state.fssScannedSystems?.[systemSeed];
+  const fssDiscovered = state.fssDiscoveredBodies || {};
+
+  // Get minable bodies in the system — ONLY those FSS-discovered
+  // Rings are minable if their parent planet is discovered
   const minableBodies = useMemo(() => {
     if (!systemData) return [];
-    return systemData.bodies.filter(b =>
-      b.type === BODY_TYPES.BELT ||
-      b.type === BODY_TYPES.ASTEROID ||
-      (b.type === BODY_TYPES.PLANET && b.landable)
-    );
-  }, [systemData]);
+    return systemData.bodies.filter(b => {
+      const isMinableType =
+        b.type === BODY_TYPES.BELT ||
+        b.type === BODY_TYPES.ASTEROID ||
+        (b.type === BODY_TYPES.PLANET && b.landable) ||
+        b.type === BODY_TYPES.RING;
+      if (!isMinableType) return false;
+      // Rings show if their parent planet is discovered
+      if (b.type === BODY_TYPES.RING) return fssDiscovered[b.parent];
+      return fssDiscovered[b.id];
+    });
+  }, [systemData, fssDiscovered]);
 
   // Prospecting is deterministic — same body always yields the same deposits.
-  // Mined deposits go on a cooldown timer and regenerate after REGEN_COOLDOWN.
   const { available, regenerating } = useMemo(() => {
     if (!selectedProspect) return { available: [], regenerating: [] };
     const body = selectedProspect;
@@ -88,7 +97,6 @@ export default function MiningScreen() {
     return { available: avail, regenerating: regen };
   }, [selectedProspect, state.minedDeposits, now]);
 
-  // Prospect a body — select it and compute deterministic deposits
   const handleProspect = useCallback((body) => {
     soundEngine.play('scan');
     setSelectedProspect(body);
@@ -96,7 +104,6 @@ export default function MiningScreen() {
     setCargoWarning(false);
   }, []);
 
-  // Mine a specific prospect — fills cargo and materials locker
   const handleMine = useCallback((prospect) => {
     if (cargoFull) {
       soundEngine.play('error');
@@ -113,11 +120,8 @@ export default function MiningScreen() {
       const yieldQty = prospect.isCore ? prospect.yield * 3 : prospect.yield;
       const intQty = Math.max(1, Math.floor(yieldQty));
 
-      // Always add to materials locker (for synthesis / engineering)
       addMaterial(prospect.materialId, Math.round(yieldQty * 10) / 10);
 
-      // Add to cargo — all mined materials are tradeable commodities.
-      // Respect remaining cargo capacity.
       const currentCargoUsed = (state.ship?.cargo || []).reduce((s, c) => s + c.qty, 0);
       const cap = state.ship?.cargoCapacity ?? 0;
       const spaceLeft = cap - currentCargoUsed;
@@ -127,7 +131,6 @@ export default function MiningScreen() {
         addCargo(prospect.materialId, cargoQty);
       }
 
-      // Mark deposit as depleted so it stays mined permanently
       markDepositMined(prospect.id);
 
       setMiningResult({
@@ -154,7 +157,7 @@ export default function MiningScreen() {
           <span className="text-orange-300 font-bold uppercase text-sm">Mining & Refinery Operations</span>
         </div>
         <div className="text-xs text-orange-600">
-          {state.currentLocation === 'station' ? 'STATION-BASED PROSPECTING' : 'IN-SYSTEM PROSPECTING'}
+          {fssScanned ? 'SYSTEM SURVEY COMPLETE' : 'PARTIAL SURVEY'}
         </div>
       </div>
 
@@ -187,10 +190,36 @@ export default function MiningScreen() {
       <div className="flex-1 overflow-y-auto p-3 grid grid-cols-1 lg:grid-cols-2 gap-3">
         {/* Left: Select body to prospect */}
         <div className="space-y-2">
-          <h3 className="text-orange-500 text-xs font-bold uppercase">Select Prospecting Target</h3>
-          {minableBodies.length === 0 && (
-            <div className="text-orange-700 text-xs">No minable bodies in this system.</div>
+          <h3 className="text-orange-500 text-xs font-bold uppercase">Minable Bodies in System</h3>
+
+          {/* No FSS scan done yet */}
+          {minableBodies.length === 0 && !fssScanned && (
+            <div className="border border-cyan-900 bg-black/50 p-4 text-center space-y-2">
+              <Radio className="w-8 h-8 mx-auto text-cyan-700" />
+              <div className="text-cyan-400 text-xs font-bold uppercase">No Survey Data</div>
+              <div className="text-cyan-600 text-[10px]">
+                No minable bodies have been discovered yet. Run an FSS scan to reveal asteroid belts, ringed planets, and landable bodies in this system.
+              </div>
+              {onNavigate && (
+                <button
+                  onClick={() => onNavigate('fss')}
+                  className="px-3 py-1.5 border border-cyan-500 text-cyan-300 hover:bg-cyan-950/30 text-[10px] font-bold"
+                >
+                  OPEN FSS SCANNER
+                </button>
+              )}
+            </div>
           )}
+
+          {/* FSS scanned but no minable bodies */}
+          {minableBodies.length === 0 && fssScanned && (
+            <div className="text-orange-700 text-xs text-center py-8 border border-orange-950">
+              <Gem className="w-8 h-8 mx-auto mb-2 opacity-50" />
+              <p>No minable bodies in this system.</p>
+              <p className="text-[10px] mt-1">Try another system with asteroid belts or ringed planets.</p>
+            </div>
+          )}
+
           {minableBodies.map(body => {
             const bodyDeposits = (() => {
               const rng = makeRng(body.id + ':prospect');
@@ -210,6 +239,10 @@ export default function MiningScreen() {
               }
               return { total, available, regen };
             })();
+            const isRing = body.type === BODY_TYPES.RING;
+            const parentName = isRing
+              ? systemData.bodies.find(b => b.id === body.parent)?.designation
+              : null;
             return (
               <button
                 key={body.id}
@@ -222,8 +255,12 @@ export default function MiningScreen() {
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="text-orange-400">{body.designation}</div>
-                    <div className="text-orange-700 text-[10px]">{body.planetTypeName || body.type}</div>
+                    <div className="text-orange-400">
+                      {isRing ? `${parentName} Ring` : body.designation}
+                    </div>
+                    <div className="text-orange-700 text-[10px]">
+                      {isRing ? `${body.ringType || 'rocky'} ring` : (body.planetTypeName || body.type)}
+                    </div>
                   </div>
                   <div className="text-right">
                     <div className="text-orange-600 text-[10px]">{body.materials?.length || 0} materials</div>
@@ -245,7 +282,7 @@ export default function MiningScreen() {
         {/* Right: Prospecting results */}
         <div className="space-y-2">
           <h3 className="text-orange-500 text-xs font-bold uppercase">
-            {selectedProspect ? `Prospect Results — ${selectedProspect.designation}` : 'Prospect Results'}
+            {selectedProspect ? `Prospect Results — ${selectedProspect.designation || 'Ring'}` : 'Prospect Results'}
           </h3>
 
           {!selectedProspect && (

@@ -209,7 +209,7 @@ function GameContent() {
       case 'missions':
         return <MissionsScreen />;
       case 'mining':
-        return <MiningScreen />;
+        return <MiningScreen onNavigate={handleNavigate} />;
       case 'colonization':
         return <ColonizationScreen />;
       case 'fleet':

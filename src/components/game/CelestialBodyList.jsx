@@ -1,6 +1,8 @@
-// CelestialBodyList — hierarchical tree of system bodies (star → planets → moons, belts → asteroids)
+// CelestialBodyList — hierarchical tree of FSS-discovered system bodies
+// Only the main parent star is always visible; all other bodies require FSS discovery.
 import React, { useState, useMemo } from 'react';
 import { BODY_TYPES } from '@/lib/system';
+import { COMMODITY_MAP } from '@/lib/commodities';
 
 const TYPE_SYMBOLS = {
   star: '★',
@@ -23,7 +25,10 @@ export default function CelestialBodyList({
   playerStructures = [],
   onSelectPlayerStructure,
 }) {
-  const tree = useMemo(() => buildBodyTree(systemData.bodies), [systemData]);
+  const tree = useMemo(
+    () => buildBodyTree(systemData.bodies, fssDiscoveredBodies),
+    [systemData, fssDiscoveredBodies]
+  );
 
   return (
     <div className="space-y-0">
@@ -69,9 +74,26 @@ export default function CelestialBodyList({
   );
 }
 
-function buildBodyTree(bodies) {
+// Build tree but only include: the main primary star (always) + any FSS-discovered body.
+// Undiscovered bodies are hidden entirely — the player must use the FSS scanner.
+function buildBodyTree(bodies, fssDiscoveredBodies) {
+  const discovered = fssDiscoveredBodies || {};
+  // Find the primary star — first star with parent === null
+  const primaryStar = bodies.find(b => b.type === BODY_TYPES.STAR && b.parent === null) ||
+                      bodies.find(b => b.type === BODY_TYPES.STAR);
+  if (!primaryStar) return [];
+
+  // Build child lookup but only for discovered bodies
   const byParent = {};
   for (const body of bodies) {
+    // Skip the primary star here — it's the root
+    if (body.id === primaryStar.id) continue;
+    // Only include discovered bodies (or rings attached to discovered planets — rings are part of the parent)
+    const isDiscovered = discovered[body.id];
+    // Rings are visual children of planets — show them only if the parent planet is discovered
+    const isRing = body.type === BODY_TYPES.RING;
+    const parentDiscovered = discovered[body.parent];
+    if (!isDiscovered && !(isRing && parentDiscovered)) continue;
     const p = body.parent || '__root__';
     if (!byParent[p]) byParent[p] = [];
     byParent[p].push(body);
@@ -79,8 +101,7 @@ function buildBodyTree(bodies) {
   for (const key in byParent) {
     byParent[key].sort((a, b) => (a.orbitRadius || 0) - (b.orbitRadius || 0));
   }
-  const roots = byParent['__root__'] || [];
-  return roots.map(root => buildNode(root, byParent));
+  return [buildNode(primaryStar, byParent)];
 }
 
 function buildNode(body, byParent) {
@@ -102,13 +123,28 @@ function BodyNode({ node, depth, stations, selectedBody, selectedStation, onSele
   const hasChildren = children.length > 0 || bodyStations.length > 0;
   const isStar = body.type === BODY_TYPES.STAR;
   const isBelt = body.type === BODY_TYPES.BELT;
-  const isAsteroid = body.type === BODY_TYPES.ASTEROID;
   const isRing = body.type === BODY_TYPES.RING;
+  const hasSurfaceSignals = body.surfaceSignals && body.surfaceSignals.length > 0;
+  const hasMaterials = body.materials && body.materials.length > 0;
 
   const symbol = TYPE_SYMBOLS[body.type] || '●';
   const indent = depth * 10;
 
-  const statusIcon = isStar ? '' : isMapped ? ' ✓' : isScanned ? ' ◉' : discovered ? '' : '';
+  const statusIcon = isStar ? '' : isMapped ? ' ✓' : isScanned ? ' ◉' : '';
+
+  // Build ring mining description
+  const ringMiningInfo = useMemo(() => {
+    if (!isRing || !hasMaterials) return null;
+    const topMats = body.materials.slice(0, 3).map(m => ({
+      name: COMMODITY_MAP[m.id]?.name || m.id,
+      conc: m.concentration,
+    }));
+    return {
+      ringType: body.ringType || 'rocky',
+      materials: topMats,
+      count: body.materials.length,
+    };
+  }, [isRing, body, hasMaterials]);
 
   return (
     <div>
@@ -130,18 +166,56 @@ function BodyNode({ node, depth, stations, selectedBody, selectedStation, onSele
               ? 'border-orange-500 bg-orange-950/40 text-orange-300'
               : isStar
                 ? 'border-transparent text-yellow-500 hover:border-orange-800'
-                : discovered
-                  ? 'border-transparent text-orange-400 hover:border-orange-800'
-                  : 'border-transparent text-orange-700 hover:border-orange-800'
+                : isRing
+                  ? 'border-transparent text-amber-600 hover:border-orange-800'
+                  : 'border-transparent text-orange-400 hover:border-orange-800'
           }`}
         >
           <span className="flex-shrink-0" style={{ color: isStar ? '#ffcc44' : body.color || '#888' }}>{symbol}</span>
-          <span className="truncate flex-1">
-            {discovered || isStar ? body.designation : '◆ Signal'}
-          </span>
+          <span className="truncate flex-1">{body.designation || body.name}</span>
           {statusIcon && <span className="text-cyan-500 text-[8px]">{statusIcon}</span>}
         </button>
       </div>
+
+      {/* Ring mining description */}
+      {isRing && ringMiningInfo && !collapsed && (
+        <div className="text-[8px] text-amber-700 px-1 py-0.5" style={{ paddingLeft: indent + 14 }}>
+          <span className="capitalize">{ringMiningInfo.ringType}</span> ring · {ringMiningInfo.count} deposits
+          {ringMiningInfo.materials.length > 0 && (
+            <span> · {ringMiningInfo.materials.map(m => `${m.name}(${m.concentration?.toFixed(0)}%)`).join(', ')}</span>
+          )}
+        </div>
+      )}
+
+      {/* Body mining info for belts and landable planets */}
+      {(isBelt || (body.type === BODY_TYPES.PLANET && body.landable)) && hasMaterials && !collapsed && (
+        <div className="text-[8px] text-orange-700 px-1 py-0.5" style={{ paddingLeft: indent + 14 }}>
+          {body.materials.length} mining materials available
+          {body.valuable && <span className="text-yellow-600"> · ★ VALUABLE</span>}
+        </div>
+      )}
+
+      {/* Surface signals — clickable to scan/interact */}
+      {hasSurfaceSignals && !collapsed && (
+        <div className="flex flex-wrap gap-0.5 py-0.5" style={{ paddingLeft: indent + 14 }}>
+          {body.surfaceSignals.slice(0, 4).map(sig => (
+            <button
+              key={sig.id}
+              onClick={(e) => { e.stopPropagation(); onSelectBody(body); }}
+              className={`text-[8px] border px-1 hover:bg-orange-950/30 ${
+                sig.type === 'biological'
+                  ? 'border-green-800 text-green-500'
+                  : sig.type === 'geological'
+                    ? 'border-orange-800 text-orange-500'
+                    : 'border-cyan-800 text-cyan-500'
+              }`}
+              title={`${sig.name} — select body to scan`}
+            >
+              {sig.type === 'biological' ? '🧬' : sig.type === 'geological' ? '🌋' : '💎'} {sig.name}
+            </button>
+          ))}
+        </div>
+      )}
 
       {!collapsed && hasChildren && (
         <div>
