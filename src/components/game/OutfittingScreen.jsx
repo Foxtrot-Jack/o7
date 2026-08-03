@@ -271,28 +271,45 @@ function SlotSection({ title, slots, modules, onSelect, onEngineering, disabled,
 }
 
 function ModulePicker({ slot, currentModuleId, onEquip, onUnequip, onClose, credits, isSandbox = false, guardianBlueprints = {} }) {
-  const [classFilter, setClassFilter] = useState('all');
-  const [typeFilter, setTypeFilter] = useState('all');
-
   const typeCategories = slot.type === 'optional' ? OPTIONAL_CATEGORIES
     : slot.type === 'hardpoint' ? HARDPOINT_CATEGORIES
     : slot.type === 'utility' ? UTILITY_CATEGORIES
     : null;
 
-  const available = useMemo(() => {
+  const fittingPool = useMemo(() => {
     let list = getModulesForSlot(slot.type, slot.size, null);
     if (slot.type === 'core') {
       const coreAbbr = slot.key.replace('core_', '');
       list = list.filter(m => m.id.startsWith(coreAbbr + '_'));
     }
-    if (typeCategories && typeFilter !== 'all') {
+    return list;
+  }, [slot]);
+
+  const [classFilter, setClassFilter] = useState(() => {
+    const order = ['E', 'D', 'C', 'B', 'A', 'premium'];
+    for (const f of order) {
+      if (fittingPool.some(m => m.class === f || (f === 'premium' && m.premium))) return f;
+    }
+    return 'E';
+  });
+  const [typeFilter, setTypeFilter] = useState(() => {
+    if (!typeCategories) return null;
+    for (const c of typeCategories) {
+      if (fittingPool.some(m => c.types.includes(m.type))) return c.id;
+    }
+    return typeCategories[0].id;
+  });
+
+  const available = useMemo(() => {
+    let list = fittingPool;
+    if (typeCategories && typeFilter) {
       const cat = typeCategories.find(c => c.id === typeFilter);
       if (cat) list = list.filter(m => cat.types.includes(m.type));
     }
     return list;
-  }, [slot, typeFilter, typeCategories]);
+  }, [fittingPool, typeFilter, typeCategories]);
 
-  const filtered = classFilter === 'all' ? available : available.filter(m => m.class === classFilter || (classFilter === 'premium' && m.premium));
+  const filtered = available.filter(m => m.class === classFilter || (classFilter === 'premium' && m.premium));
   const currentMod = currentModuleId ? MODULES[currentModuleId] : null;
   const currentStat = getModStat(currentMod);
   const refund = currentMod ? Math.floor(getModulePrice(currentMod.id) * 0.9) : 0;
@@ -324,7 +341,6 @@ function ModulePicker({ slot, currentModuleId, onEquip, onUnequip, onClose, cred
         {/* Module type filter (optional / hardpoint / utility) */}
         {typeCategories && (
           <div className="flex gap-1 p-2 border-b border-orange-900 overflow-x-auto">
-            <button onClick={() => setTypeFilter('all')} className={`px-2 py-0.5 border text-[10px] whitespace-nowrap ${typeFilter === 'all' ? 'border-orange-500 bg-orange-950/40 text-orange-300' : 'border-orange-900 text-orange-700'}`}>ALL</button>
             {typeCategories.map(c => (
               <button key={c.id} onClick={() => setTypeFilter(c.id)} className={`px-2 py-0.5 border text-[10px] whitespace-nowrap ${typeFilter === c.id ? 'border-orange-500 bg-orange-950/40 text-orange-300' : 'border-orange-900 text-orange-700'}`}>{c.label}</button>
             ))}
@@ -333,7 +349,7 @@ function ModulePicker({ slot, currentModuleId, onEquip, onUnequip, onClose, cred
 
         {/* Class filter */}
         <div className="flex gap-1 p-2 border-b border-orange-900">
-          {['all', 'E', 'D', 'C', 'B', 'A', 'premium'].map(f => (
+          {['E', 'D', 'C', 'B', 'A', 'premium'].map(f => (
             <button key={f} onClick={() => setClassFilter(f)} className={`px-2 py-0.5 border text-[10px] ${classFilter === f ? 'border-orange-500 bg-orange-950/40 text-orange-300' : 'border-orange-900 text-orange-700'}`}>{f === 'premium' ? 'EXP' : f.toUpperCase()}</button>
           ))}
         </div>
