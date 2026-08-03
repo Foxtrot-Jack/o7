@@ -13,6 +13,7 @@ import CelestialBodyList from './CelestialBodyList';
 import MiningPanel from './MiningPanel';
 import RadioChatter from './RadioChatter';
 import ShipCopilot from './ShipCopilot';
+import PlayerStructurePanel from './PlayerStructurePanel';
 import { generateBodyDescription } from '@/lib/bodyDescriptions';
 import { COMMODITY_MAP } from '@/lib/commodities';
 import { colorEnabledFor, monoUIActive, desaturateColor, desaturateObject3D, effectiveTheme } from '@/lib/monoColor';
@@ -59,6 +60,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
   const [selectedStation, setSelectedStation] = useState(null);
   const [travelInfo, setTravelInfo] = useState(null);
   const [orbitingBodyId, setOrbitingBodyId] = useState(null);
+  const [selectedPlayerStructure, setSelectedPlayerStructure] = useState(null);
   const [fssDismissedSeed, setFssDismissedSeed] = useState(null);
   const [scoopActive, setScoopActive] = useState(false);
   const [miningHotspotId, setMiningHotspotId] = useState(null);
@@ -82,12 +84,10 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
   }, [state.currentSystem, state.colonies, state.ownedStations]);
 
   const handleSelectPlayerStructure = useCallback((structure) => {
-    setSelectedStation({ id: structure.id, name: structure.name, parentId: structure.parentBodyId, isOrbital: structure.kind === 'station' });
+    setSelectedPlayerStructure(structure);
+    setSelectedStation(null);
     setSelectedBody(null);
-    if (onNavigate && structure.kind === 'colony') {
-      // Could navigate to colony screen, but for now just select
-    }
-  }, [onNavigate]);
+  }, []);
 
   // Ref mirror of state so the animation loop (useEffect[]) always reads
   // the latest values instead of a stale first-render closure.
@@ -863,6 +863,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
   const handleSelectBody = useCallback((body) => {
     setSelectedBody(body);
     setSelectedStation(null);
+    setSelectedPlayerStructure(null);
     // Rings have no mesh — focus on their parent planet instead
     const lookupId = body.type === BODY_TYPES.RING ? body.parent : body.id;
     const entry = bodyMeshesRef.current.find(bm => bm.body.id === lookupId);
@@ -876,6 +877,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
   const handleSelectStation = useCallback((station) => {
     setSelectedStation(station);
     setSelectedBody(null);
+    setSelectedPlayerStructure(null);
     const parentEntry = bodyMeshesRef.current.find(bm => bm.body.id === station.parentId);
     focusBodyRef.current = parentEntry || null;
     if (parentEntry && parentEntry.visualRadius) {
@@ -1126,6 +1128,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
           systemData={systemData}
           selectedBody={selectedBody}
           selectedStation={selectedStation}
+          selectedPlayerStructure={selectedPlayerStructure}
           onSelectBody={handleSelectBody}
           onSelectStation={handleSelectStation}
           fssDiscoveredBodies={state.fssDiscoveredBodies}
@@ -1147,7 +1150,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
       )}
 
       {/* Station docking panel — shown when in supercruise */}
-      {state.currentLocation !== 'station' && systemData.stations.length > 0 && !selectedBody && !selectedStation && (
+      {state.currentLocation !== 'station' && systemData.stations.length > 0 && !selectedBody && !selectedStation && !selectedPlayerStructure && (
         <div className="border border-green-800 bg-black/95 p-3 text-xs space-y-2 shrink-0">
           <div className="text-green-500 font-bold uppercase text-[10px] border-b border-green-900 pb-1">
             Available Stations — Request Docking
@@ -1176,6 +1179,20 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
             ))}
           </div>
         </div>
+      )}
+
+      {/* Player-owned colony / station info + actions */}
+      {selectedPlayerStructure && (
+        <PlayerStructurePanel
+          structure={selectedPlayerStructure}
+          systemData={systemData}
+          orbitingBodyId={orbitingBodyId}
+          travelInfo={travelInfo}
+          onTravelToStation={handleTravelToStation}
+          onTravelToBody={handleTravelToBody}
+          onNavigate={onNavigate}
+          onClose={() => setSelectedPlayerStructure(null)}
+        />
       )}
 
       {/* Selected station info - bottom */}

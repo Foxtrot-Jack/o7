@@ -17,6 +17,7 @@ export default function CelestialBodyList({
   systemData,
   selectedBody,
   selectedStation,
+  selectedPlayerStructure,
   onSelectBody,
   onSelectStation,
   fssDiscoveredBodies,
@@ -26,6 +27,7 @@ export default function CelestialBodyList({
   onSelectPlayerStructure,
 }) {
   const tree = buildBodyTree(systemData.bodies);
+  const selectedPlayerId = selectedPlayerStructure?.id;
 
   return (
     <div className="space-y-0">
@@ -37,6 +39,7 @@ export default function CelestialBodyList({
           stations={systemData.stations}
           selectedBody={selectedBody}
           selectedStation={selectedStation}
+          selectedPlayerId={selectedPlayerId}
           onSelectBody={onSelectBody}
           onSelectStation={onSelectStation}
           fssDiscoveredBodies={fssDiscoveredBodies}
@@ -55,7 +58,7 @@ export default function CelestialBodyList({
               key={structure.id}
               onClick={() => onSelectPlayerStructure?.(structure)}
               className={`w-full text-left flex items-center gap-1 px-1 py-0.5 text-[10px] border transition-all ${
-                selectedStation?.id === structure.id
+                selectedPlayerId === structure.id
                   ? 'border-purple-500 bg-purple-950/30 text-purple-300'
                   : 'border-transparent text-purple-500 hover:text-purple-300'
               }`}
@@ -97,7 +100,7 @@ function buildNode(body, byParent) {
   return { body, children };
 }
 
-function BodyNode({ node, depth, stations, selectedBody, selectedStation, onSelectBody, onSelectStation, fssDiscoveredBodies, scannedBodies, probeProgress, playerStructures, onSelectPlayerStructure }) {
+function BodyNode({ node, depth, stations, selectedBody, selectedStation, selectedPlayerId, onSelectBody, onSelectStation, fssDiscoveredBodies, scannedBodies, probeProgress, playerStructures, onSelectPlayerStructure }) {
   const { body, children } = node;
   // Belts default to collapsed (they contain many asteroids)
   const [collapsed, setCollapsed] = useState(body.type === BODY_TYPES.BELT);
@@ -195,7 +198,7 @@ function BodyNode({ node, depth, stations, selectedBody, selectedStation, onSele
               key={structure.id}
               onClick={() => onSelectPlayerStructure?.(structure)}
               className={`w-full text-left flex items-center gap-1 py-0.5 text-[10px] border transition-all ${
-                selectedStation?.id === structure.id
+                selectedPlayerId === structure.id
                   ? 'border-purple-500 bg-purple-950/30 text-purple-300'
                   : 'border-transparent text-purple-500 hover:text-purple-300'
               }`}
@@ -215,6 +218,7 @@ function BodyNode({ node, depth, stations, selectedBody, selectedStation, onSele
               stations={stations}
               selectedBody={selectedBody}
               selectedStation={selectedStation}
+              selectedPlayerId={selectedPlayerId}
               onSelectBody={onSelectBody}
               onSelectStation={onSelectStation}
               fssDiscoveredBodies={fssDiscoveredBodies}

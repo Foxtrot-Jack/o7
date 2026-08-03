@@ -26,6 +26,7 @@ import { DEFAULT_GESTURE_SETTINGS, DEFAULT_DISPLAY_SETTINGS } from './screenSett
 import { CANIS_STELLA_RANKS, CEO_TITLE, MISSION_REP_REWARD } from './canisStella';
 import { CURRENT_SAVE_VERSION, validateShip, createInitialState, createSandboxState } from './gameStateInitializers';
 import { updateRank, getProbesRequired, hasCarrierVendor, getAvailableShipsAtStation, getOutfittingLevel, OUTFITTING_LEVELS } from './gameStateHelpers';
+import { safeWriteSave, loadSave, clearSave } from './saveSystem';
 // Re-export helpers that other modules import from gameState
 export { getProbesRequired, hasCarrierVendor, getAvailableShipsAtStation, getOutfittingLevel, OUTFITTING_LEVELS };
 
@@ -58,12 +59,11 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
 
   const storageKey = saveSlot === 'sandbox' ? STORAGE_KEY_SANDBOX : STORAGE_KEY;
 
-  // Load from localStorage on mount
+  // Load from localStorage on mount (with backup recovery)
   useEffect(() => {
     try {
-      const saved = localStorage.getItem(storageKey);
-      if (saved) {
-        const parsed = JSON.parse(saved);
+      const parsed = loadSave(storageKey, saveSlot);
+      if (parsed) {
         // Merge with defaults to handle new fields
         setState(prev => {
           const merged = { ...prev, ...parsed,
@@ -166,14 +166,10 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     }
   }, []);
 
-  // Save to localStorage on changes (debounced)
+  // Save to localStorage on changes (debounced) — validated + backed up
   useEffect(() => {
     const timer = setTimeout(() => {
-      try {
-        localStorage.setItem(storageKey, JSON.stringify(state));
-      } catch (e) {
-        console.error('Failed to save:', e);
-      }
+      safeWriteSave(storageKey, state);
     }, 500);
     return () => clearTimeout(timer);
   }, [state, storageKey]);
@@ -188,13 +184,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
   const AUTOSAVE_INTERVAL_MS = 120000; // 120 seconds
 
   const flushSave = useCallback(() => {
-    try {
-      localStorage.setItem(storageKey, JSON.stringify(stateRef.current));
-      return true;
-    } catch (e) {
-      console.error('Autosave failed:', e);
-      return false;
-    }
+    return safeWriteSave(storageKey, stateRef.current);
   }, [storageKey]);
 
   useEffect(() => {
@@ -224,13 +214,13 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     };
   }, [flushSave]);
 
-  // Update function
+  // Update function — ALWAYS merges into prev. A partial updater (returning
+  // only e.g. { settings }) is merged rather than replacing the whole state,
+  // so a settings tweak can never nuke credits/ship/colonies.
   const update = useCallback((updater) => {
     setState(prev => {
-      if (typeof updater === 'function') {
-        return updater(prev);
-      }
-      return { ...prev, ...updater };
+      const partial = typeof updater === 'function' ? updater(prev) : updater;
+      return { ...prev, ...partial };
     });
   }, []);
 
@@ -1031,19 +1021,15 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     setState(prev => ({ ...prev, currentLocation: 'system', currentSurfaceBody: null, lastOrbitBodyId: prev.currentSurfaceBody }));
   }, []);
 
-  // Reset game
+  // Reset game — the ONLY sanctioned path to permanent data loss
   const resetGame = useCallback(() => {
-    localStorage.removeItem(storageKey);
+    clearSave(storageKey);
     setState(saveSlot === 'sandbox' ? createSandboxState() : createInitialState());
   }, [storageKey, saveSlot]);
 
   // Switch to a different save slot
   const switchSave = useCallback(() => {
-    try {
-      localStorage.setItem(storageKey, JSON.stringify(stateRef.current));
-    } catch (e) {
-      console.error('Failed to save before switch:', e);
-    }
+    safeWriteSave(storageKey, stateRef.current);
     if (onSwitchSave) onSwitchSave();
   }, [onSwitchSave, storageKey]);
 
@@ -1913,13 +1899,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
   }, []);
 
   const manualSave = useCallback(() => {
-    try {
-      localStorage.setItem(storageKey, JSON.stringify(stateRef.current));
-      return true;
-    } catch (e) {
-      console.error('Manual save failed:', e);
-      return false;
-    }
+    return safeWriteSave(storageKey, stateRef.current);
   }, [storageKey]);
 
   const isSandbox = state.saveMode === 'sandbox';

@@ -13,6 +13,7 @@ export default function SoundSettings() {
 
   const setSound = (key, val) => {
     update(prev => ({
+      ...prev,
       settings: {
         ...prev.settings,
         sound: { ...prev.settings?.sound, [key]: val },
