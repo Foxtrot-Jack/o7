@@ -7,10 +7,17 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import ScrollToTop from './components/ScrollToTop';
 import Game from './pages/Game';
+import ThankYou from './pages/ThankYou';
 // Add page imports here
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+
+  // Public Thank-You page for donors returning from Wix checkout — must render for anonymous
+  // buyers, so short-circuit before any auth/loading gate.
+  if (window.location.pathname === '/ThankYou') {
+    return <ThankYou />;
+  }
 
   // Show loading spinner while checking app public settings or auth
   if (isLoadingPublicSettings || isLoadingAuth) {
@@ -36,6 +43,7 @@ const AuthenticatedApp = () => {
   return (
     <Routes>
       {/* Add your page Route elements here */}
+      <Route path="/ThankYou" element={<ThankYou />} />
       <Route path="/" element={<Game />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
