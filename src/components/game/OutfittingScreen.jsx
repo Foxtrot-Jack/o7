@@ -60,6 +60,50 @@ function getModStat(mod) {
   return { value: val, unit };
 }
 
+const CLASS_ORDER = ['E', 'D', 'C', 'B', 'A'];
+
+// Module categories — each section breaks its parts into browsable groups.
+// `types` lists module `type` values (the abbr for hardpoints) that belong to the group.
+const OPTIONAL_CATEGORIES = [
+  { id: 'cargo', label: 'Cargo Racks', types: ['cargo_rack'] },
+  { id: 'passenger', label: 'Passenger Cabins', types: ['passenger_cabin'] },
+  { id: 'fuelscoop', label: 'Fuel Scoops', types: ['fuel_scoop'] },
+  { id: 'fueltank', label: 'Fuel Tanks', types: ['fuel_tank'] },
+  { id: 'shieldgen', label: 'Shield Generators', types: ['shield_generator'] },
+  { id: 'shieldcell', label: 'Shield Cell Banks', types: ['shield_cell_bank'] },
+  { id: 'hull', label: 'Hull Reinforcement', types: ['hull_reinforcement', 'meta_alloy_hull_reinforcement'] },
+  { id: 'modrein', label: 'Module Reinforcement', types: ['module_reinforcement'] },
+  { id: 'limpet', label: 'Limpet Controllers', types: ['collector_limpet', 'prospector_limpet', 'repair_limpet', 'recon_limpet', 'decontamination_limpet', 'research_limpet'] },
+  { id: 'afm', label: 'AFM Units', types: ['afm_unit'] },
+  { id: 'srv', label: 'SRV Hangars', types: ['srv_hangar'] },
+  { id: 'fighter', label: 'Fighter Hangars', types: ['fighter_hangar'] },
+  { id: 'refinery', label: 'Refineries', types: ['refinery'] },
+  { id: 'scanner', label: 'Surface Scanners', types: ['surface_scanner'] },
+  { id: 'guardian', label: 'Guardian Tech', types: ['guardian_fsd_booster', 'guardian_hull_reinforcement', 'guardian_module_reinforcement', 'guardian_shield_reinforcement'] },
+];
+
+const HARDPOINT_CATEGORIES = [
+  { id: 'laser', label: 'Lasers', types: ['pl', 'bl', 'bml'] },
+  { id: 'kinetic', label: 'Kinetic', types: ['mc', 'can', 'rg', 'fc', 'gc', 'rp', 'sc'] },
+  { id: 'explosive', label: 'Missiles & Mines', types: ['mr', 'tor', 'sm', 'mnl', 'fm', 'em'] },
+  { id: 'plasma', label: 'Plasma', types: ['pa', 'ps'] },
+  { id: 'ax', label: 'AX Weapons', types: ['axm', 'axmc'] },
+  { id: 'guardian', label: 'Guardian Weapons', types: ['ggc', 'gsc', 'gpc'] },
+  { id: 'mining', label: 'Mining Tools', types: ['minl', 'scl', 'ab', 'ssm'] },
+];
+
+const UTILITY_CATEGORIES = [
+  { id: 'shieldbooster', label: 'Shield Boosters', types: ['shield_booster'] },
+  { id: 'chaff', label: 'Chaff', types: ['chaff'] },
+  { id: 'heatsink', label: 'Heat Sinks', types: ['heat_sink'] },
+  { id: 'pointdefence', label: 'Point Defence', types: ['point_defence'] },
+  { id: 'kws', label: 'KWS Scanners', types: ['kws'] },
+  { id: 'ecm', label: 'ECM', types: ['ecm'] },
+  { id: 'manifest', label: 'Cargo Scanners', types: ['manifest_scanner'] },
+  { id: 'wake', label: 'Wake Scanners', types: ['wake_scanner'] },
+  { id: 'tether', label: 'Sinuous Tethers', types: ['sinuous_tether'] },
+];
+
 export default function OutfittingScreen() {
   const { state, getSystemData, update, addCredits } = useGameState();
   const systemData = getSystemData();
@@ -147,9 +191,9 @@ export default function OutfittingScreen() {
       </div>
 
       <SlotSection title="Core Internals" slots={Object.entries(slots.core).map(([key, size]) => ({ key: `core_${key}`, label: SLOT_LABELS[key] || key.toUpperCase(), size, type: 'core' }))} modules={modules} onSelect={setSelectedSlot} onEngineering={setEngineeringSlot} disabled={!isDocked} />
-      <SlotSection title="Optional Internals" slots={slots.optional.map((size, i) => ({ key: `opt_${i}`, label: `Size ${size}`, size, type: 'optional' }))} modules={modules} onSelect={setSelectedSlot} onEngineering={setEngineeringSlot} disabled={!isDocked} />
-      <SlotSection title="Hardpoints" slots={slots.hardpoints.map((size, i) => ({ key: `hp_${i}`, label: HARDPOINT_SIZES[size] || `Size ${size}`, size, type: 'hardpoint' }))} modules={modules} onSelect={setSelectedSlot} onEngineering={setEngineeringSlot} disabled={!isDocked} />
-      <SlotSection title="Utility Mounts" slots={Array.from({ length: slots.utility }, (_, i) => ({ key: `util_${i}`, label: `Utility ${i+1}`, size: 0, type: 'utility' }))} modules={modules} onSelect={setSelectedSlot} onEngineering={setEngineeringSlot} disabled={!isDocked} />
+      <CategorySection title="Optional Internals" slots={slots.optional.map((size, i) => ({ key: `opt_${i}`, label: `Slot ${i+1} (Sz ${size})`, size, type: 'optional' }))} categories={OPTIONAL_CATEGORIES} modules={modules} onEquip={equipModule} onUnequip={unequipModule} onEngineering={setEngineeringSlot} disabled={!isDocked} credits={state.credits} isSandbox={state.saveMode === 'sandbox' || (state.cheats?.unlocked && state.cheats?.active?.free_outfitting)} guardianBlueprints={state.guardianBlueprints} />
+      <CategorySection title="Hardpoints" slots={slots.hardpoints.map((size, i) => ({ key: `hp_${i}`, label: `Hp ${i+1} (${HARDPOINT_SIZES[size] || 'Sz ' + size})`, size, type: 'hardpoint' }))} categories={HARDPOINT_CATEGORIES} modules={modules} onEquip={equipModule} onUnequip={unequipModule} onEngineering={setEngineeringSlot} disabled={!isDocked} credits={state.credits} isSandbox={state.saveMode === 'sandbox' || (state.cheats?.unlocked && state.cheats?.active?.free_outfitting)} guardianBlueprints={state.guardianBlueprints} />
+      <CategorySection title="Utility Mounts" slots={Array.from({ length: slots.utility }, (_, i) => ({ key: `util_${i}`, label: `Util ${i+1}`, size: 0, type: 'utility' }))} categories={UTILITY_CATEGORIES} modules={modules} onEquip={equipModule} onUnequip={unequipModule} onEngineering={setEngineeringSlot} disabled={!isDocked} credits={state.credits} isSandbox={state.saveMode === 'sandbox' || (state.cheats?.unlocked && state.cheats?.active?.free_outfitting)} guardianBlueprints={state.guardianBlueprints} />
 
       {selectedSlot && (
         <ModulePicker
@@ -215,6 +259,149 @@ function SlotSection({ title, slots, modules, onSelect, onEngineering, disabled 
                   </button>
                 )}
               </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function CategorySection({ title, slots, categories, modules, onEquip, onUnequip, onEngineering, disabled, isSandbox = false, guardianBlueprints = {} }) {
+  const [activeCat, setActiveCat] = useState(categories[0]?.id);
+  const [classFilter, setClassFilter] = useState('all');
+  const [equipPicker, setEquipPicker] = useState(null);
+
+  const cat = categories.find(c => c.id === activeCat) || categories[0];
+  const catTypes = cat?.types || [];
+
+  const fittingSlots = (mod) => slots.filter(s => s.size >= mod.size);
+
+  const allParts = useMemo(() => {
+    const parts = [];
+    for (const mod of Object.values(MODULES)) {
+      if (!catTypes.includes(mod.type)) continue;
+      if (fittingSlots(mod).length === 0) continue;
+      parts.push(mod);
+    }
+    parts.sort((a, b) => a.size - b.size || CLASS_ORDER.indexOf(a.class) - CLASS_ORDER.indexOf(b.class));
+    return parts;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [catTypes, slots]);
+
+  const parts = classFilter === 'all' ? allParts : allParts.filter(m => m.class === classFilter || (classFilter === 'premium' && m.premium));
+
+  const equipped = slots.filter(s => {
+    const mod = modules[s.key] ? MODULES[modules[s.key]] : null;
+    return mod && catTypes.includes(mod.type);
+  });
+
+  const handleEquipClick = (mod) => {
+    const compatible = fittingSlots(mod);
+    if (compatible.length === 1) {
+      onEquip(compatible[0].key, mod.id);
+    } else {
+      setEquipPicker({ modId: mod.id, slots: compatible });
+    }
+  };
+
+  return (
+    <div className="border border-orange-900 p-3">
+      <h3 className="text-orange-500 text-xs font-bold uppercase mb-2">{title}</h3>
+
+      {/* Category tabs */}
+      <div className="flex gap-1 overflow-x-auto pb-1 mb-2 border-b border-orange-950/50">
+        {categories.map(c => {
+          const hasParts = slots.some(s => Object.values(MODULES).some(m => c.types.includes(m.type) && m.size <= s.size));
+          return (
+            <button
+              key={c.id}
+              onClick={() => { setActiveCat(c.id); setClassFilter('all'); setEquipPicker(null); }}
+              className={`px-2 py-1 border text-[10px] whitespace-nowrap ${activeCat === c.id ? 'border-orange-500 bg-orange-950/40 text-orange-300' : hasParts ? 'border-orange-900 text-orange-700 hover:text-orange-500' : 'border-orange-950 text-orange-800 opacity-50'}`}
+            >
+              {c.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Class filter */}
+      <div className="flex gap-1 mb-2 flex-wrap">
+        {['all', 'E', 'D', 'C', 'B', 'A', 'premium'].map(f => (
+          <button key={f} onClick={() => setClassFilter(f)} className={`px-1.5 py-0.5 border text-[9px] ${classFilter === f ? 'border-orange-500 bg-orange-950/40 text-orange-300' : 'border-orange-900 text-orange-700'}`}>{f === 'premium' ? 'EXP' : f.toUpperCase()}</button>
+        ))}
+      </div>
+
+      {/* Equipped in this category */}
+      {equipped.length > 0 && (
+        <div className="mb-2 space-y-1">
+          <div className="text-green-700 text-[9px] uppercase">Equipped ({equipped.length})</div>
+          {equipped.map(s => {
+            const mod = MODULES[modules[s.key]];
+            const stat = getModStat(mod);
+            return (
+              <div key={s.key} className="flex items-center justify-between border border-green-900 p-1.5 text-xs">
+                <div className="min-w-0 flex-1">
+                  <div className="text-green-400 truncate">{mod.name}</div>
+                  <div className="text-orange-700 text-[9px]">{s.label} · {mod.statLabel}: {stat.value}{stat.unit}</div>
+                </div>
+                <div className="flex gap-1 flex-shrink-0">
+                  {!disabled && <button onClick={() => onUnequip(s.key)} className="px-2 py-1 border border-red-900 text-red-500 hover:bg-red-950/30 text-[10px]">SELL</button>}
+                  <button onClick={() => onEngineering(s.key)} className="px-2 py-1 border border-purple-800 text-purple-400 hover:bg-purple-950/30 text-[10px]"><Settings className="w-3 h-3" /></button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Available parts */}
+      <div className="space-y-1">
+        {parts.length === 0 && <div className="text-orange-700 text-xs text-center py-3">No parts in this category fit your ship.</div>}
+        {parts.map(mod => {
+          const price = isSandbox ? 0 : getModulePrice(mod.id);
+          const stat = getModStat(mod);
+          const guardianBpId = getGuardianBlueprintId(mod);
+          const locked = guardianBpId !== null && !isGuardianModuleUnlocked(mod, guardianBlueprints);
+          const fragmentsHave = (guardianBlueprints && guardianBlueprints[guardianBpId]?.count) || 0;
+          const fragmentsNeed = getGuardianFragmentsRequired(mod);
+          const isPicking = equipPicker?.modId === mod.id;
+          return (
+            <div key={mod.id} className={`border p-1.5 text-xs ${isPicking ? 'border-orange-600' : 'border-orange-950'}`}>
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <div className={`font-bold truncate ${mod.premium ? 'text-yellow-400' : locked ? 'text-purple-600' : 'text-orange-300'}`}>
+                    {mod.name}
+                    {mod.premium && <span className="text-yellow-500 text-[9px] ml-1">EXP</span>}
+                    {locked && <span className="text-purple-500 text-[9px] ml-1">🔒 GUARDIAN</span>}
+                  </div>
+                  <div className="text-orange-600 text-[9px]">{mod.statLabel}: {stat.value}{stat.unit} · Mass {mod.mass}T · {isSandbox ? 'FREE' : `${price.toLocaleString()} CR`}</div>
+                  {locked && <div className="text-purple-600 text-[8px]">Requires {fragmentsNeed} blueprint fragment{fragmentsNeed === 1 ? '' : 's'} — you have {fragmentsHave}.</div>}
+                </div>
+                <button
+                  onClick={() => handleEquipClick(mod)}
+                  disabled={disabled || locked}
+                  className="px-2 py-1 border border-orange-700 text-orange-400 hover:bg-orange-950/30 text-[10px] disabled:opacity-30 flex-shrink-0"
+                >
+                  {disabled ? '—' : 'EQUIP'}
+                </button>
+              </div>
+              {isPicking && (
+                <div className="mt-1 border-t border-orange-950/50 pt-1">
+                  <div className="text-orange-700 text-[9px] mb-0.5">Choose a slot:</div>
+                  <div className="flex flex-wrap gap-1">
+                    {equipPicker.slots.map(s => {
+                      const occ = modules[s.key] ? MODULES[modules[s.key]] : null;
+                      return (
+                        <button key={s.key} onClick={() => { onEquip(s.key, mod.id); setEquipPicker(null); }} className="px-1.5 py-0.5 border border-orange-700 text-orange-400 hover:bg-orange-950/30 text-[9px]">
+                          {s.label}{occ ? ` · ⚠ ${occ.name}` : ''}
+                        </button>
+                      );
+                    })}
+                    <button onClick={() => setEquipPicker(null)} className="px-1.5 py-0.5 border border-orange-900 text-orange-700 text-[9px]">CANCEL</button>
+                  </div>
+                </div>
+              )}
             </div>
           );
         })}
