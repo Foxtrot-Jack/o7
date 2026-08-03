@@ -53,7 +53,8 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
   const shipColorsOn = colorEnabledFor('ships', effTheme, settings.monoOverrides);
   const stationColorsOn = colorEnabledFor('stations', effTheme, settings.monoOverrides);
   const bodyListScale = (settings.uiScale?.bodyList ?? 100) / 100;
-  const showShipComms = settings.shipComms !== false;
+  const showShipCopilot = settings.showShipCopilot !== false;
+  const showRadioChatter = settings.showRadioChatter !== false;
   const [selectedBody, setSelectedBody] = useState(null);
   const [hoveredBody, setHoveredBody] = useState(null);
   const [bodiesCollapsed, setBodiesCollapsed] = useState(state.settings?.miniScreen || false);
@@ -404,7 +405,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
       } else if (body.type === BODY_TYPES.PLANET || body.type === BODY_TYPES.MOON) {
         const isGasGiant = body.planetType?.startsWith('gas_giant') || body.planetType?.startsWith('helium');
         const radius = body.type === BODY_TYPES.MOON
-          ? Math.max(0.1, Math.min(0.4, body.radius * 0.4))
+          ? Math.max(0.05, Math.min(0.2, body.radius * 0.2))
           : isGasGiant
             ? Math.max(1, Math.min(3, body.radius * 0.12))
             : Math.max(0.3, Math.min(1.2, body.radius * 0.4));
@@ -470,7 +471,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
           const gg = b.planetType?.startsWith('gas_giant') || b.planetType?.startsWith('helium');
           return gg ? Math.max(1, Math.min(3, b.radius * 0.12)) : Math.max(0.3, Math.min(1.2, b.radius * 0.4));
         }
-        if (b.type === BODY_TYPES.MOON) return Math.max(0.1, Math.min(0.4, b.radius * 0.4));
+        if (b.type === BODY_TYPES.MOON) return Math.max(0.05, Math.min(0.2, b.radius * 0.2));
         if (b.type === BODY_TYPES.ASTEROID) return Math.max(0.1, b.radius * 2);
         return 1;
       };
@@ -536,7 +537,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
       if (!stationColorsOn) desaturateObject3D(stationModel);
       const isGasGiant = parentBody.planetType?.startsWith('gas_giant') || parentBody.planetType?.startsWith('helium');
       const planetVisualRadius = parentBody.type === BODY_TYPES.MOON
-        ? Math.max(0.1, Math.min(0.4, parentBody.radius * 0.4))
+        ? Math.max(0.05, Math.min(0.2, parentBody.radius * 0.2))
         : isGasGiant
           ? Math.max(1, Math.min(3, parentBody.radius * 0.12))
           : Math.max(0.3, Math.min(1.2, parentBody.radius * 0.4));
@@ -1142,10 +1143,10 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
 
       {/* Ship AI copilot + radio chatter — stacked above the info panel */}
       <div className="absolute bottom-2 left-2 right-44 sm:right-56 z-20 flex flex-col gap-1 max-h-[85vh] overflow-y-auto">
-      {showShipComms && (
+      {(showShipCopilot || showRadioChatter) && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 shrink-0">
-          <ShipCopilot />
-          <RadioChatter />
+          {showShipCopilot && <ShipCopilot />}
+          {showRadioChatter && <RadioChatter />}
         </div>
       )}
 

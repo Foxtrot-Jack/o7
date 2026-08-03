@@ -1,5 +1,5 @@
 // 3D Galaxy Map — rotatable, pinch-zoomable view of procedurally generated stars
-import React, { useRef, useEffect, useState, useCallback } from 'react';
+import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import * as THREE from 'three';
 import { generateStarsInRange, distance3D, getStarColor, GALACTIC_RADIUS, generateGalaxyOverview, LANDMARK_SYSTEMS, BUBBLE_CENTERS } from '@/lib/galaxy';
 import { getRegionName } from '@/lib/regions';
@@ -49,11 +49,34 @@ export default function GalaxyMap({ onJumpToSystem }) {
   const [showGrid, setShowGrid] = useState(false);
   const [showLegend, setShowLegend] = useState(false);
   const [showOrrery, setShowOrrery] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [routeResult, setRouteResult] = useState(null);
   const [plottingRoute, setPlottingRoute] = useState(false);
   const brightnessRef = useRef({ star: 100, trail: 40, overview: 80 });
   brightnessRef.current = { star: starBrightness, trail: trailBrightness, overview: overviewBrightness };
   const [galaxyViewMode, setGalaxyViewMode] = useState(false);
+
+  // System search — matches name across loaded stars, bookmarks, landmarks, visited systems, and flight log
+  const searchResults = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return [];
+    const matches = [];
+    const seen = new Set();
+    const add = (star) => {
+      if (!star || !star.name) return;
+      const key = star.seed || star.name;
+      if (seen.has(key)) return;
+      if (star.name.toLowerCase().includes(q)) { seen.add(key); matches.push(star); }
+    };
+    stars.forEach(add);
+    (state.bookmarkedSystems || []).forEach(add);
+    LANDMARK_SYSTEMS.forEach(add);
+    Object.values(state.discoveredSystems || {}).forEach(add);
+    (state.flightLog || []).forEach(add);
+    return matches.slice(0, 12);
+  }, [searchQuery, stars, state.bookmarkedSystems, state.discoveredSystems, state.flightLog]);
+
   // Sync filters to state for persistence across map close/reopen
   useEffect(() => { update({ galaxyFilters: filters }); }, [filters]);
   const bubbleCloudsRef = useRef(null);
@@ -872,15 +895,35 @@ export default function GalaxyMap({ onJumpToSystem }) {
         )}
       </div>
 
-      {/* Filter toggle */}
-      <button onClick={() => setShowFilterPanel(!showFilterPanel)} className="absolute top-2 left-1/2 -translate-x-1/2 px-2 py-0.5 border border-orange-900 text-orange-600 hover:text-orange-400 text-[10px] z-30">
-        {showFilterPanel ? '▼ HIDE FILTERS' : '▲ FILTERS'}
-      </button>
-      <button onClick={() => setShowBookmarks(!showBookmarks)} className="absolute top-2 left-1/2 translate-x-16 px-2 py-0.5 border border-yellow-900 text-yellow-600 hover:text-yellow-400 text-[10px] z-30">
+      {/* Search + Filter toggle */}
+      <div className="absolute top-2 left-1/2 -translate-x-1/2 flex gap-1 z-30">
+        <button onClick={() => setSearchOpen(!searchOpen)} className={`px-2 py-0.5 border text-[10px] ${searchOpen ? 'border-cyan-600 text-cyan-400' : 'border-cyan-900 text-cyan-600 hover:text-cyan-400'}`}>⌕ SEARCH</button>
+        <button onClick={() => setShowFilterPanel(!showFilterPanel)} className="px-2 py-0.5 border border-orange-900 text-orange-600 hover:text-orange-400 text-[10px]">
+          {showFilterPanel ? '▼ FILTERS' : '▲ FILTERS'}
+        </button>
+      </div>
+      <button onClick={() => setShowBookmarks(!showBookmarks)} className="absolute top-2 left-1/2 translate-x-32 px-2 py-0.5 border border-yellow-900 text-yellow-600 hover:text-yellow-400 text-[10px] z-30">
         ★ ({state.bookmarkedSystems?.length || 0})
       </button>
+
+      {/* System search panel */}
+      {searchOpen && (
+        <div className="absolute top-8 left-1/2 -translate-x-1/2 w-72 max-w-[90%] border border-cyan-900 bg-black/95 p-2 space-y-1 text-[10px] z-30">
+          <input autoFocus value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search system by name..." className="w-full bg-black border border-cyan-800 text-cyan-300 px-2 py-1 text-[11px] focus:outline-none" />
+          <div className="max-h-60 overflow-y-auto space-y-0.5">
+            {searchQuery.trim() === '' && <div className="text-cyan-800 leading-relaxed">Type a system name to search nearby space, landmarks, bookmarks, and visited systems.</div>}
+            {searchQuery.trim() !== '' && searchResults.length === 0 && <div className="text-orange-800">No systems found matching "{searchQuery}".</div>}
+            {searchResults.map(star => (
+              <button key={star.seed || star.name} onClick={() => { handleSelectStar(star); setSearchOpen(false); setSearchQuery(''); }} className="flex items-center justify-between w-full border border-cyan-950 hover:border-cyan-700 px-1.5 py-1 text-left">
+                <span className="text-cyan-400 truncate">{star.name}</span>
+                <span className="text-cyan-700 text-[9px] flex-shrink-0 ml-2">{star.starClass?.class || '?'} · {star.population > 0 ? 'POP' : 'EMPTY'}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       {showBookmarks && (
-        <div className="absolute top-8 left-1/2 translate-x-16 w-64 max-w-[80%] border border-yellow-900 bg-black/95 p-2 space-y-1 text-[10px] z-30 max-h-60 overflow-y-auto">
+        <div className="absolute top-8 left-1/2 translate-x-32 w-64 max-w-[80%] border border-yellow-900 bg-black/95 p-2 space-y-1 text-[10px] z-30 max-h-60 overflow-y-auto">
           <div className="text-yellow-700 uppercase mb-1">Bookmarked Systems</div>
           {state.bookmarkedSystems?.length === 0 && <div className="text-orange-800">No bookmarks yet.</div>}
           {state.bookmarkedSystems?.map(bm => (

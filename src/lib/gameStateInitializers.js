@@ -112,6 +112,8 @@ export function createInitialState() {
       uiTextStyles: {},
       navGroupStyles: {},
       shipComms: true,
+      showShipCopilot: true,
+      showRadioChatter: true,
       sound: {
         enabled: true,
         sfxVolume: 0.7,

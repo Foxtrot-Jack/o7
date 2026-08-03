@@ -82,6 +82,8 @@ import { soundEngine } from '@/lib/soundEngine';
 import { SCREEN_CONTEXTS } from '@/lib/soundPresets';
 import { getScreenTextStyle } from '@/lib/uiTextCategories';
 
+const STATION_ONLY_SCREENS = ['station', 'market', 'outfitting', 'materialtrader', 'synthesis', 'crew', 'blackmarket', 'engineering', 'bountyboard', 'passengers', 'multicrew', 'cartography', 'maintenance'];
+
 function GameContent() {
   const { state, manualSave } = useGameState();
   const [screen, setScreen] = useState('system');
@@ -187,6 +189,14 @@ function GameContent() {
 
     return unsubscribe;
   }, []);
+
+  // Station screens are only reachable while docked — if the player undocks
+  // or jumps away while viewing one, return to the system orrery.
+  useEffect(() => {
+    if (STATION_ONLY_SCREENS.includes(screen) && state.currentLocation !== 'station') {
+      setScreen('system');
+    }
+  }, [screen, state.currentLocation]);
 
   const handleNavigate = (target) => {
     screenHistoryRef.current.push(screen);

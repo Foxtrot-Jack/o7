@@ -59,7 +59,7 @@ export default function ShipPanel({ onNavigate }) {
       </div>
 
       <div className="flex-1 overflow-y-auto p-4">
-        {tab === 'overview' && <ShipOverview ship={state.ship || {}} shipType={currentShip} customShips={state.customShips || []} showShipComms={state.settings?.shipComms !== false} onToggleShipComms={() => update({ settings: { ...state.settings, shipComms: !(state.settings?.shipComms !== false) } })} />}
+        {tab === 'overview' && <ShipOverview ship={state.ship || {}} shipType={currentShip} customShips={state.customShips || []} showShipCopilot={state.settings?.showShipCopilot !== false} onToggleShipCopilot={() => update({ settings: { ...state.settings, showShipCopilot: !(state.settings?.showShipCopilot !== false) } })} showRadioChatter={state.settings?.showRadioChatter !== false} onToggleRadioChatter={() => update({ settings: { ...state.settings, showRadioChatter: !(state.settings?.showRadioChatter !== false) } })} />}
         {tab === 'cargo' && <CargoHold cargo={state.ship?.cargo || []} onJettison={(id, qty) => removeCargo(id, qty)} />}
         {tab === 'materials' && <MaterialsLocker />}
         {tab === 'shipyard' && (
@@ -101,7 +101,7 @@ export default function ShipPanel({ onNavigate }) {
   );
 }
 
-function ShipOverview({ ship, shipType, customShips, showShipComms, onToggleShipComms }) {
+function ShipOverview({ ship, shipType, customShips, showShipCopilot, onToggleShipCopilot, showRadioChatter, onToggleRadioChatter }) {
   const stats = [
     { label: 'Manufacturer', value: shipType?.manufacturer },
     { label: 'Ship Class', value: `Class ${shipType?.class}` },
@@ -138,14 +138,26 @@ function ShipOverview({ ship, shipType, customShips, showShipComms, onToggleShip
         <h3 className="text-orange-500 text-sm font-bold uppercase">Cockpit HUD</h3>
         <div className="flex items-center justify-between text-xs">
           <div>
-            <div className="text-orange-300">Ship AI Copilot &amp; Comms</div>
-            <div className="text-orange-700 text-[10px]">Show the copilot advice and comms channel above the body info panel in the system orrery.</div>
+            <div className="text-orange-300">Ship AI Copilot</div>
+            <div className="text-orange-700 text-[10px]">Show the copilot advice panel above the body info panel in the system orrery.</div>
           </div>
           <button
-            onClick={onToggleShipComms}
-            className={`px-3 py-1 border text-[10px] font-bold ${showShipComms ? 'border-green-600 text-green-400' : 'border-orange-900 text-orange-700'}`}
+            onClick={onToggleShipCopilot}
+            className={`px-3 py-1 border text-[10px] font-bold ${showShipCopilot ? 'border-green-600 text-green-400' : 'border-orange-900 text-orange-700'}`}
           >
-            {showShipComms ? 'ON' : 'OFF'}
+            {showShipCopilot ? 'ON' : 'OFF'}
+          </button>
+        </div>
+        <div className="flex items-center justify-between text-xs">
+          <div>
+            <div className="text-orange-300">Radio Chatter</div>
+            <div className="text-orange-700 text-[10px]">Show the comms channel ticker above the body info panel in the system orrery.</div>
+          </div>
+          <button
+            onClick={onToggleRadioChatter}
+            className={`px-3 py-1 border text-[10px] font-bold ${showRadioChatter ? 'border-green-600 text-green-400' : 'border-orange-900 text-orange-700'}`}
+          >
+            {showRadioChatter ? 'ON' : 'OFF'}
           </button>
         </div>
       </div>
