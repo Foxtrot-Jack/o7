@@ -3,15 +3,24 @@ import React, { useState } from 'react';
 import { useGameState } from '@/lib/gameState';
 import { MODULES, SLOT_LABELS, SHIP_SLOTS, ENGINEERING_BLUEPRINTS, HARDPOINT_ENGINEERING } from '@/lib/shipOutfitting';
 import { getEngineeringCost, canAffordEngineering } from '@/lib/engineering';
-import { Wrench, FlaskConical, ChevronRight, Check } from 'lucide-react';
+import { getStationEngineer } from '@/lib/engineers';
+import { FlaskConical, ChevronRight, Check } from 'lucide-react';
 
 export default function EngineeringScreen() {
-  const { state, applyEngineering, addCredits, addMaterial } = useGameState();
+  const { state, applyEngineering, addCredits, addMaterial, getSystemData } = useGameState();
   const [selectedSlot, setSelectedSlot] = useState(null);
   const isSandbox = state.saveMode === 'sandbox';
+  const systemData = getSystemData();
+  const engineer = getStationEngineer(state.currentSystem, systemData, isSandbox);
 
-  if (state.currentLocation !== 'station') {
-    return <div className="p-4 text-center text-orange-500"><Wrench className="w-8 h-8 mx-auto mb-2 opacity-50" /><p>Dock at a station to access engineering services.</p></div>;
+  if (!engineer) {
+    return (
+      <div className="p-4 text-center text-orange-500">
+        <FlaskConical className="w-8 h-8 mx-auto mb-2 opacity-50" />
+        <p className="font-bold">No Engineer at this Station</p>
+        <p className="text-orange-700 text-xs mt-1 max-w-xs mx-auto">Engineering requires a station with Standard tech or better. Resident engineers are found in high-tech and industrial systems — check Starport Services.</p>
+      </div>
+    );
   }
 
   const shipType = state.ship.type;
@@ -67,7 +76,10 @@ export default function EngineeringScreen() {
     <div className="w-full h-full overflow-y-auto p-4 space-y-3">
       <div className="border border-orange-700 p-4 flex items-center gap-2">
         <FlaskConical className="w-5 h-5 text-orange-500" />
-        <h2 className="text-orange-300 font-bold uppercase">Engineering Workshop</h2>
+        <div>
+          <h2 className="text-orange-300 font-bold uppercase">Engineering Workshop</h2>
+          <p className="text-cyan-500 text-[10px]">{engineer.name} · Max Grade {engineer.maxGrade}</p>
+        </div>
         <span className="text-orange-700 text-[10px] ml-auto">MATERIALS & CREDITS REQUIRED</span>
       </div>
 
@@ -114,25 +126,31 @@ export default function EngineeringScreen() {
                         <span className="text-cyan-500 text-[9px]">GRADE {currentLevel}/{bp.levels}</span>
                       </div>
                       <p className="text-orange-700 text-[9px]">{bp.desc}</p>
-                      {currentLevel < bp.levels ? (
-                        (() => {
-                          const cost = getEngineeringCost(selectedEntry.mod.type, currentLevel, currentLevel + 1);
-                          const canAfford = isSandbox || canAffordEngineering(state.materials, state.credits, cost);
+                      {(() => {
+                        const nextLevel = currentLevel + 1;
+                        const atMax = currentLevel >= bp.levels || nextLevel > engineer.maxGrade;
+                        if (atMax) {
                           return (
-                            <button
-                              onClick={() => handleApply(bp.id, currentLevel + 1)}
-                              disabled={!canAfford}
-                              className="w-full py-1 border border-orange-600 text-orange-400 hover:bg-orange-950/30 text-[9px] font-bold disabled:opacity-30 flex items-center justify-center gap-1"
-                            >
-                              <ChevronRight className="w-3 h-3" />
-                              UPGRADE TO G{currentLevel + 1}
-                              {!isSandbox && <span className="ml-1">— {cost.credits.toLocaleString()} CR</span>}
-                            </button>
+                            <div className="text-green-500 text-[9px] flex items-center gap-1">
+                              <Check className="w-3 h-3" />
+                              {currentLevel >= bp.levels ? 'MAX GRADE' : `MAX GRADE HERE (G${engineer.maxGrade})`}
+                            </div>
                           );
-                        })()
-                      ) : (
-                        <div className="text-green-500 text-[9px] flex items-center gap-1"><Check className="w-3 h-3" /> MAX GRADE</div>
-                      )}
+                        }
+                        const cost = getEngineeringCost(selectedEntry.mod.type, currentLevel, nextLevel);
+                        const canAfford = isSandbox || canAffordEngineering(state.materials, state.credits, cost);
+                        return (
+                          <button
+                            onClick={() => handleApply(bp.id, nextLevel)}
+                            disabled={!canAfford}
+                            className="w-full py-1 border border-orange-600 text-orange-400 hover:bg-orange-950/30 text-[9px] font-bold disabled:opacity-30 flex items-center justify-center gap-1"
+                          >
+                            <ChevronRight className="w-3 h-3" />
+                            UPGRADE TO G{nextLevel}
+                            {!isSandbox && <span className="ml-1">— {cost.credits.toLocaleString()} CR</span>}
+                          </button>
+                        );
+                      })()}
                       {selectedEntry && currentLevel < bp.levels && (() => {
                         const cost = getEngineeringCost(selectedEntry.mod.type, currentLevel, currentLevel + 1);
                         return (

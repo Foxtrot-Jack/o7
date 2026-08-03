@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useGameState, getOutfittingLevel, OUTFITTING_LEVELS } from '@/lib/gameState';
 import { Home, Fuel, Wrench, ShoppingCart, Ship as ShipIcon, Telescope, Map, Pickaxe, Rocket, LogOut, ClipboardList, Settings as SettingsIcon, ArrowLeftRight, FlaskConical, Users, Skull, Crosshair, UserCheck, ScrollText, Save } from 'lucide-react';
 import { soundEngine } from '@/lib/soundEngine';
+import { getStationEngineer } from '@/lib/engineers';
 
 export default function StationScreen({ onNavigate }) {
   const { state, getSystemData, leaveStation, refuel, addCredits, repairShip, manualSave } = useGameState();
@@ -29,6 +30,7 @@ export default function StationScreen({ onNavigate }) {
   const fullRefuelCost = isSandbox ? 0 : Math.ceil(fuelNeeded * 50);
   const outfittingLevelIndex = Math.max(0, Math.min(4, getOutfittingLevel(state.currentSystem, systemData, isSandbox) - 1));
   const outfittingLevel = OUTFITTING_LEVELS[outfittingLevelIndex];
+  const engineer = getStationEngineer(state.currentSystem, systemData, isSandbox);
 
   const handleRefuel = () => {
     if (refuelAmount <= 0) return;
@@ -87,7 +89,7 @@ export default function StationScreen({ onNavigate }) {
       services: [
         { icon: ShipIcon, label: 'Shipyard', available: true, nav: 'ship' },
         { icon: Wrench, label: 'Outfitting', available: true, nav: 'outfitting' },
-        { icon: FlaskConical, label: 'Engineering', available: true, nav: 'engineering' },
+        { icon: FlaskConical, label: 'Engineering', available: !!engineer, note: engineer ? `${engineer.name} · G${engineer.maxGrade}` : null, nav: 'engineering' },
         { icon: ArrowLeftRight, label: 'Material Trader', available: true, nav: 'materialtrader' },
         { icon: FlaskConical, label: 'Synthesis', available: true, nav: 'synthesis' },
       ],
@@ -203,6 +205,11 @@ export default function StationScreen({ onNavigate }) {
             TECH: <span className="text-orange-300">{outfittingLevel.name}</span>
           </div>
           <div className="text-[9px] text-orange-700">{outfittingLevel.desc}</div>
+          {engineer ? (
+            <div className="text-[9px] text-cyan-500 border-t border-orange-950 pt-1">ENGINEER: <span className="text-cyan-400">{engineer.name}</span> · G{engineer.maxGrade}</div>
+          ) : (
+            <div className="text-[9px] text-orange-800 border-t border-orange-950 pt-1">No resident engineer</div>
+          )}
           <button onClick={() => onNavigate('outfitting')} className="w-full text-[9px] py-1.5 border border-orange-500 text-orange-300 hover:bg-orange-950/50 font-bold">
             OUTFITTING
           </button>
@@ -250,12 +257,12 @@ export default function StationScreen({ onNavigate }) {
   );
 }
 
-function ServiceButton({ icon: Icon, label, available, onClick }) {
+function ServiceButton({ icon: Icon, label, available, note, onClick }) {
   return (
     <button
       onClick={available ? () => { soundEngine.play('click'); onClick(); } : undefined}
       disabled={!available}
-      className={`flex flex-col items-center gap-1 p-2 border transition-all ${
+      className={`flex flex-col items-center gap-0.5 p-2 border transition-all ${
         available
           ? 'border-orange-800 text-orange-400 hover:border-orange-500 hover:bg-orange-950/30'
           : 'border-gray-900 text-gray-700 cursor-not-allowed'
@@ -263,6 +270,7 @@ function ServiceButton({ icon: Icon, label, available, onClick }) {
     >
       <Icon className="w-4 h-4" />
       <span className="text-[9px] text-center leading-tight">{label}</span>
+      {available && note && <span className="text-[8px] text-cyan-600 text-center leading-tight">{note}</span>}
       {!available && <span className="text-[8px] text-gray-800">N/A</span>}
     </button>
   );

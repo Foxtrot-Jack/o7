@@ -1,6 +1,7 @@
 // Outfitting Screen — Coriolis-style module management
 import React, { useState, useMemo } from 'react';
 import { useGameState, SHIP_MAP } from '@/lib/gameState';
+import { getStationEngineer } from '@/lib/engineers';
 import {
   MODULES, SHIP_SLOTS, computeShipStats, getModulesForSlot,
   getDefaultModules, getModulePrice, ENGINEERING_BLUEPRINTS,
@@ -168,6 +169,8 @@ export default function OutfittingScreen() {
     }));
   };
 
+  const engineer = getStationEngineer(state.currentSystem, systemData, state.saveMode === 'sandbox');
+
   return (
     <div className="w-full h-full overflow-y-auto p-4 space-y-4">
       <div className="border border-orange-700 p-4">
@@ -190,10 +193,10 @@ export default function OutfittingScreen() {
         {!isDocked && <div className="text-orange-700 text-[10px] mt-2">⚠ Dock at a station to modify your loadout.</div>}
       </div>
 
-      <SlotSection title="Core Internals" slots={Object.entries(slots.core).map(([key, size]) => ({ key: `core_${key}`, label: SLOT_LABELS[key] || key.toUpperCase(), size, type: 'core' }))} modules={modules} onSelect={setSelectedSlot} onEngineering={setEngineeringSlot} disabled={!isDocked} />
-      <CategorySection title="Optional Internals" slots={slots.optional.map((size, i) => ({ key: `opt_${i}`, label: `Slot ${i+1} (Sz ${size})`, size, type: 'optional' }))} categories={OPTIONAL_CATEGORIES} modules={modules} onEquip={equipModule} onUnequip={unequipModule} onEngineering={setEngineeringSlot} disabled={!isDocked} credits={state.credits} isSandbox={state.saveMode === 'sandbox' || (state.cheats?.unlocked && state.cheats?.active?.free_outfitting)} guardianBlueprints={state.guardianBlueprints} />
-      <CategorySection title="Hardpoints" slots={slots.hardpoints.map((size, i) => ({ key: `hp_${i}`, label: `Hp ${i+1} (${HARDPOINT_SIZES[size] || 'Sz ' + size})`, size, type: 'hardpoint' }))} categories={HARDPOINT_CATEGORIES} modules={modules} onEquip={equipModule} onUnequip={unequipModule} onEngineering={setEngineeringSlot} disabled={!isDocked} credits={state.credits} isSandbox={state.saveMode === 'sandbox' || (state.cheats?.unlocked && state.cheats?.active?.free_outfitting)} guardianBlueprints={state.guardianBlueprints} />
-      <CategorySection title="Utility Mounts" slots={Array.from({ length: slots.utility }, (_, i) => ({ key: `util_${i}`, label: `Util ${i+1}`, size: 0, type: 'utility' }))} categories={UTILITY_CATEGORIES} modules={modules} onEquip={equipModule} onUnequip={unequipModule} onEngineering={setEngineeringSlot} disabled={!isDocked} credits={state.credits} isSandbox={state.saveMode === 'sandbox' || (state.cheats?.unlocked && state.cheats?.active?.free_outfitting)} guardianBlueprints={state.guardianBlueprints} />
+      <SlotSection title="Core Internals" slots={Object.entries(slots.core).map(([key, size]) => ({ key: `core_${key}`, label: SLOT_LABELS[key] || key.toUpperCase(), size, type: 'core' }))} modules={modules} onSelect={setSelectedSlot} onEngineering={setEngineeringSlot} disabled={!isDocked} canEngineer={!!engineer} />
+      <SlotSection title="Optional Internals" slots={slots.optional.map((size, i) => ({ key: `opt_${i}`, label: `Optional ${i + 1} (Size ${size})`, size, type: 'optional' }))} modules={modules} onSelect={setSelectedSlot} onEngineering={setEngineeringSlot} disabled={!isDocked} canEngineer={!!engineer} />
+      <SlotSection title="Hardpoints" slots={slots.hardpoints.map((size, i) => ({ key: `hp_${i}`, label: `${HARDPOINT_SIZES[size] || 'Size ' + size} Hardpoint`, size, type: 'hardpoint' }))} modules={modules} onSelect={setSelectedSlot} onEngineering={setEngineeringSlot} disabled={!isDocked} canEngineer={!!engineer} />
+      <SlotSection title="Utility Mounts" slots={Array.from({ length: slots.utility }, (_, i) => ({ key: `util_${i}`, label: `Utility ${i + 1}`, size: 0, type: 'utility' }))} modules={modules} onSelect={setSelectedSlot} onEngineering={setEngineeringSlot} disabled={!isDocked} canEngineer={!!engineer} />
 
       {selectedSlot && (
         <ModulePicker
@@ -215,7 +218,7 @@ export default function OutfittingScreen() {
           currentEng={(modules.__engineering || {})[engineeringSlot]}
           onApply={applyEngineering}
           onClose={() => setEngineeringSlot(null)}
-          outfittingLevel={(state.saveMode === 'sandbox' || (state.cheats?.unlocked && state.cheats?.active?.free_outfitting)) ? 5 : Math.min(5, Math.max(1, Math.ceil(Math.log10((state.currentSystem.population || 1) + 1))))}
+          outfittingLevel={engineer ? engineer.maxGrade : 0}
         />
       )}
     </div>
@@ -231,7 +234,7 @@ function StatPill({ icon: Icon, label, value }) {
   );
 }
 
-function SlotSection({ title, slots, modules, onSelect, onEngineering, disabled }) {
+function SlotSection({ title, slots, modules, onSelect, onEngineering, disabled, canEngineer }) {
   return (
     <div className="border border-orange-900 p-3">
       <h3 className="text-orange-500 text-xs font-bold uppercase mb-2">{title} ({slots.length})</h3>
@@ -253,7 +256,7 @@ function SlotSection({ title, slots, modules, onSelect, onEngineering, disabled 
                 <button onClick={() => !disabled && onSelect(slot)} disabled={disabled} className="px-2 py-1 border border-orange-700 text-orange-400 hover:bg-orange-950/30 text-[10px] disabled:opacity-30">
                   {mod ? 'CHANGE' : 'EQUIP'}
                 </button>
-                {mod && (
+                {mod && canEngineer && (
                   <button onClick={() => onEngineering(slot.key)} className="px-2 py-1 border border-purple-800 text-purple-400 hover:bg-purple-950/30 text-[10px]">
                     <Settings className="w-3 h-3" />
                   </button>
@@ -267,176 +270,74 @@ function SlotSection({ title, slots, modules, onSelect, onEngineering, disabled 
   );
 }
 
-function CategorySection({ title, slots, categories, modules, onEquip, onUnequip, onEngineering, disabled, isSandbox = false, guardianBlueprints = {} }) {
-  const [activeCat, setActiveCat] = useState(categories[0]?.id);
-  const [classFilter, setClassFilter] = useState('all');
-  const [equipPicker, setEquipPicker] = useState(null);
-
-  const cat = categories.find(c => c.id === activeCat) || categories[0];
-  const catTypes = cat?.types || [];
-
-  const fittingSlots = (mod) => slots.filter(s => s.size >= mod.size);
-
-  const allParts = useMemo(() => {
-    const parts = [];
-    for (const mod of Object.values(MODULES)) {
-      if (!catTypes.includes(mod.type)) continue;
-      if (fittingSlots(mod).length === 0) continue;
-      parts.push(mod);
-    }
-    parts.sort((a, b) => a.size - b.size || CLASS_ORDER.indexOf(a.class) - CLASS_ORDER.indexOf(b.class));
-    return parts;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [catTypes, slots]);
-
-  const parts = classFilter === 'all' ? allParts : allParts.filter(m => m.class === classFilter || (classFilter === 'premium' && m.premium));
-
-  const equipped = slots.filter(s => {
-    const mod = modules[s.key] ? MODULES[modules[s.key]] : null;
-    return mod && catTypes.includes(mod.type);
-  });
-
-  const handleEquipClick = (mod) => {
-    const compatible = fittingSlots(mod);
-    if (compatible.length === 1) {
-      onEquip(compatible[0].key, mod.id);
-    } else {
-      setEquipPicker({ modId: mod.id, slots: compatible });
-    }
-  };
-
-  return (
-    <div className="border border-orange-900 p-3">
-      <h3 className="text-orange-500 text-xs font-bold uppercase mb-2">{title}</h3>
-
-      {/* Category tabs */}
-      <div className="flex gap-1 overflow-x-auto pb-1 mb-2 border-b border-orange-950/50">
-        {categories.map(c => {
-          const hasParts = slots.some(s => Object.values(MODULES).some(m => c.types.includes(m.type) && m.size <= s.size));
-          return (
-            <button
-              key={c.id}
-              onClick={() => { setActiveCat(c.id); setClassFilter('all'); setEquipPicker(null); }}
-              className={`px-2 py-1 border text-[10px] whitespace-nowrap ${activeCat === c.id ? 'border-orange-500 bg-orange-950/40 text-orange-300' : hasParts ? 'border-orange-900 text-orange-700 hover:text-orange-500' : 'border-orange-950 text-orange-800 opacity-50'}`}
-            >
-              {c.label}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Class filter */}
-      <div className="flex gap-1 mb-2 flex-wrap">
-        {['all', 'E', 'D', 'C', 'B', 'A', 'premium'].map(f => (
-          <button key={f} onClick={() => setClassFilter(f)} className={`px-1.5 py-0.5 border text-[9px] ${classFilter === f ? 'border-orange-500 bg-orange-950/40 text-orange-300' : 'border-orange-900 text-orange-700'}`}>{f === 'premium' ? 'EXP' : f.toUpperCase()}</button>
-        ))}
-      </div>
-
-      {/* Equipped in this category */}
-      {equipped.length > 0 && (
-        <div className="mb-2 space-y-1">
-          <div className="text-green-700 text-[9px] uppercase">Equipped ({equipped.length})</div>
-          {equipped.map(s => {
-            const mod = MODULES[modules[s.key]];
-            const stat = getModStat(mod);
-            return (
-              <div key={s.key} className="flex items-center justify-between border border-green-900 p-1.5 text-xs">
-                <div className="min-w-0 flex-1">
-                  <div className="text-green-400 truncate">{mod.name}</div>
-                  <div className="text-orange-700 text-[9px]">{s.label} · {mod.statLabel}: {stat.value}{stat.unit}</div>
-                </div>
-                <div className="flex gap-1 flex-shrink-0">
-                  {!disabled && <button onClick={() => onUnequip(s.key)} className="px-2 py-1 border border-red-900 text-red-500 hover:bg-red-950/30 text-[10px]">SELL</button>}
-                  <button onClick={() => onEngineering(s.key)} className="px-2 py-1 border border-purple-800 text-purple-400 hover:bg-purple-950/30 text-[10px]"><Settings className="w-3 h-3" /></button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Available parts */}
-      <div className="space-y-1">
-        {parts.length === 0 && <div className="text-orange-700 text-xs text-center py-3">No parts in this category fit your ship.</div>}
-        {parts.map(mod => {
-          const price = isSandbox ? 0 : getModulePrice(mod.id);
-          const stat = getModStat(mod);
-          const guardianBpId = getGuardianBlueprintId(mod);
-          const locked = guardianBpId !== null && !isGuardianModuleUnlocked(mod, guardianBlueprints);
-          const fragmentsHave = (guardianBlueprints && guardianBlueprints[guardianBpId]?.count) || 0;
-          const fragmentsNeed = getGuardianFragmentsRequired(mod);
-          const isPicking = equipPicker?.modId === mod.id;
-          return (
-            <div key={mod.id} className={`border p-1.5 text-xs ${isPicking ? 'border-orange-600' : 'border-orange-950'}`}>
-              <div className="flex items-center justify-between gap-2">
-                <div className="min-w-0 flex-1">
-                  <div className={`font-bold truncate ${mod.premium ? 'text-yellow-400' : locked ? 'text-purple-600' : 'text-orange-300'}`}>
-                    {mod.name}
-                    {mod.premium && <span className="text-yellow-500 text-[9px] ml-1">EXP</span>}
-                    {locked && <span className="text-purple-500 text-[9px] ml-1">🔒 GUARDIAN</span>}
-                  </div>
-                  <div className="text-orange-600 text-[9px]">{mod.statLabel}: {stat.value}{stat.unit} · Mass {mod.mass}T · {isSandbox ? 'FREE' : `${price.toLocaleString()} CR`}</div>
-                  {locked && <div className="text-purple-600 text-[8px]">Requires {fragmentsNeed} blueprint fragment{fragmentsNeed === 1 ? '' : 's'} — you have {fragmentsHave}.</div>}
-                </div>
-                <button
-                  onClick={() => handleEquipClick(mod)}
-                  disabled={disabled || locked}
-                  className="px-2 py-1 border border-orange-700 text-orange-400 hover:bg-orange-950/30 text-[10px] disabled:opacity-30 flex-shrink-0"
-                >
-                  {disabled ? '—' : 'EQUIP'}
-                </button>
-              </div>
-              {isPicking && (
-                <div className="mt-1 border-t border-orange-950/50 pt-1">
-                  <div className="text-orange-700 text-[9px] mb-0.5">Choose a slot:</div>
-                  <div className="flex flex-wrap gap-1">
-                    {equipPicker.slots.map(s => {
-                      const occ = modules[s.key] ? MODULES[modules[s.key]] : null;
-                      return (
-                        <button key={s.key} onClick={() => { onEquip(s.key, mod.id); setEquipPicker(null); }} className="px-1.5 py-0.5 border border-orange-700 text-orange-400 hover:bg-orange-950/30 text-[9px]">
-                          {s.label}{occ ? ` · ⚠ ${occ.name}` : ''}
-                        </button>
-                      );
-                    })}
-                    <button onClick={() => setEquipPicker(null)} className="px-1.5 py-0.5 border border-orange-900 text-orange-700 text-[9px]">CANCEL</button>
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
 function ModulePicker({ slot, currentModuleId, onEquip, onUnequip, onClose, credits, isSandbox = false, guardianBlueprints = {} }) {
-  const [filter, setFilter] = useState('all');
+  const [classFilter, setClassFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState('all');
+
+  const typeCategories = slot.type === 'optional' ? OPTIONAL_CATEGORIES
+    : slot.type === 'hardpoint' ? HARDPOINT_CATEGORIES
+    : slot.type === 'utility' ? UTILITY_CATEGORIES
+    : null;
+
   const available = useMemo(() => {
-    const mods = getModulesForSlot(slot.type, slot.size, null);
+    let list = getModulesForSlot(slot.type, slot.size, null);
     if (slot.type === 'core') {
       const coreAbbr = slot.key.replace('core_', '');
-      return mods.filter(m => m.id.startsWith(coreAbbr + '_'));
+      list = list.filter(m => m.id.startsWith(coreAbbr + '_'));
     }
-    return mods;
-  }, [slot]);
+    if (typeCategories && typeFilter !== 'all') {
+      const cat = typeCategories.find(c => c.id === typeFilter);
+      if (cat) list = list.filter(m => cat.types.includes(m.type));
+    }
+    return list;
+  }, [slot, typeFilter, typeCategories]);
 
-  const filtered = filter === 'all' ? available : available.filter(m => m.class === filter || (filter === 'premium' && m.premium));
+  const filtered = classFilter === 'all' ? available : available.filter(m => m.class === classFilter || (classFilter === 'premium' && m.premium));
   const currentMod = currentModuleId ? MODULES[currentModuleId] : null;
+  const currentStat = getModStat(currentMod);
   const refund = currentMod ? Math.floor(getModulePrice(currentMod.id) * 0.9) : 0;
 
   return (
     <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="w-full max-w-md max-h-[80vh] flex flex-col border border-orange-700 bg-black" onClick={e => e.stopPropagation()}>
+      <div className="w-full max-w-md max-h-[85vh] flex flex-col border border-orange-700 bg-black" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-orange-900 p-3">
-          <h3 className="text-orange-300 font-bold text-sm uppercase">Select Module — {slot.label} (Size {slot.size})</h3>
+          <h3 className="text-orange-300 font-bold text-sm uppercase">Outfitting — {slot.label} (Size {slot.size})</h3>
           <button onClick={onClose}><X className="w-4 h-4 text-orange-600" /></button>
         </div>
+
+        {/* Currently equipped / being replaced */}
+        <div className="border-b border-orange-900 p-2 bg-orange-950/20">
+          {currentMod ? (
+            <>
+              <div className="flex items-center justify-between text-[10px]">
+                <span className="text-orange-700 uppercase">Currently Equipped — Replacing</span>
+                <span className="text-green-500">Trade-in +{isSandbox ? '0' : refund.toLocaleString()} CR</span>
+              </div>
+              <div className="text-orange-300 font-bold text-xs">{currentMod.name}</div>
+              <div className="text-orange-600 text-[9px]">{currentMod.statLabel}: {currentStat.value}{currentStat.unit} · Mass {currentMod.mass}T</div>
+            </>
+          ) : (
+            <div className="text-orange-500 text-[10px] uppercase">Empty Slot — Install New Module</div>
+          )}
+        </div>
+
+        {/* Module type filter (optional / hardpoint / utility) */}
+        {typeCategories && (
+          <div className="flex gap-1 p-2 border-b border-orange-900 overflow-x-auto">
+            <button onClick={() => setTypeFilter('all')} className={`px-2 py-0.5 border text-[10px] whitespace-nowrap ${typeFilter === 'all' ? 'border-orange-500 bg-orange-950/40 text-orange-300' : 'border-orange-900 text-orange-700'}`}>ALL</button>
+            {typeCategories.map(c => (
+              <button key={c.id} onClick={() => setTypeFilter(c.id)} className={`px-2 py-0.5 border text-[10px] whitespace-nowrap ${typeFilter === c.id ? 'border-orange-500 bg-orange-950/40 text-orange-300' : 'border-orange-900 text-orange-700'}`}>{c.label}</button>
+            ))}
+          </div>
+        )}
+
+        {/* Class filter */}
         <div className="flex gap-1 p-2 border-b border-orange-900">
           {['all', 'E', 'D', 'C', 'B', 'A', 'premium'].map(f => (
-            <button key={f} onClick={() => setFilter(f)} className={`px-2 py-0.5 border text-[10px] ${filter === f ? 'border-orange-500 bg-orange-950/40 text-orange-300' : 'border-orange-900 text-orange-700'}`}>{f === 'premium' ? 'EXP' : f.toUpperCase()}</button>
+            <button key={f} onClick={() => setClassFilter(f)} className={`px-2 py-0.5 border text-[10px] ${classFilter === f ? 'border-orange-500 bg-orange-950/40 text-orange-300' : 'border-orange-900 text-orange-700'}`}>{f === 'premium' ? 'EXP' : f.toUpperCase()}</button>
           ))}
         </div>
+
         <div className="flex-1 overflow-y-auto p-2 space-y-1">
           {filtered.length === 0 && <div className="text-orange-700 text-xs text-center py-4">No modules available.</div>}
           {filtered.map(mod => {
@@ -450,11 +351,11 @@ function ModulePicker({ slot, currentModuleId, onEquip, onUnequip, onClose, cred
             const fragmentsHave = (guardianBlueprints && guardianBlueprints[guardianBpId]?.count) || 0;
             const fragmentsNeed = getGuardianFragmentsRequired(mod);
             return (
-              <button key={mod.id} onClick={() => !isEquipped && !isGuardianLocked && onEquip(mod.id)} disabled={isEquipped || !canAfford || isGuardianLocked} className={`w-full text-left border p-2 text-xs ${isEquipped ? 'border-green-700' : isGuardianLocked ? 'border-purple-950 opacity-50' : canAfford ? 'border-orange-900 hover:border-orange-700' : 'border-gray-900 opacity-40'}`}>
+              <button key={mod.id} onClick={() => !isEquipped && !isGuardianLocked && onEquip(mod.id)} disabled={isEquipped || !canAfford || isGuardianLocked} className={`w-full text-left border p-2 text-xs ${isEquipped ? 'border-green-700 bg-green-950/20' : isGuardianLocked ? 'border-purple-950 opacity-50' : canAfford ? 'border-orange-900 hover:border-orange-700' : 'border-gray-900 opacity-40'}`}>
                 <div className="flex items-center justify-between">
                   <div>
                     <span className={`font-bold ${mod.premium ? 'text-yellow-400' : isGuardianLocked ? 'text-purple-600' : 'text-orange-300'}`}>{mod.name}</span>
-                    {mod.premium && <span className="text-yellow-500 text-[9px] ml-1">EXPANDED</span>}
+                    {mod.premium && <span className="text-yellow-500 text-[9px] ml-1">EXP</span>}
                     {isGuardianLocked && <span className="text-purple-500 text-[9px] ml-1">🔒 GUARDIAN</span>}
                   </div>
                   <span className="text-orange-400">{isEquipped ? '✓ EQUIPPED' : isGuardianLocked ? 'LOCKED' : isSandbox ? 'FREE' : netCost >= 0 ? `${netCost.toLocaleString()} CR` : `+${Math.abs(netCost).toLocaleString()} CR`}</span>
@@ -468,7 +369,7 @@ function ModulePicker({ slot, currentModuleId, onEquip, onUnequip, onClose, cred
         {currentMod && (
           <div className="border-t border-orange-900 p-2">
             <button onClick={onUnequip} className="w-full py-1.5 border border-red-900 text-red-500 hover:bg-red-950/30 text-xs">
-              SELL {currentMod.name} (+{refund.toLocaleString()} CR)
+              SELL {currentMod.name} (+{isSandbox ? '0' : refund.toLocaleString()} CR)
             </button>
           </div>
         )}
