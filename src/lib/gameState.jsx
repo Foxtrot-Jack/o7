@@ -28,6 +28,7 @@ import { CANIS_STELLA_RANKS, CEO_TITLE, MISSION_REP_REWARD } from './canisStella
 import { CURRENT_SAVE_VERSION, validateShip, createInitialState, createSandboxState } from './gameStateInitializers';
 import { updateRank, getProbesRequired, hasCarrierVendor, getAvailableShipsAtStation, getOutfittingLevel, OUTFITTING_LEVELS } from './gameStateHelpers';
 import { safeWriteSave, loadSave, clearSave } from './saveSystem';
+import { applyGlobalSettings, saveGlobalSettings } from './globalSettings';
 // Re-export helpers that other modules import from gameState
 export { getProbesRequired, hasCarrierVendor, getAvailableShipsAtStation, getOutfittingLevel, OUTFITTING_LEVELS };
 
@@ -57,6 +58,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
   const [state, setState] = useState(() => saveSlot === 'sandbox' ? createSandboxState() : createInitialState());
   const stateRef = useRef(state);
   stateRef.current = state;
+  const loadedRef = useRef(false);
 
   const storageKey = saveSlot === 'sandbox' ? STORAGE_KEY_SANDBOX : STORAGE_KEY;
 
@@ -158,14 +160,17 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
           return merged;
         });
       } else {
-        // No save — generate initial system data
+        // No save — generate initial system data, applying global settings
         setState(prev => ({
           ...prev,
           currentSystemData: generateSystemFromStar(prev.currentSystem),
+          settings: applyGlobalSettings(prev.settings),
         }));
       }
+      loadedRef.current = true;
     } catch (e) {
       console.error('Failed to load save:', e);
+      loadedRef.current = true;
     }
   }, []);
 
@@ -173,6 +178,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
   useEffect(() => {
     const timer = setTimeout(() => {
       safeWriteSave(storageKey, state);
+      if (loadedRef.current) saveGlobalSettings(state.settings);
     }, 500);
     return () => clearTimeout(timer);
   }, [state, storageKey]);
@@ -187,6 +193,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
   const AUTOSAVE_INTERVAL_MS = 120000; // 120 seconds
 
   const flushSave = useCallback(() => {
+    if (loadedRef.current) saveGlobalSettings(stateRef.current.settings);
     return safeWriteSave(storageKey, stateRef.current);
   }, [storageKey]);
 
