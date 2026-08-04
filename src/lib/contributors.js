@@ -64,6 +64,15 @@ export function getRandomFounderName() {
   return CONTRIBUTORS[Math.floor(Math.random() * CONTRIBUTORS.length)].alias;
 }
 
+// Returns a random founder alias NOT already on screen (exclude = Set of aliases),
+// or null when every founder is already present — used by the dock camera so a
+// founder never appears twice at once.
+export function getRandomFounderNameExcluding(exclude = new Set()) {
+  const avail = CONTRIBUTORS.filter(c => !exclude.has(c.alias));
+  if (avail.length === 0) return null;
+  return avail[Math.floor(Math.random() * avail.length)].alias;
+}
+
 // Check if a name belongs to a founder (for special NPC handling).
 const FOUNDER_ALIASES = new Set(CONTRIBUTORS.map(c => c.alias));
 export function isFounderName(name) {

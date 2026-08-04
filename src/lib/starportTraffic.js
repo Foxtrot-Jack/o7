@@ -4,7 +4,7 @@
 // pilots so contributors can spot their NPC at the dock — a secondary
 // Founder Sighting channel alongside the random travel encounter.
 import { SHIP_TYPES } from './shipRoster';
-import { getRandomFounderName, getContributorCount } from './contributors';
+import { getRandomFounderNameExcluding, getContributorCount } from './contributors';
 
 const NPC_FIRST = ['Vex', 'Korra', 'Dax', 'Rima', 'Solon', 'Tova', 'Nyx', 'Orin', 'Pax', 'Lira', 'Mira', 'Garr', 'Sable', 'Wren', 'Cade', 'Iolo', 'Rusk', 'Hela', 'Bram', 'Jovan', 'Sera', 'Kade', 'Nima', 'Roan'];
 const NPC_LAST = ['Vance', 'Okoro', 'Sund', 'Reza', 'Kell', 'Voss', 'Marr', 'Thane', 'Drake', 'Sol', 'Aza', 'Kor', 'Vell', 'Cross', 'Nimo', 'Hark', 'Falke', 'Orin', 'Bex', 'Sedgewick'];
@@ -23,10 +23,16 @@ function randDur(range) {
   return (range[0] + Math.random() * (range[1] - range[0]));
 }
 
-function randomPilot() {
-  // ~22% founder pilot if any contributors exist
-  if (getContributorCount() > 0 && Math.random() < 0.22) {
-    const alias = getRandomFounderName();
+// Founder sightings should feel special and stay uncommon: a founder only
+// appears when none of that alias is already on screen, and the chance drops
+// sharply while another founder is present. activeFounders is a Set of founder
+// aliases currently in the pads/queue.
+function randomPilot(activeFounders) {
+  const active = activeFounders || new Set();
+  const activeCount = active.size;
+  const chance = activeCount > 0 ? 0.04 : 0.12;
+  if (getContributorCount() > 0 && Math.random() < chance) {
+    const alias = getRandomFounderNameExcluding(active);
     if (alias) return { name: alias, founder: true };
   }
   const f = NPC_FIRST[Math.floor(Math.random() * NPC_FIRST.length)];
@@ -34,9 +40,9 @@ function randomPilot() {
   return { name: `CMDR ${f} ${l}`, founder: false };
 }
 
-export function spawnShip() {
+export function spawnShip(activeFounders) {
   const t = SHIP_TYPES[Math.floor(Math.random() * SHIP_TYPES.length)];
-  const pilot = randomPilot();
+  const pilot = randomPilot(activeFounders);
   return {
     id: 'npc_' + (++_id),
     shipName: t.name,

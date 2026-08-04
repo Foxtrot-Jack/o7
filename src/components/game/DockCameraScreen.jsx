@@ -250,7 +250,11 @@ export default function DockCameraScreen() {
       spawnTimerRef.current -= dt;
       const occupied = simRef.current.pads.filter(p => p.ship).length + simRef.current.queue.length;
       if (spawnTimerRef.current <= 0 && occupied < PAD_COUNT + 7) {
-        simRef.current.queue.push(spawnShip());
+        // Collect founder aliases already on screen so a founder never duplicates.
+        const activeFounders = new Set();
+        for (const pad of simRef.current.pads) if (pad.ship?.founder) activeFounders.add(pad.ship.pilot);
+        for (const s of simRef.current.queue) if (s.founder) activeFounders.add(s.pilot);
+        simRef.current.queue.push(spawnShip(activeFounders));
         spawnTimerRef.current = 1.6 + Math.random() * 2.4;
       }
 
