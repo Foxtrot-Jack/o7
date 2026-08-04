@@ -30,12 +30,10 @@ export default function TutorialOverlay({ steps, categoryName, onClose, onTarget
   };
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center pointer-events-none">
-      {/* Dimming backdrop — visual only, does not block interaction */}
-      <div className="absolute inset-0 bg-black/50 pointer-events-none" />
-
-      {/* Instruction panel — the only interactive element; clicks pass through elsewhere */}
-      <div className="relative z-10 pointer-events-auto w-full max-w-lg mx-2 mb-2 sm:mb-4 border border-cyan-700 bg-black p-4 space-y-3 shadow-lg shadow-cyan-950/50">
+    <div className="fixed inset-0 z-[200] flex items-end justify-center pointer-events-none p-2 pb-1">
+      {/* No backdrop — the game remains fully visible and interactive while the
+          tutorial panel stays on screen. Only the panel itself captures clicks. */}
+      <div className="relative z-10 pointer-events-auto w-full max-w-md border border-cyan-700 bg-black/95 p-3 space-y-2 shadow-lg shadow-cyan-950/50">
         <div className="flex items-center gap-2 border-b border-cyan-900 pb-2">
           <GraduationCap className="w-5 h-5 text-cyan-500" />
           <h2 className="text-cyan-300 font-bold uppercase text-sm flex-1 truncate">{current.title}</h2>
