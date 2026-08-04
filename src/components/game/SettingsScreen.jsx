@@ -1,7 +1,7 @@
 // Settings — restructured into intuitive tabbed categories
 import React, { useState } from 'react';
 import { useGameState } from '@/lib/gameState';
-import { Settings, Monitor, Palette, Type, Volume2, Hand, Database, Download, Upload, RotateCcw, ArrowLeftRight, Lock, Unlock, Smartphone, Maximize, Contrast, LayoutGrid, ChevronDown, Heart } from 'lucide-react';
+import { Settings, Monitor, Palette, Type, Volume2, Hand, Database, Download, Upload, RotateCcw, ArrowLeftRight, Lock, Unlock, Smartphone, Maximize, Contrast, LayoutGrid, ChevronDown, Heart, Users } from 'lucide-react';
 import { THEME_LIST } from '@/lib/themes';
 import TextBrightnessSettings from '@/components/game/TextBrightnessSettings';
 import SoundSettings from '@/components/game/SoundSettings';
@@ -14,6 +14,7 @@ import StatusHeaderStyleControl from '@/components/game/StatusHeaderStyleControl
 import UITextStyleSettings from '@/components/game/UITextStyleSettings';
 import MenuTextStyleSettings from '@/components/game/MenuTextStyleSettings';
 import SupportTab from '@/components/game/SupportTab';
+import FounderSettings from '@/components/game/FounderSettings';
 
 const TABS = [
   { id: 'display', label: 'Display', icon: Monitor },
@@ -24,6 +25,7 @@ const TABS = [
   { id: 'controls', label: 'Controls', icon: Hand },
   { id: 'data', label: 'Data', icon: Database },
   { id: 'support', label: 'Support', icon: Heart },
+  { id: 'founders', label: 'Founders', icon: Users },
 ];
 
 // Collapsible section — nests related controls under a single header so the
@@ -292,6 +294,7 @@ export default function SettingsScreen() {
         )}
 
         {tab === 'support' && <SupportTab />}
+        {tab === 'founders' && <FounderSettings />}
       </div>
     </div>
   );

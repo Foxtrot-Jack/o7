@@ -31,7 +31,7 @@ function randomPilot() {
   }
   const f = NPC_FIRST[Math.floor(Math.random() * NPC_FIRST.length)];
   const l = NPC_LAST[Math.floor(Math.random() * NPC_LAST.length)];
-  return { name: `${f} ${l}`, founder: false };
+  return { name: `CMDR ${f} ${l}`, founder: false };
 }
 
 export function spawnShip() {

@@ -73,7 +73,7 @@ export function getCurrentTier(progressPct) {
 }
 
 export function generateLeaderboard(goalProgress, playerContribution) {
-  const names = ['Cmdr RedNova', 'Cmdr SteelDrift', 'Cmdr VoidRunner', 'Cmdr NebulaHunter', 'Cmdr Ironclad'];
+  const names = ['CMDR RedNova', 'CMDR SteelDrift', 'CMDR VoidRunner', 'CMDR NebulaHunter', 'CMDR Ironclad'];
   const entries = names.map((name, i) => ({
     name,
     contribution: Math.floor(goalProgress * (0.18 - i * 0.03)),

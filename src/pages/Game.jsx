@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { GameStateProvider, useGameState } from '@/lib/gameState';
 import CRTFrame from '@/components/game/CRTFrame';
 import SaveSelect from '@/components/game/SaveSelect';
+import CharacterCreator from '@/components/game/CharacterCreator';
 import NavBar from '@/components/game/NavBar';
 import StatusHeader from '@/components/game/StatusHeader';
 import GalaxyMap from '@/components/game/GalaxyMap';
@@ -534,6 +535,12 @@ function GameContent() {
   );
 }
 
+function GameBootstrap() {
+  const { state } = useGameState();
+  if (!state.commanderName) return <CharacterCreator />;
+  return <GameContent />;
+}
+
 export default function Game() {
   const [saveSlot, setSaveSlot] = useState(null);
 
@@ -549,7 +556,7 @@ export default function Game() {
         localStorage.removeItem('starfarer_active_save');
         setSaveSlot(null);
       }}>
-        <GameContent />
+        <GameBootstrap />
       </GameStateProvider>
     </GameErrorBoundary>
   );

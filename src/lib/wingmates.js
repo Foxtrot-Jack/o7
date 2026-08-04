@@ -18,7 +18,7 @@ export function generatePilot() {
   const r = PILOT_RANKS[rankIdx];
   return {
     id: `pilot_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
-    name: `${first} ${last}`,
+    name: `CMDR ${first} ${last}`,
     rank: r.rank,
     rankLabel: r.label,
     hireCost: r.hireCost,

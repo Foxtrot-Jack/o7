@@ -7,7 +7,12 @@ import { Activity, Flag, TrendingUp, TrendingDown, Coins } from 'lucide-react';
 export default function BGSScreen() {
   const { state, getSystemData, addCredits } = useGameState();
   const systemData = getSystemData();
-  const baseFactions = useMemo(() => generateFactionStates(state.currentSystem?.seed, systemData), [state.currentSystem?.seed]);
+  const baseFactions = useMemo(() => {
+    const f = generateFactionStates(state.currentSystem?.seed, systemData);
+    const deltas = state.founderBGS?.[state.currentSystem?.seed];
+    if (deltas) for (const fac of f) fac.influence = Math.max(1, Math.min(95, fac.influence + (deltas[fac.name] || 0)));
+    return f;
+  }, [state.currentSystem?.seed, state.founderBGS]);
   const [factions, setFactions] = useState(null);
   const [log, setLog] = useState([]);
 
@@ -91,6 +96,20 @@ export default function BGSScreen() {
               <Coins className="w-2.5 h-2.5" /> {entry}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Founder activity feed */}
+      {(state.founderActivity || []).length > 0 && (
+        <div className="border border-cyan-900 p-2 space-y-1">
+          <div className="text-[10px] text-cyan-700 uppercase flex items-center gap-1"><Activity className="w-3 h-3" /> Founder Activity</div>
+          <div className="max-h-32 overflow-y-auto space-y-0.5">
+            {(state.founderActivity || []).slice(0, 12).map(e => (
+              <div key={e.id} className="text-[10px] text-cyan-600">
+                <span className="text-cyan-400 font-bold">{e.alias}</span> {e.text}
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

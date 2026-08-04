@@ -561,7 +561,7 @@ const explorationSteps = [
   {
     id: 'exp-screen',
     title: 'Exploration Screen',
-    text: 'Open [[internal]] > Data > Exploration for the exploration dashboard. It tracks your scan count, total payout, and current system survey status. Honk your discovery scanner in each new system to populate the system map, then probe bodies for detailed data.',
+    text: 'Open [[internal]] > Data > Exploration for the exploration dashboard. It tracks your scan count, total payout, and current system survey status. Run an FSS scan in each new system to populate the system map, then probe landable bodies for detailed data.',
     target: { tab: 'internal', folder: 'Data', item: 'exploration' },
   },
   {
@@ -891,7 +891,7 @@ const settingsSteps = [
 ];
 
 const salvageSteps = [
-  { id: 'salvage-intro', title: 'Salvageable Wreckage', text: 'Your wake scanner has flagged salvageable wreckage in deep space. The further you explore, the more wreckage you find — and the rarer the components. These wrecks drop unique salvage components distinct from regular materials.', target: null },
+  { id: 'salvage-intro', title: 'Salvageable Wreckage', text: 'Your sensors have flagged salvageable wreckage in deep space. The further you explore, the more wreckage you find — and the rarer the components. These wrecks drop unique salvage components distinct from regular materials.', target: null },
   { id: 'salvage-open', title: 'Open the Salvage Screen', text: 'Open [[internal]] > Data > Salvage to review the wreck your scanners detected in this system.', target: { tab: 'internal', folder: 'Data', item: 'wreckage' } },
   { id: 'salvage-collect', title: 'Salvage the Wreck', text: 'Press SALVAGE WRECK to recover the unique components aboard. They are stored in your Salvaged Components locker, separate from regular materials.', target: { tab: 'internal', folder: 'Data', item: 'wreckage' } },
   { id: 'salvage-sell', title: 'Sell for Credits', text: 'Collected components can be sold for credits anytime from the Salvage screen — rarer components are worth far more. Keep exploring to find legendary wrecks.', target: { tab: 'internal', folder: 'Data', item: 'wreckage' } },

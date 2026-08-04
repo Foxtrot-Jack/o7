@@ -31,6 +31,7 @@ import { CURRENT_SAVE_VERSION, validateShip, createInitialState, createSandboxSt
 import { updateRank, getProbesRequired, hasCarrierVendor, getAvailableShipsAtStation, getOutfittingLevel, OUTFITTING_LEVELS } from './gameStateHelpers';
 import { safeWriteSave, loadSave, clearSave } from './saveSystem';
 import { applyGlobalSettings, saveGlobalSettings } from './globalSettings';
+import { useFounderSim } from './founderSim';
 // Re-export helpers that other modules import from gameState
 export { getProbesRequired, hasCarrierVendor, getAvailableShipsAtStation, getOutfittingLevel, OUTFITTING_LEVELS };
 
@@ -87,6 +88,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
             },
             monoOverrides: { ...(prev.settings?.monoOverrides || {}), ...(parsed.settings?.monoOverrides || {}) },
             uiScale: { ...(prev.settings?.uiScale || {}), ...(parsed.settings?.uiScale || {}) },
+            founders: { ...(prev.settings?.founders || {}), ...(parsed.settings?.founders || {}) },
           },
           achievements: {
             firstDiscoveries: {}, milestones: {}, scannedSystemSeeds: [], systemsScanned: 0, totalBodiesScanned: 0,
@@ -154,6 +156,11 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
           lightYearsTraveled: parsed.lightYearsTraveled || 0,
           lifetimeEarnings: parsed.lifetimeEarnings || 0,
           shipsPurchased: parsed.shipsPurchased || 0,
+          commanderName: parsed.commanderName || null,
+          isFounderSignIn: parsed.isFounderSignIn || false,
+          founderActivity: parsed.founderActivity || [],
+          founderSim: parsed.founderSim || { progress: {}, lastTick: Date.now() },
+          founderBGS: parsed.founderBGS || {},
           version: CURRENT_SAVE_VERSION,
         };
           // Apply shared global personalization settings over this save's
@@ -238,6 +245,25 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     };
   }, [flushSave]);
 
+  const { tickFounders } = useFounderSim(setState);
+
+  // Founder BGS simulation — advances founder pilots (explore/claim systems +
+  // activity feed) on real elapsed time. The explorer-speed slider is the only
+  // cap, so a long absence simply lets founders progress further.
+  useEffect(() => {
+    if (!loaded) return;
+    const run = () => {
+      const prev = stateRef.current;
+      const last = prev.founderSim?.lastTick || Date.now();
+      const elapsed = Date.now() - last;
+      if (elapsed < 1000) return;
+      tickFounders(elapsed);
+    };
+    run();
+    const id = setInterval(run, 60000);
+    return () => clearInterval(id);
+  }, [loaded, tickFounders]);
+
   // Update function — ALWAYS merges into prev. A partial updater (returning
   // only e.g. { settings }) is merged rather than replacing the whole state,
   // so a settings tweak can never nuke credits/ship/colonies.
@@ -292,9 +318,10 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
         discoveredSystems: {
           ...prev.discoveredSystems,
           [system.seed]: prev.discoveredSystems[system.seed] || {
-            name: system.name,
-            firstDiscovered: true,
-            bodyCount: systemData.bodyCount,
+          name: system.name,
+          firstDiscovered: true,
+          discoveredBy: prev.commanderName || 'CMDR Unknown',
+          bodyCount: systemData.bodyCount,
             scanValue: 0,
             originCoords: { x: system.x, y: system.y, z: system.z },
           },
@@ -1552,6 +1579,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
           [destGate.system.seed]: prev.discoveredSystems[destGate.system.seed] || {
             name: destGate.system.name,
             firstDiscovered: true,
+            discoveredBy: prev.commanderName || 'CMDR Unknown',
             bodyCount: systemData.bodyCount,
             scanValue: 0,
             originCoords: { x: destGate.system.x, y: destGate.system.y, z: destGate.system.z },

@@ -42,6 +42,11 @@ export default function StatusHeader() {
     <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-3 py-2 border-b border-orange-900/50 bg-black text-xs" style={headerStyle}>
       <div className="flex items-center gap-4">
         <div className="flex flex-col">
+          <span className="text-orange-700 text-[10px] uppercase">Commander</span>
+          <span className="text-orange-300 font-bold">{state.commanderName || 'CMDR Unknown'}</span>
+          {state.isFounderSignIn && <span className="text-yellow-500 text-[9px] border border-yellow-700 px-1 ml-1">FOUNDER</span>}
+        </div>
+        <div className="flex flex-col">
           <span className="text-orange-700 text-[10px] uppercase">Credits</span>
           <span className="text-orange-300 font-bold">{formatCredits(state.credits)} CR</span>
           {state.saveMode === 'sandbox' && <span className="text-cyan-400 text-[9px] border border-cyan-700 px-1 ml-1">SANDBOX</span>}

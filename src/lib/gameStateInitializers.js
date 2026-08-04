@@ -123,6 +123,7 @@ export function createInitialState() {
       },
       gestures: DEFAULT_GESTURE_SETTINGS,
       display: DEFAULT_DISPLAY_SETTINGS,
+      founders: { explorationEnabled: true, explorerSpeed: 50 },
     },
     crew: [],
     powerPlay: null,
@@ -164,6 +165,11 @@ export function createInitialState() {
     rebuyPending: null,
     guardianBlueprints: {},
     galaxyFilters: { spectral: 'all', security: 'all', population: 'all', showParkedShips: true, showColonies: true, showMissions: true, explorationMode: false, showBubble: true, showRoute: true },
+    commanderName: null,
+    isFounderSignIn: false,
+    founderActivity: [],
+    founderSim: { progress: {}, lastTick: Date.now() },
+    founderBGS: {},
     createdAt: Date.now(),
   };
 }

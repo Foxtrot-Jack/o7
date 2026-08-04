@@ -151,7 +151,11 @@ export default function ExplorationScreen() {
               <div key={i} className="flex items-center justify-between border-b border-orange-950/50 py-1 text-xs">
                 <div>
                   <span className="text-orange-400">{sys.name}</span>
-                  {sys.firstDiscovered && <span className="text-yellow-500 text-[10px] ml-2">★ FIRST DISCOVERY</span>}
+                  {sys.firstDiscovered
+                    ? <span className="text-yellow-500 text-[10px] ml-2">★ FIRST DISCOVERY</span>
+                    : sys.discoveredBy && sys.discoveredBy !== state.commanderName
+                      ? <span className="text-cyan-600 text-[10px] ml-2">◆ FIRST BY {sys.discoveredBy}</span>
+                      : null}
                 </div>
                 <div className="text-orange-700 text-[10px]">
                   {sys.bodyCount || '?'} bodies
