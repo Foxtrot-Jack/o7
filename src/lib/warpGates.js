@@ -36,6 +36,12 @@ export function getGateBuildProgress(materials) {
 }
 
 export function canBuildGate(state) {
+  // Sandbox is a testing ground — gates are free and need no carrier or materials.
+  if (state.saveMode === 'sandbox') {
+    if ((state.warpGates || []).some(g => g.systemSeed === state.currentSystem.seed))
+      return { can: false, reason: 'A gate already exists in this system' };
+    return { can: true, reason: '' };
+  }
   if (!state.fleetCarriers || state.fleetCarriers.length === 0)
     return { can: false, reason: 'Requires a Fleet Carrier' };
   const carrierInSystem = state.fleetCarriers.some(c => c.systemSeed === state.currentSystem.seed);

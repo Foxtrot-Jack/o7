@@ -98,6 +98,17 @@ Text brightness scales up to 600% for a high-contrast glow. Every font is resiza
 
 Appearance, display, audio, and control preferences are saved globally — they persist across Commander and Sandbox slots and survive preview reloads, so your chosen theme and layout apply no matter which save you load.`,
       },
+      {
+        title: 'Sandbox Mode',
+        body: `Sandbox is a testing ground where all game content is free and unlocked from the moment you load in — no grinding, no prerequisites.
+
+• CREDITS — You start with 1,000,000,000 CR, and purchases that cost credits in a Commander save are free here: ships, fleet carriers, stations, warp gates, colony establishment, module outfitting, engineering, and synthesis.
+• UNLOCKS — Ship availability, outfitting level, custom-ship/carrier/station parts, and the carrier vendor are fully unlocked regardless of system population or shipyard level.
+• NO PREREQUISITES — Warp gates need no fleet carrier or materials; stations need no colony; colonies can be established on any landable body; synthesis needs no materials.
+• PROGRESS — Mission ranks, faction reputation, achievements, and the card binder still function, so you can exercise any system end-to-end. Nothing carries over to your Commander save.
+
+Use Sandbox to try out ships, loadouts, carriers, stations, and the card arena before committing the time in your main save.`,
+      },
     ],
   },
 

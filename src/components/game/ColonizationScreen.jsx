@@ -82,6 +82,7 @@ function getUncollectedIncome(colony) {
 export default function ColonizationScreen() {
   const { state, getSystemData, addColony, updateColony, addCredits, removeCargo } = useGameState();
   const systemData = getSystemData();
+  const isSandbox = state.saveMode === 'sandbox';
   const [showEstablish, setShowEstablish] = useState(false);
   const [selectedBody, setSelectedBody] = useState(null);
   const [selectedType, setSelectedType] = useState('agricultural');
@@ -97,9 +98,9 @@ export default function ColonizationScreen() {
       b.type === BODY_TYPES.PLANET &&
       b.landable &&
       !colonizedIds.includes(b.id) &&
-      (b.habitable || b.terraformed || b.atmosphere || b.gravity < 2)
+      (isSandbox || b.habitable || b.terraformed || b.atmosphere || b.gravity < 2)
     );
-  }, [systemData, state.colonies]);
+  }, [systemData, state.colonies, isSandbox]);
 
   const colonizablePorts = useMemo(() => {
     if (!systemData) return [];
@@ -112,7 +113,7 @@ export default function ColonizationScreen() {
   const handleEstablish = () => {
     const target = targetType === 'body' ? selectedBody : selectedPort;
     if (!target) return;
-    if (state.credits < establishmentCost) {
+    if (!isSandbox && state.credits < establishmentCost) {
       alert('INSUFFICIENT CREDITS FOR COLONIZATION');
       return;
     }
@@ -143,7 +144,7 @@ export default function ColonizationScreen() {
       establishedAt: Date.now(),
     };
 
-    addCredits(-establishmentCost);
+    if (!isSandbox) addCredits(-establishmentCost);
     addColony(colony);
     setShowEstablish(false);
     setSelectedBody(null);
@@ -363,10 +364,10 @@ export default function ColonizationScreen() {
           {(selectedBody || selectedPort) && (
             <button
               onClick={handleEstablish}
-              disabled={state.credits < establishmentCost}
+              disabled={!isSandbox && state.credits < establishmentCost}
               className="w-full py-2 border border-orange-500 text-orange-300 hover:bg-orange-950/50 text-sm font-bold disabled:opacity-30"
             >
-              ESTABLISH {COLONY_TIERS[selectedTier].name.toUpperCase()} — {establishmentCost.toLocaleString()} CR
+              {isSandbox ? `ESTABLISH ${COLONY_TIERS[selectedTier].name.toUpperCase()} — FREE` : `ESTABLISH ${COLONY_TIERS[selectedTier].name.toUpperCase()} — ${establishmentCost.toLocaleString()} CR`}
             </button>
           )}
         </div>

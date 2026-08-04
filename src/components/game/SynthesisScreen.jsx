@@ -7,6 +7,7 @@ import { FlaskConical, Check, X } from 'lucide-react';
 
 export default function SynthesisScreen() {
   const { state, synthesize } = useGameState();
+  const isSandbox = state.saveMode === 'sandbox';
   const [msg, setMsg] = useState('');
   const materials = state.materials || {};
 
@@ -28,8 +29,13 @@ export default function SynthesisScreen() {
         <h2 className="text-orange-300 font-bold uppercase">Synthesis</h2>
       </div>
 
+      {isSandbox && (
+        <div className="border border-cyan-700 bg-cyan-950/20 p-2 text-center text-cyan-400 text-xs">
+          SANDBOX: Synthesis is free — materials are not required or consumed.
+        </div>
+      )}
       <div className="text-orange-600 text-xs">
-        Convert raw materials from your Ship Locker into consumable effects. Materials are consumed on synthesis.
+        Convert raw materials from your Ship Locker into consumable effects. {isSandbox ? 'In sandbox, nothing is consumed.' : 'Materials are consumed on synthesis.'}
       </div>
 
       {msg && (
@@ -47,7 +53,7 @@ export default function SynthesisScreen() {
 
       <div className="space-y-3">
         {SYNTHESIS_RECIPES.map(recipe => {
-          const can = canSynthesize(recipe, materials);
+          const can = isSandbox || canSynthesize(recipe, materials);
           return (
             <div key={recipe.id} className={`border p-3 space-y-2 ${can ? 'border-orange-900' : 'border-orange-950 opacity-60'}`}>
               <div className="flex items-center justify-between">

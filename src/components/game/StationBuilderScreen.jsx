@@ -14,7 +14,7 @@ export default function StationBuilderScreen() {
   const coloniesHere = (state.colonies || []).filter(c => c.systemSeed === state.currentSystem?.seed);
 
   const handleBuild = () => {
-    if (!selectedColony) return;
+    if (!isSandbox && !selectedColony) return;
     buildStation(stationName || undefined, selectedEconomy, selectedColony);
     setSelectedColony(null);
     setStationName('');
@@ -33,9 +33,12 @@ export default function StationBuilderScreen() {
       </div>
 
       {/* Build new station */}
-      {coloniesHere.length > 0 ? (
+      {coloniesHere.length > 0 || isSandbox ? (
         <div className="border border-orange-900 p-3 space-y-2">
-          <h3 className="text-orange-500 text-xs font-bold uppercase">Build New Station — {STATION_BUILD_COST.toLocaleString()} CR</h3>
+          <h3 className="text-orange-500 text-xs font-bold uppercase">Build New Station — {isSandbox ? 'FREE' : `${STATION_BUILD_COST.toLocaleString()} CR`}</h3>
+          {isSandbox && coloniesHere.length === 0 && (
+            <div className="text-cyan-600 text-[10px]">Sandbox: no colony required — the station builds in this system.</div>
+          )}
           <div className="space-y-1">
             <div className="text-[10px] text-orange-600">Select colony:</div>
             {coloniesHere.map(c => (
@@ -59,10 +62,10 @@ export default function StationBuilderScreen() {
           <div className="text-[10px] text-orange-700">{STATION_ECONOMIES.find(e => e.id === selectedEconomy)?.desc}</div>
           <button
             onClick={handleBuild}
-            disabled={!selectedColony || (!isSandbox && state.credits < STATION_BUILD_COST)}
+            disabled={(!isSandbox && !selectedColony) || (!isSandbox && state.credits < STATION_BUILD_COST)}
             className="w-full py-2 border border-orange-500 text-orange-300 hover:bg-orange-950/30 text-xs font-bold disabled:opacity-30 flex items-center justify-center gap-1"
           >
-            <Plus className="w-3.5 h-3.5" /> BUILD STATION ({STATION_BUILD_COST.toLocaleString()} CR)
+            <Plus className="w-3.5 h-3.5" /> BUILD STATION ({isSandbox ? 'FREE' : `${STATION_BUILD_COST.toLocaleString()} CR`})
           </button>
         </div>
       ) : (

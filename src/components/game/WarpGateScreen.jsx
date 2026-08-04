@@ -8,6 +8,7 @@ import { Network, Anchor, Zap, Globe } from 'lucide-react';
 export default function WarpGateScreen() {
   const { state, buildWarpGate, warpJump } = useGameState();
   const [gateName, setGateName] = useState('');
+  const isSandbox = state.saveMode === 'sandbox';
 
   const gates = state.warpGates || [];
   const currentGate = gates.find(g => g.systemSeed === state.currentSystem.seed);
@@ -87,6 +88,12 @@ export default function WarpGateScreen() {
             <Anchor className="w-3 h-3" /> Construct Warp Gate
           </div>
 
+          {isSandbox ? (
+            <div className="border border-cyan-700 bg-cyan-950/20 p-2 text-center text-cyan-400 text-[10px]">
+              SANDBOX: Warp gates are free — no fleet carrier, credits, or materials required.
+            </div>
+          ) : (
+            <>
           {/* Requirements checklist */}
           <div className="space-y-1">
             <div className="text-[10px] text-orange-700 uppercase">Requirements</div>
@@ -123,6 +130,8 @@ export default function WarpGateScreen() {
               );
             })}
           </div>
+            </>
+          )}
 
           {/* Gate name input */}
           <input
@@ -140,7 +149,7 @@ export default function WarpGateScreen() {
             disabled={!buildCheck.can}
             className="w-full py-2 border border-cyan-500 text-cyan-300 hover:bg-cyan-950/30 text-xs font-bold disabled:opacity-30"
           >
-            {buildCheck.can ? '⚡ CONSTRUCT WARP GATE' : `⚠ ${buildCheck.reason}`}
+            {buildCheck.can ? (isSandbox ? '⚡ CONSTRUCT WARP GATE — FREE' : '⚡ CONSTRUCT WARP GATE') : `⚠ ${buildCheck.reason}`}
           </button>
         </div>
       )}

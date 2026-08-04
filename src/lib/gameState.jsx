@@ -1492,17 +1492,22 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
   // ===== WARP GATES =====
   const buildWarpGate = useCallback((name) => {
     setState(prev => {
-      if (!prev.fleetCarriers || prev.fleetCarriers.length === 0) return prev;
-      const carrierInSystem = prev.fleetCarriers.some(c => c.systemSeed === prev.currentSystem.seed);
-      if (!carrierInSystem) return prev;
-      if (prev.credits < GATE_CREDIT_COST) return prev;
-      for (const [mat, qty] of Object.entries(GATE_MATERIAL_COST)) {
-        if ((prev.materials[mat] || 0) < qty) return prev;
-      }
+      const isSb = prev.saveMode === 'sandbox';
       if ((prev.warpGates || []).some(g => g.systemSeed === prev.currentSystem.seed)) return prev;
+      if (!isSb) {
+        if (!prev.fleetCarriers || prev.fleetCarriers.length === 0) return prev;
+        const carrierInSystem = prev.fleetCarriers.some(c => c.systemSeed === prev.currentSystem.seed);
+        if (!carrierInSystem) return prev;
+        if (prev.credits < GATE_CREDIT_COST) return prev;
+        for (const [mat, qty] of Object.entries(GATE_MATERIAL_COST)) {
+          if ((prev.materials[mat] || 0) < qty) return prev;
+        }
+      }
       const newMaterials = { ...prev.materials };
-      for (const [mat, qty] of Object.entries(GATE_MATERIAL_COST)) {
-        newMaterials[mat] -= qty;
+      if (!isSb) {
+        for (const [mat, qty] of Object.entries(GATE_MATERIAL_COST)) {
+          newMaterials[mat] -= qty;
+        }
       }
       const gate = {
         id: `gate_${Date.now()}`,
@@ -1847,14 +1852,17 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     setState(prev => {
       const recipe = SYNTHESIS_MAP[recipeId];
       if (!recipe) return prev;
+      const isSb = prev.saveMode === 'sandbox';
       const mats = { ...prev.materials };
-      for (const [matId, qty] of Object.entries(recipe.inputs)) {
-        if ((mats[matId] || 0) < qty) return prev;
+      if (!isSb) {
+        for (const [matId, qty] of Object.entries(recipe.inputs)) {
+          if ((mats[matId] || 0) < qty) return prev;
+        }
+        for (const [matId, qty] of Object.entries(recipe.inputs)) {
+          mats[matId] -= qty;
+        }
       }
-      for (const [matId, qty] of Object.entries(recipe.inputs)) {
-        mats[matId] -= qty;
-      }
-      let updates = { materials: mats };
+      let updates = isSb ? {} : { materials: mats };
       updates.achievements = { ...prev.achievements, milestones: { ...(prev.achievements?.milestones || {}), ...(prev.achievements?.milestones?.first_synthesis ? {} : { first_synthesis: { date: Date.now() } }) } };
       if (recipe.effect === 'fsd_boost') updates.fsdBoost = true;
       if (recipe.effect === 'hull_repair') updates.ship = { ...prev.ship, integrity: Math.min(100, (prev.ship.integrity ?? 100) + 20) };
@@ -2052,13 +2060,13 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     setState(prev => {
       const isSb = prev.saveMode === 'sandbox';
       if (!isSb && prev.credits < STATION_BUILD_COST) return prev;
-      const colony = prev.colonies.find(c => c.id === colonyId);
-      if (!colony) return prev;
-      if (prev.ownedStations?.some(s => s.colonyId === colonyId)) return prev;
+      const colony = colonyId ? prev.colonies.find(c => c.id === colonyId) : null;
+      if (!isSb && !colony) return prev;
+      if (colony && prev.ownedStations?.some(s => s.colonyId === colonyId)) return prev;
       const station = {
         id: `station_${Date.now()}`,
-        name: name || `${colony.name} Station`,
-        colonyId,
+        name: name || (colony ? `${colony.name} Station` : `${prev.currentSystem.name} Station`),
+        colonyId: colony ? colony.id : null,
         systemSeed: prev.currentSystem.seed,
         systemName: prev.currentSystem.name,
         economy: economyType,
