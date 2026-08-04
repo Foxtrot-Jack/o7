@@ -302,6 +302,582 @@ const customShipSteps = [
   },
 ];
 
+// --- Engineering, Synthesis & Materials ---
+const engineeringSteps = [
+  {
+    id: 'eng-welcome',
+    title: 'Engineering Unlocked',
+    text: 'You have docked at a station with a resident engineer. Engineering lets you permanently upgrade ship modules beyond their stock stats using materials and credits — the primary endgame progression for ship performance.',
+    target: null,
+  },
+  {
+    id: 'eng-workshop',
+    title: 'Engineering Workshop',
+    text: 'Open Internal > Modules > Engineering while docked at a station with an engineer. The left panel lists every equipped module. Select one to see its available blueprints. Each blueprint has multiple grades — higher grades give bigger bonuses but cost more materials.',
+    target: { tab: 'internal', folder: 'Modules', item: 'engineering' },
+  },
+  {
+    id: 'eng-blueprints',
+    title: 'Blueprints & Grades',
+    text: 'Blueprints are stat upgrades tailored to a module type — Dirty Drive for thrusters, Long Range for weapons, Shield Boosters for shields, and so on. Each has 5 grades. An engineer caps at their max grade, so high-grade engineers are worth seeking out in high-tech systems.',
+    target: { tab: 'internal', folder: 'Modules', item: 'engineering' },
+  },
+  {
+    id: 'eng-costs',
+    title: 'Costs & Materials',
+    text: 'Upgrading costs credits and materials — raw, manufactured, and encoded. Materials are consumed permanently. Use Internal > Modules > Material Trader to exchange materials you have for ones you need. The cost panel shows exactly what each upgrade requires and highlights what you are missing in red.',
+    target: { tab: 'internal', folder: 'Modules', item: 'materialtrader' },
+  },
+  {
+    id: 'synthesis',
+    title: 'Synthesis',
+    text: 'Open Internal > Modules > Synthesis to craft temporary consumable buffs — ammo, FSD injections, heat sinks, and more — from materials. Unlike engineering, synthesis is single-use and does not permanently alter your modules. Keep a stock of synthesized ammo and FSD boosts for long expeditions.',
+    target: { tab: 'internal', folder: 'Modules', item: 'synthesis' },
+  },
+  {
+    id: 'eng-done',
+    title: 'Engineer Wisely',
+    text: 'Engineering is the difference between a stock ship and a serious one. Prioritize FSD range and thruster speed first, then hardpoints and shields for combat. Materials are scarce — spend them where they count. Replay this guide anytime from the Codex.',
+    target: null,
+  },
+];
+
+// --- Combat & Bounties ---
+const combatSteps = [
+  {
+    id: 'cmb-welcome',
+    title: 'Combat Career',
+    text: 'Combat is one of the three pillars of income alongside trade and exploration. This guide covers bounty hunting, conflict zones, piracy, and self-defense — everything you need to fight and survive.',
+    target: null,
+  },
+  {
+    id: 'cmb-bounty',
+    title: 'Bounty Board',
+    text: 'Open Cons > Missions > Bounty Board while docked to accept kill contracts. Each bounty lists a target, a reward, and a system. Bounty vouchers are awarded automatically when you destroy a wanted ship — cash them at any station with Cartographics or the Bounty Board.',
+    target: { tab: 'cons', folder: 'Missions', item: 'bountyboard' },
+  },
+  {
+    id: 'cmb-conflict',
+    title: 'Conflict Zones',
+    text: 'Open External > Field Ops > Conflict Zones to join an active warzone. Choose a faction to fight for, then engage enemy ships. Conflict zones pay combat bonds per kill — cash them at a station. Higher-intensity zones pay more but are far more dangerous. Bring a combat-fitted ship.',
+    target: { tab: 'external', folder: 'Field Ops', item: 'conflictzone' },
+  },
+  {
+    id: 'cmb-res',
+    title: 'Mining Sites (RES)',
+    text: 'Resource Extraction Sites (External > Field Ops > Mining Sites) are asteroid fields with a high concentration of wanted pirates. They double as combat arenas — patrol the site, scan ships, and destroy wanted ones for bounties while also mining. Security ships patrol high-security RES, offering some backup.',
+    target: { tab: 'external', folder: 'Field Ops', item: 'res' },
+  },
+  {
+    id: 'cmb-piracy',
+    title: 'Piracy',
+    text: 'Open External > Field Ops > Piracy to intercept and raid cargo from NPC traders. Piracy is illegal — it generates bounties on your head and lowers your reputation with the targeted faction. It pays well in anarchy systems where there is no security response. Use a fast ship with hatch-breaker limpets.',
+    target: { tab: 'external', folder: 'Field Ops', item: 'piracy' },
+  },
+  {
+    id: 'cmb-loadout',
+    title: 'Combat Outfitting',
+    text: 'A combat ship needs shield boosters, hull reinforcement, and high-DPS hardpoints. Outfit at Internal > Modules > Outfitting, then engineer your weapons and shields at Engineering. Carry shield cells or heat sinks. Never fight in a stock ship against engineered opponents.',
+    target: { tab: 'internal', folder: 'Modules', item: 'outfitting' },
+  },
+  {
+    id: 'cmb-done',
+    title: 'Fly Dangerous',
+    text: 'Combat is high-risk, high-reward. Cash your bonds and vouchers before dying — unbanked combat earnings are lost on rebuy. Pick your fights, engineer your ship, and always have a clean escape route. Replay this guide anytime from the Codex.',
+    target: null,
+  },
+];
+
+// --- Mining & Resources ---
+const miningSteps = [
+  {
+    id: 'min-welcome',
+    title: 'Mining Career',
+    text: 'Mining extracts raw materials and minerals from asteroids and planetary surfaces. It is the primary source of engineering materials and a steady credit earner. This guide covers space mining, surface mining, and the tools you need.',
+    target: null,
+  },
+  {
+    id: 'min-screen',
+    title: 'Mining Screen',
+    text: 'Open External > Field Ops > Mining for the mining overview. Here you manage your refinery, prospect asteroids, and collect fragments. Mining requires a refinery module, cargo racks, and ideally a prospector limpet controller and collector limpets for efficient extraction.',
+    target: { tab: 'external', folder: 'Field Ops', item: 'mining' },
+  },
+  {
+    id: 'min-res',
+    title: 'Resource Extraction Sites',
+    text: 'Open External > Field Ops > Mining Sites to find a RES — an asteroid field rich with minerals. Travel to one in the System view, then mine the asteroids. High-value minerals like platinum and painite are rare but extremely profitable. Watch for pirates at low-security sites.',
+    target: { tab: 'external', folder: 'Field Ops', item: 'res' },
+  },
+  {
+    id: 'min-rings',
+    title: 'Ring Mining & Hotspots',
+    text: 'In the System view, select a planet with rings and scan it to reveal mineral hotspots. Travel to the ring, then target a hotspot to mine that specific mineral. Each hotspot type (pristine, common, rare) determines yield. Use a prospector limpet on each asteroid to check its contents before mining.',
+    target: { tab: 'internal', folder: 'Navigation', item: 'system' },
+  },
+  {
+    id: 'min-survey',
+    title: 'Surface Survey & SRV',
+    text: 'For surface mining, open External > Scanning > Surface Survey on a landable planet, then deploy your SRV (External > Deployed > SRV Rover). Drive across the surface collecting mineral deposits. Surface deposits yield raw materials for engineering. Use the wave scanner on your SRV to locate deposits.',
+    target: { tab: 'external', folder: 'Scanning', item: 'survey' },
+  },
+  {
+    id: 'min-srv',
+    title: 'SRV Rover',
+    text: 'Open External > Deployed > SRV Rover to drive your Surface Recon Vehicle on planet surfaces. The SRV collects materials, scans geological and biological signals, and can be recalled to your ship. Drive carefully — SRVs can be destroyed, and you respawn at your ship on foot.',
+    target: { tab: 'external', folder: 'Deployed', item: 'srv' },
+  },
+  {
+    id: 'min-materials',
+    title: 'Materials & Refinery',
+    text: 'Mined fragments go to your refinery, which processes them into cargo. Raw and manufactured materials are stored in your materials locker — not cargo. Use Internal > Modules > Material Trader to exchange unwanted materials for ones you need for engineering and synthesis.',
+    target: { tab: 'internal', folder: 'Modules', item: 'materialtrader' },
+  },
+  {
+    id: 'min-done',
+    title: 'Strike It Rich',
+    text: 'Mining is the most reliable path to engineering materials and a solid credit income. Find a pristine ring, fill your cargo, and sell at a refinery station. Keep your refinery busy and your cargo hold managed. Replay this guide anytime from the Codex.',
+    target: null,
+  },
+];
+
+// --- Crew, Multi-Crew & Squadron ---
+const crewSteps = [
+  {
+    id: 'crw-welcome',
+    title: 'Crew & Squadron',
+    text: 'You do not have to fly alone. This guide covers hiring crew, running multi-crew ships, managing wingmates, and deploying fighters — the personnel systems that multiply your effectiveness.',
+    target: null,
+  },
+  {
+    id: 'crw-crew',
+    title: 'Crew Quarters',
+    text: 'Open Cons > Personnel > Crew Quarters while docked to hire NPC crew. Active crew provide passive bonuses — a combat pilot increases weapon damage, an engineer boosts shield recharge, a trader improves market prices. Crew take a percentage of your earnings as salary, so hire wisely.',
+    target: { tab: 'cons', folder: 'Personnel', item: 'crew' },
+  },
+  {
+    id: 'crw-multicrew',
+    title: 'Multi-Crew',
+    text: 'Open External > Squadron > Multi-Crew to run a ship with multiple roles filled — pilot, gunner, and fighter bay pilot. Each role can be filled by an NPC or (in future) another commander. Multi-crew lets one large ship operate at full capacity with dedicated weapon and fighter control.',
+    target: { tab: 'external', folder: 'Squadron', item: 'multicrew' },
+  },
+  {
+    id: 'crw-wingmates',
+    title: 'Wingmates',
+    text: 'Open External > Squadron > Wingmates to assign escort ships that fly with you. Wingmates assist in combat, mining, and trade, sharing kills and protecting you. A full wing of three escorts turns a solo operation into a formidable force. Manage their loadouts and orders from this screen.',
+    target: { tab: 'external', folder: 'Squadron', item: 'wingmates' },
+  },
+  {
+    id: 'crw-fighters',
+    title: 'Fighter Hangar',
+    text: 'Open External > Deployed > Fighter Hangar to launch ship-launched fighters from a large vessel with a fighter bay. A fighter can be piloted by an NPC or multi-crew crewmate, adding DPS and drawing fire. Fighters are small and expendable — they can be rebuilt at a station if destroyed.',
+    target: { tab: 'external', folder: 'Deployed', item: 'fighters' },
+  },
+  {
+    id: 'crw-fleet',
+    title: 'Fleet Manager',
+    text: 'Open External > Squadron > Fleet Manager to view and organize every ship you own. Stored ships can be transferred to your current station for a fee. Use this screen to swap between your combat, trade, and exploration vessels without flying back to each one.',
+    target: { tab: 'external', folder: 'Squadron', item: 'fleet' },
+  },
+  {
+    id: 'crw-done',
+    title: 'Build Your Team',
+    text: 'A well-crewed ship with escorts and fighters outperforms a solo vessel many times over. Balance crew salaries against your income, keep your fighters stocked, and transfer ships to where you need them. Replay this guide anytime from the Codex.',
+    target: null,
+  },
+];
+
+// --- Missions, Passengers & Trade ---
+const missionsSteps = [
+  {
+    id: 'msn-welcome',
+    title: 'Missions & Passengers',
+    text: 'Missions are the structured way to earn credits and reputation. This guide covers the mission board, mission chains, passengers, and the advanced trade tools that maximize your income.',
+    target: null,
+  },
+  {
+    id: 'msn-board',
+    title: 'Mission Board',
+    text: 'Open Cons > Missions > Missions while docked to see available contracts. Missions include delivery, courier, mining, passenger transport, and bounty hunting. Each lists a destination, reward, and deadline. Accept missions whose destination systems you can reach in time — failing a mission damages your reputation.',
+    target: { tab: 'cons', folder: 'Missions', item: 'missions' },
+  },
+  {
+    id: 'msn-chains',
+    title: 'Mission Chains',
+    text: 'Open Cons > Missions > Mission Chains to follow multi-part story arcs. Completing a chain grants escalating rewards and unlocks unique reputation opportunities. Chains connect across multiple systems — follow the prompts to each destination in sequence.',
+    target: { tab: 'cons', folder: 'Missions', item: 'chains' },
+  },
+  {
+    id: 'msn-passengers',
+    title: 'Passenger Lounge',
+    text: 'Open Cons > Personnel > Passenger Lounge while docked to accept passenger missions. Passengers need cabin space — install passenger cabins in optional internal slots via Outfitting. VIP passengers pay more but demand specific cabin classes and may refuse if your reputation is too low.',
+    target: { tab: 'cons', folder: 'Personnel', item: 'passengers' },
+  },
+  {
+    id: 'msn-trade-tools',
+    title: 'Trade Tools',
+    text: 'Open Cons > Trade > Trade Tools to find profitable routes. Enter your cargo capacity and the tool suggests buy-low, sell-high loops between nearby stations. It accounts for commodity prices and distances, letting you maximize profit per ton per light year.',
+    target: { tab: 'cons', folder: 'Trade', item: 'trade' },
+  },
+  {
+    id: 'msn-analysis',
+    title: 'Market Analysis',
+    text: 'Open Cons > Trade > Market Analysis for AI-driven trade route recommendations. It scans nearby markets for the best margins and trends, suggesting where to buy and sell for maximum profit. Use it alongside Trade Tools to validate routes before committing your cargo.',
+    target: { tab: 'cons', folder: 'Trade', item: 'marketai' },
+  },
+  {
+    id: 'msn-blackmarket',
+    title: 'Black Market',
+    text: 'Open Cons > Trade > Black Market at stations with one (found in low-security and anarchy systems) to sell stolen or illegal goods. Black market prices are lower than legal markets, but it is the only way to offload pirated cargo. Selling here raises your wanted status — manage your crime record carefully.',
+    target: { tab: 'cons', folder: 'Trade', item: 'blackmarket' },
+  },
+  {
+    id: 'msn-company',
+    title: 'Company',
+    text: 'Open Cons > Trade > Company to manage your corporate faction. As you grow, you can found a company that holds assets, issues dividends, and competes with NPC factions for system influence. Company growth ties into the BGS (Background Simulation) — influence drives control of stations and systems.',
+    target: { tab: 'cons', folder: 'Trade', item: 'company' },
+  },
+  {
+    id: 'msn-done',
+    title: 'Earn Your Fortune',
+    text: 'Missions and trade are the backbone of a growing commander. Stack compatible missions, use trade tools to fill empty cargo, and watch your deadlines. A reputation of reliability unlocks the highest-paying contracts. Replay this guide anytime from the Codex.',
+    target: null,
+  },
+];
+
+// --- Exploration & Exobiology ---
+const explorationSteps = [
+  {
+    id: 'exp-welcome',
+    title: 'Exploration Career',
+    text: 'Exploration is the art of traveling into the unknown, scanning what you find, and selling the data for credits. It is the most solitary but potentially most lucrative career for a patient commander. This guide covers scanning, cartographics, and exobiology.',
+    target: null,
+  },
+  {
+    id: 'exp-screen',
+    title: 'Exploration Screen',
+    text: 'Open Internal > Data > Exploration for the exploration dashboard. It tracks your scan count, total payout, and current system survey status. Honk your discovery scanner in each new system to populate the system map, then probe bodies for detailed data.',
+    target: { tab: 'internal', folder: 'Data', item: 'exploration' },
+  },
+  {
+    id: 'exp-fss',
+    title: 'FSS Scanner',
+    text: 'Open External > Scanning > FSS Scanner when you arrive in a new system. The Full Spectrum Scanner reveals all bodies in the system. Tune the scanner to each signal type to identify and discover planets, moons, and belts. Discovered bodies are mapped on the system orrery.',
+    target: { tab: 'external', folder: 'Scanning', item: 'fss' },
+  },
+  {
+    id: 'exp-survey',
+    title: 'Surface Survey',
+    text: 'Open External > Scanning > Surface Survey on a landable planet after an FSS scan to launch surface probes. Probes map the surface and reveal geological, biological, and resource signals. A fully mapped body pays a bonus when sold at Cartographics. You need a Detailed Surface Scanner module equipped.',
+    target: { tab: 'external', folder: 'Scanning', item: 'survey' },
+  },
+  {
+    id: 'exp-exobio',
+    title: 'Exobiology',
+    text: 'Open External > Scanning > Exobiology to sample alien life on habitable planets. Land on a planet with biological signals, deploy your SRV or approach on foot, and collect samples from three different colonies of the same species. Sell the complete sample at Vista Genomics for a significant payout.',
+    target: { tab: 'external', folder: 'Scanning', item: 'exobiology' },
+  },
+  {
+    id: 'exp-cartography',
+    title: 'Cartographics',
+    text: 'Open Internal > Data > Cartographics while docked to sell your scan data. You only get paid when you sell — and you lose all unsold data if your ship is destroyed. Always return to a station and cash in before risking your ship. First discoveries earn a bonus and your name on the body.',
+    target: { tab: 'internal', folder: 'Data', item: 'cartography' },
+  },
+  {
+    id: 'exp-discoveries',
+    title: 'Discoveries Database',
+    text: 'Open Role > Reference > Discoveries to review every body you have first-discovered. The database logs your name, the body, and the scan value. It is your permanent record of exploration — even after selling the data, the discovery credits remain.',
+    target: { tab: 'role', folder: 'Reference', item: 'discoveries' },
+  },
+  {
+    id: 'exp-done',
+    title: 'Into the Black',
+    text: 'Exploration rewards patience. Fit a long-range FSD, a fuel scoop, and an AFMU. Jump into unexplored space, scan everything, and return to sell. The first commander to scan a body gets their name on it forever. Fly far, fly safe, and cash in often. Replay this guide anytime from the Codex.',
+    target: null,
+  },
+];
+
+// --- Commander Identity & Progression ---
+const commanderSteps = [
+  {
+    id: 'cmd-welcome',
+    title: 'Commander Identity',
+    text: 'Your commander is more than a pilot — a reputation, a rank, a collection of titles and achievements. This guide covers the Role tab: your profile, ranks, reputation, titles, badges, and the competitive leaderboards.',
+    target: null,
+  },
+  {
+    id: 'cmd-profile',
+    title: 'Commander Profile',
+    text: 'Open Role > Identity > Profile to see your commander record: total earnings, light years traveled, jumps, kills, and ranks across trade, combat, exploration, and mining. The profile is your permanent stat sheet — it persists across ship losses and grows throughout your career.',
+    target: { tab: 'role', folder: 'Identity', item: 'profile' },
+  },
+  {
+    id: 'cmd-ranks',
+    title: 'Ranks & Reputation',
+    text: 'Open Role > Identity > Reputation to view your standing with every faction and superpower you have interacted with. Higher reputation unlocks better missions, higher payouts, and access to restricted systems. Reputation rises by completing missions and bounties for a faction; it falls if you attack their ships or fail their missions.',
+    target: { tab: 'role', folder: 'Identity', item: 'rep' },
+  },
+  {
+    id: 'cmd-titles',
+    title: 'Titles',
+    text: 'Open Role > Identity > Titles to view and equip earned titles. Titles are displayed alongside your name and reflect milestones — combat ranks, exploration achievements, faction allegiance. Equip one to show your status to other commanders and in your profile.',
+    target: { tab: 'role', folder: 'Identity', item: 'titles' },
+  },
+  {
+    id: 'cmd-badges',
+    title: 'Badge Maker',
+    text: 'Open Role > Identity > Badge Maker to create custom badges from your achievements. Combine unlocked icons and colors into a personal emblem. Badges are cosmetic but let you express your commander identity — collect the components by completing specific achievement milestones.',
+    target: { tab: 'role', folder: 'Identity', item: 'badgemaker' },
+  },
+  {
+    id: 'cmd-achievements',
+    title: 'Awards & Achievements',
+    text: 'Open Role > Progress > Awards to see every achievement and your progress toward each. Achievements reward credits, materials, and titles. Some are milestone-based (jumps, kills, credits); others are discovery-based (first carrier, first colony). Check back often — new achievements unlock as you progress.',
+    target: { tab: 'role', folder: 'Progress', item: 'achievements' },
+  },
+  {
+    id: 'cmd-leaderboard',
+    title: 'Leaderboard',
+    text: 'Open Role > Progress > Leaderboard to compare your stats against other commanders. Leaderboards track total credits, jumps, kills, exploration value, and more. Climb the ranks by playing more — the leaderboard updates as your stats grow.',
+    target: { tab: 'role', folder: 'Progress', item: 'leaderboard' },
+  },
+  {
+    id: 'cmd-codex',
+    title: 'Codex',
+    text: 'Open Role > Reference > Codex anytime to look up any game mechanic. The Codex is the complete in-game encyclopedia — including this Tutorials category, where you can replay any guide. Bookmark it; it is your reference for everything in the galaxy.',
+    target: { tab: 'role', folder: 'Reference', item: 'codex' },
+  },
+  {
+    id: 'cmd-done',
+    title: 'Write Your Legend',
+    text: 'Your commander record grows with every jump, every kill, every credit. Build your reputation, earn your titles, and climb the leaderboard. The galaxy remembers its commanders — make sure it remembers you. Replay this guide anytime from the Codex.',
+    target: null,
+  },
+];
+
+// --- Galactic Politics, News & Events ---
+const galaxySteps = [
+  {
+    id: 'gal-welcome',
+    title: 'The Living Galaxy',
+    text: 'The galaxy is not static — factions rise and fall, powers vie for control, news breaks, and events unfold on a real calendar. This guide covers the political and news systems that shape the universe around you.',
+    target: null,
+  },
+  {
+    id: 'gal-bgs',
+    title: 'Faction Status (BGS)',
+    text: 'Open Cons > World > Faction Status to track the Background Simulation — the system that models faction influence and control. Factions gain influence through missions, trade, and bounties done in their systems. High influence can trigger wars and elections that shift station ownership. Your actions move the needle.',
+    target: { tab: 'cons', folder: 'World', item: 'bgs' },
+  },
+  {
+    id: 'gal-powerplay',
+    title: 'Power Play',
+    text: 'Open Cons > World > Power Play to pledge allegiance to a galactic power. Powers are major figures who control vast territory. Pledge to one, complete their objectives, and earn rank rewards — unique modules, salary, and system access. Pledging is a commitment; switching powers resets your progress.',
+    target: { tab: 'cons', folder: 'World', item: 'powerplay' },
+  },
+  {
+    id: 'gal-crime',
+    title: 'Crime Status',
+    text: 'Open Cons > World > Crime Status to view your wanted level and active bounties. Crimes — piracy, murder, smuggling — generate fines and bounties on your head. Pay fines at any station; clear bounties at an Interstellar Factors in a low-security system. A clean record keeps security forces friendly.',
+    target: { tab: 'cons', folder: 'World', item: 'crime' },
+  },
+  {
+    id: 'gal-galnet',
+    title: 'StarNet News',
+    text: 'Open Cons > World > StarNet News for the galactic news feed. Articles cover faction conflicts, power shifts, market events, and cosmic phenomena. Reading Galnet keeps you informed of where the action is — a war starting in a nearby system may mean combat bonds and trade disruption.',
+    target: { tab: 'cons', folder: 'World', item: 'galnet' },
+  },
+  {
+    id: 'gal-goals',
+    title: 'Community Goals',
+    text: 'Open Cons > World > Community Goals to join time-limited server-wide objectives. Contribute commodities, combat bonds, or exploration data to a shared goal. When the community fills the meter, all contributors receive tiered rewards — the more you contribute, the bigger your cut. Goals reset on a timer.',
+    target: { tab: 'cons', folder: 'World', item: 'goals' },
+  },
+  {
+    id: 'gal-holidays',
+    title: 'Public Holidays',
+    text: 'Open Cons > World > Public Holidays to see the real-calendar holiday system. On public holidays, special effects activate — fuel discounts, bonus payouts, increased traffic. Holidays run on a two-week countdown; plan your trading and refueling around them to save credits.',
+    target: { tab: 'cons', folder: 'World', item: 'holidays' },
+  },
+  {
+    id: 'gal-events',
+    title: 'Cosmic Events',
+    text: 'Open Cons > World > Cosmic Events for server-wide timed events — double payouts, material showers, faction flashpoints. Events are time-limited and often tie to holidays or narrative arcs. Participate while they last for bonus rewards you cannot get otherwise.',
+    target: { tab: 'cons', folder: 'World', item: 'events' },
+  },
+  {
+    id: 'gal-done',
+    title: 'Shape the Galaxy',
+    text: 'The Background Simulation means your actions matter system by system. Back a faction, pledge a power, read the news, and join community goals. The living galaxy rewards those who participate. Replay this guide anytime from the Codex.',
+    target: null,
+  },
+];
+
+// --- Cabin Life: Rooms, Aquarium, Garden, Genetics ---
+const cabinSteps = [
+  {
+    id: 'cab-welcome',
+    title: 'Cabin Life',
+    text: 'Beyond the cockpit, your ship or carrier can house living spaces — cabins, aquariums, gardens, and labs. These provide passive bonuses, cosmetic flair, and specimen collection. This guide covers the cabin systems on the Misc tab.',
+    target: null,
+  },
+  {
+    id: 'cab-cabin',
+    title: 'Cabin',
+    text: 'Open Misc > Cabin > Cabin to view and enter your ship cabin. The cabin is your personal space — furnished with rooms you build. From here you can walk around, view your collections, and manage your living quarters. Cabin modules are installed in optional internal slots via Outfitting.',
+    target: { tab: 'misc', folder: 'Cabin', item: 'cabin' },
+  },
+  {
+    id: 'cab-rooms',
+    title: 'Room Manager',
+    text: 'Open Misc > Cabin > Room Manager to build and arrange rooms in your cabin or carrier interior. Each room type — quarters, lounge, lab, greenhouse — provides different bonuses or functions. Place rooms to fit your playstyle; the layout is fully customizable and saved per ship or carrier.',
+    target: { tab: 'misc', folder: 'Cabin', item: 'roommanager' },
+  },
+  {
+    id: 'cab-aquarium',
+    title: 'Aquarium',
+    text: 'Open Misc > Cabin > Aquarium to collect and display aquatic specimens caught during your travels. Fish are procedurally generated with unique traits. A stocked aquarium provides a small morale bonus to crew and is a living record of the worlds you have visited. Catch fish with specialized equipment on water worlds.',
+    target: { tab: 'misc', folder: 'Cabin', item: 'aquarium' },
+  },
+  {
+    id: 'cab-garden',
+    title: 'Garden',
+    text: 'Open Misc > Cabin > Garden to cultivate flora collected from habitable planets. Plants grow over time and provide materials, oxygen, or morale bonuses. A well-tended garden is both decorative and functional — harvest it periodically for usable resources.',
+    target: { tab: 'misc', folder: 'Cabin', item: 'garden' },
+  },
+  {
+    id: 'cab-genetics',
+    title: 'Genetics Lab',
+    text: 'Open Misc > Cabin > Genetics Lab to crossbreed specimens from your aquarium and garden. Combining traits can produce rare and valuable new species. The genetics lab is the endgame of specimen collection — experiment with pairings to discover unique organisms worth credits and achievements.',
+    target: { tab: 'misc', folder: 'Cabin', item: 'geneticslab' },
+  },
+  {
+    id: 'cab-done',
+    title: 'Make It Home',
+    text: 'Your cabin is your home among the stars. Collect specimens, build rooms, and create a space that reflects your journey. The bonuses are modest but the satisfaction of a living ship is its own reward. Replay this guide anytime from the Codex.',
+    target: null,
+  },
+];
+
+// --- Infrastructure: Warp Gates & Canis Stella ---
+const infrastructureSteps = [
+  {
+    id: 'inf-welcome',
+    title: 'Galactic Infrastructure',
+    text: 'As you progress, you can build infrastructure that benefits you and other commanders — warp gates for instant travel and allegiance to the Canis Stella megacorporation. This guide covers these endgame systems on the Misc tab.',
+    target: null,
+  },
+  {
+    id: 'inf-warpgates',
+    title: 'Warp Gates',
+    text: 'Open Misc > Infrastructure > Warp Gates to construct permanent fast-travel links between systems. A warp gate allows instant jumps between two linked systems, bypassing fuel and range costs. Building a gate requires significant credits and rare materials, but it permanently shortcuts a route you travel often.',
+    target: { tab: 'misc', folder: 'Infrastructure', item: 'warpgates' },
+  },
+  {
+    id: 'inf-canis',
+    title: 'Canis Stella',
+    text: 'Open Misc > Infrastructure > Canis Stella to engage with the Canis Stella corporation — a player-facing megacorp with its own rank structure, CEO title, and corporate missions. Climb the corporate ladder by completing Canis Stella objectives. The top rank grants the CEO title and control of corporate policy.',
+    target: { tab: 'misc', folder: 'Infrastructure', item: 'canisstella' },
+  },
+  {
+    id: 'inf-done',
+    title: 'Build the Future',
+    text: 'Warp gates reshape travel for everyone who uses them, and Canis Stella offers a corporate career unlike any faction. These are long-term investments — build them when you have the resources and the ambition. Replay this guide anytime from the Codex.',
+    target: null,
+  },
+];
+
+// --- Maintenance & Ship Management ---
+const maintenanceSteps = [
+  {
+    id: 'mnt-welcome',
+    title: 'Ship Maintenance',
+    text: 'Your ship degrades over time and through combat. This guide covers maintenance, loadout presets, and the ship management tools that keep you flying.',
+    target: null,
+  },
+  {
+    id: 'mnt-maintenance',
+    title: 'Maintenance Screen',
+    text: 'Open Internal > Modules > Maintenance while docked to repair worn modules. Modules accumulate wear from use — thrusters, FSD, and weapons degrade fastest. Worn modules perform worse and cost more to repair the longer you wait. Run maintenance regularly to keep your ship at peak performance.',
+    target: { tab: 'internal', folder: 'Modules', item: 'maintenance' },
+  },
+  {
+    id: 'mnt-ship',
+    title: 'Ship Panel',
+    text: 'Open Internal > Ship > Ship for your vessel dashboard — stats, cargo manifest, materials locker, shipyard, and outfitting access. Monitor your hull integrity, fuel, and cargo here. The ship panel is your command center for everything about your current vessel.',
+    target: { tab: 'internal', folder: 'Ship', item: 'ship' },
+  },
+  {
+    id: 'mnt-presets',
+    title: 'Loadout Presets',
+    text: 'Open Internal > Ship > Loadout Presets to save and recall module configurations. Save a combat build, an exploration build, and a trade build, then swap between them at a station with one click (modules must be in your storage). Presets save time when switching roles — never re-outfit from scratch again.',
+    target: { tab: 'internal', folder: 'Ship', item: 'presets' },
+  },
+  {
+    id: 'mnt-rebuy',
+    title: 'Rebuy & Insurance',
+    text: 'If your ship is destroyed, you rebuy it at a fraction of its value from the rebuy screen. Always keep enough credits for a rebuy — flying without rebuy funds means losing the ship permanently. Custom ships cost more to rebuy since they include all custom parts. Check your rebuy cost on the Ship panel before dangerous trips.',
+    target: { tab: 'internal', folder: 'Ship', item: 'ship' },
+  },
+  {
+    id: 'mnt-done',
+    title: 'Keep It Flying',
+    text: 'A maintained ship is a surviving ship. Repair before combat, save your loadouts, and always have rebuy funds. The commander who respects their ship flies longer. Replay this guide anytime from the Codex.',
+    target: null,
+  },
+];
+
+// --- Settings & Controls ---
+const settingsSteps = [
+  {
+    id: 'set-welcome',
+    title: 'Settings & Controls',
+    text: 'o7 is highly customizable — from the CRT aesthetic to physical controls. This guide covers the Settings tab and controller configuration so you can tailor the experience to your hardware and preferences.',
+    target: null,
+  },
+  {
+    id: 'set-settings',
+    title: 'Settings Screen',
+    text: 'Open the Settings tab to access eight categories: Display (CRT, fullscreen, scale, orientation), Color (themes, custom RGB), Mono (grayscale with per-category color), Type (fonts, sizes), Audio (volume, presets), Controls (gestures, filters), Data (save management), and Support (donations). Each has nested collapsible sections.',
+    target: { tab: 'settings', item: 'settings' },
+  },
+  {
+    id: 'set-display',
+    title: 'Display & Accessibility',
+    text: 'In Settings > Display, toggle CRT effects, adjust the display scale (50-150%), set screen orientation (portrait/landscape with a lock), and enable mini-screen mode for small external displays like the Moto Razr 50. Text brightness scales up to 600% for a high-contrast glow. UI element sizing is independent per panel.',
+    target: { tab: 'settings', item: 'settings' },
+  },
+  {
+    id: 'set-color',
+    title: 'Color & Mono',
+    text: 'In Settings > Color, choose from preset themes or set a custom RGB accent. In Settings > Mono, enable a full monochrome mode and selectively restore color per category — stars, planets, ships, stations, and UI — for a classic green-phosphor look with color where you want it.',
+    target: { tab: 'settings', item: 'settings' },
+  },
+  {
+    id: 'set-audio',
+    title: 'Audio',
+    text: 'In Settings > Audio, set master, SFX, and music volumes. Choose from six music presets, and override the track per screen if you prefer specific music in combat, exploration, or stations. Test sounds with the preview buttons. The Ship Copilot and Radio Chatter have independent toggles found in the Ship panel.',
+    target: { tab: 'settings', item: 'settings' },
+  },
+  {
+    id: 'set-controller',
+    title: 'Controller Config',
+    text: 'Open Settings tab > Controller Config to rebind keyboard and gamepad controls. Every action supports multiple bindings for multi-controller play. Conflicts are auto-resolved. Navigate with d-pad or arrow keys, select with A or Enter, back with B or Escape. Reset all to defaults with one button. The focus system enables full controller play without a mouse.',
+    target: { tab: 'settings', item: 'controllerconfig' },
+  },
+  {
+    id: 'set-data',
+    title: 'Save Management',
+    text: 'In Settings > Data, switch between Commander and Sandbox saves, export a backup JSON file, import a save to restore progress, or reset your game. Backups are recommended before major updates. The auto-save rolls a _bak backup automatically on each save.',
+    target: { tab: 'settings', item: 'settings' },
+  },
+  {
+    id: 'set-done',
+    title: 'Make It Yours',
+    text: 'o7 is designed to be played your way — mouse, keyboard, touch, or controller; color or monochrome; portrait or landscape. Spend a few minutes in Settings to configure it to your hardware and taste. Replay this guide anytime from the Codex.',
+    target: null,
+  },
+];
+
 export const TUTORIAL_CATEGORIES = {
   starter: {
     id: 'starter',
@@ -353,6 +929,114 @@ export const TUTORIAL_CATEGORIES = {
     steps: customShipSteps,
     trigger: (state, prev) =>
       state.ship?.type === 'custom' && prev?.ship?.type !== 'custom',
+  },
+  engineering: {
+    id: 'engineering',
+    name: 'Engineering & Materials',
+    icon: '🔧',
+    desc: 'Upgrading modules with blueprints, synthesis, and the material trader.',
+    steps: engineeringSteps,
+    trigger: (state, prev) => {
+      const getEng = s => Object.values(s?.ship?.modules?.__engineering || {}).length;
+      return getEng(state) > 0 && getEng(prev) === 0;
+    },
+  },
+  combat: {
+    id: 'combat',
+    name: 'Combat & Bounties',
+    icon: '⚔️',
+    desc: 'Bounty hunting, conflict zones, piracy, and combat outfitting.',
+    steps: combatSteps,
+    trigger: (state, prev) => (state.totalKills ?? 0) > 0 && (prev?.totalKills ?? 0) === 0,
+  },
+  mining: {
+    id: 'mining',
+    name: 'Mining & Resources',
+    icon: '⛏️',
+    desc: 'Space mining, ring hotspots, surface survey, SRV, and the material refinery.',
+    steps: miningSteps,
+    trigger: (state, prev) => {
+      const mats = s => Object.values(s?.materials || {}).reduce((a, b) => a + (b || 0), 0);
+      return mats(state) > 0 && mats(prev) === 0;
+    },
+  },
+  crew: {
+    id: 'crew',
+    name: 'Crew & Squadron',
+    icon: '👥',
+    desc: 'Hiring crew, multi-crew, wingmates, fighter hangar, and fleet management.',
+    steps: crewSteps,
+    trigger: (state, prev) => (state.crew?.length ?? 0) > 0 && (prev?.crew?.length ?? 0) === 0,
+  },
+  missions: {
+    id: 'missions',
+    name: 'Missions, Passengers & Trade',
+    icon: '📋',
+    desc: 'Mission board, chains, passengers, trade tools, market analysis, black market, and company.',
+    steps: missionsSteps,
+    trigger: (state, prev) => (state.completedMissions ?? 0) > 0 && (prev?.completedMissions ?? 0) === 0,
+  },
+  exploration: {
+    id: 'exploration',
+    name: 'Exploration & Exobiology',
+    icon: '🔭',
+    desc: 'FSS scanning, surface survey, exobiology, cartographics, and the discoveries database.',
+    steps: explorationSteps,
+    trigger: (state, prev) => {
+      const scans = s => Object.keys(s?.scannedBodies || {}).length;
+      return scans(state) > 0 && scans(prev) === 0;
+    },
+  },
+  commander: {
+    id: 'commander',
+    name: 'Commander Identity',
+    icon: '🎖️',
+    desc: 'Profile, ranks, reputation, titles, badge maker, achievements, and leaderboards.',
+    steps: commanderSteps,
+    trigger: (state, prev) => (state.achievements?.length ?? 0) > 0 && (prev?.achievements?.length ?? 0) === 0,
+  },
+  galaxy: {
+    id: 'galaxy',
+    name: 'Galactic Politics & News',
+    icon: '📰',
+    desc: 'BGS faction status, power play, crime, StarNet news, community goals, and events.',
+    steps: galaxySteps,
+    trigger: (state, prev) =>
+      (state.reputation && Object.keys(state.reputation).length > 0) &&
+      (!prev?.reputation || Object.keys(prev.reputation).length === 0),
+  },
+  cabin: {
+    id: 'cabin',
+    name: 'Cabin Life',
+    icon: '🏠',
+    desc: 'Cabin rooms, aquarium, garden, and the genetics lab for specimen collection.',
+    steps: cabinSteps,
+    trigger: (state, prev) => (state.cabinRooms?.length ?? 0) > 0 && (prev?.cabinRooms?.length ?? 0) === 0,
+  },
+  infrastructure: {
+    id: 'infrastructure',
+    name: 'Warp Gates & Canis Stella',
+    icon: '🌌',
+    desc: 'Constructing warp gates and climbing the Canis Stella corporate ladder.',
+    steps: infrastructureSteps,
+    trigger: (state, prev) => (state.warpGates?.length ?? 0) > 0 && (prev?.warpGates?.length ?? 0) === 0,
+  },
+  maintenance: {
+    id: 'maintenance',
+    name: 'Ship Maintenance',
+    icon: '🛠️',
+    desc: 'Module maintenance, loadout presets, and rebuy insurance.',
+    steps: maintenanceSteps,
+    trigger: (state, prev) =>
+      (state.ship?.integrity ?? 100) < 100 && (prev?.ship?.integrity ?? 100) >= 100,
+  },
+  settings: {
+    id: 'settings',
+    name: 'Settings & Controls',
+    icon: '⚙️',
+    desc: 'Display, color, mono, fonts, audio, controller config, and save management.',
+    steps: settingsSteps,
+    // Manual trigger only — always available from the Codex and footer button
   },
 };
 
