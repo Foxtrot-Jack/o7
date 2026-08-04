@@ -80,12 +80,14 @@ export default function DockCameraScreen() {
 
   const orbitPoint = (angle) => {
     const { w, h } = sizeRef.current;
-    const cx = w / 2, cy = h * 0.18, rx = w * 0.34, ry = h * 0.11;
+    const groundY = Math.floor(h * 0.74);
+    // orbit centered on the station body, arcing over the deck
+    const cx = w / 2, cy = groundY - 10, rx = w * 0.42, ry = h * 0.34;
     return { x: cx + Math.cos(angle) * rx, y: cy + Math.sin(angle) * ry };
   };
 
   const computePos = (ship, pad) => {
-    const meta = metaRef.current[ship.id] || (metaRef.current[ship.id] = { lastState: ship.state, orbitAngle: Math.random() * Math.PI * 2, startX: 0, startY: 0, dir: 1 });
+    const meta = metaRef.current[ship.id] || (metaRef.current[ship.id] = { lastState: ship.state, orbitAngle: Math.random() * Math.PI * 2, orbitDir: Math.random() < 0.5 ? 1 : -1, startX: 0, startY: 0, dir: 1 });
     const { w, h } = sizeRef.current;
     const groundY = Math.floor(h * 0.74);
     const padY = groundY - 7;
@@ -123,7 +125,7 @@ export default function DockCameraScreen() {
     let x, y, heading;
     switch (ship.state) {
       case 'holding': {
-        meta.orbitAngle += 0.0025;
+        meta.orbitAngle += 0.0028 * meta.orbitDir;
         const op = orbitPoint(meta.orbitAngle);
         x = op.x; y = op.y;
         heading = Math.atan2(Math.cos(meta.orbitAngle), -Math.sin(meta.orbitAngle)) + Math.PI / 2;
@@ -281,13 +283,13 @@ export default function DockCameraScreen() {
         const sx = (i * 97.3) % w, sy = (i * 53.7) % (groundY - 40);
         ctx.fillRect(sx, sy, 1, 1);
       }
-      // orbit arc (dashed)
-      const cx = w / 2, cy = h * 0.18, rx = w * 0.34, ry = h * 0.11;
-      ctx.strokeStyle = 'rgba(255,136,0,0.25)';
+      // orbit arc (dashed) — centered on the station, arcs over the deck
+      const ox = w / 2, oy = groundY - 10, orx = w * 0.42, ory = h * 0.34;
+      ctx.strokeStyle = 'rgba(255,136,0,0.22)';
       ctx.lineWidth = 1;
       ctx.setLineDash([4, 6]);
       ctx.beginPath();
-      ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+      ctx.ellipse(ox, oy, orx, ory, 0, Math.PI, Math.PI * 2); // upper arc only
       ctx.stroke();
       ctx.setLineDash([]);
 
@@ -402,7 +404,11 @@ export default function DockCameraScreen() {
         }
       };
       for (const pad of res.pads) if (pad.ship) drawShip(pad.ship, pad, computePos(pad.ship, pad));
-      for (const ship of res.queue) drawShip(ship, null, computePos(ship, null));
+      for (const ship of res.queue) {
+        const pos = computePos(ship, null);
+        if (pos.y > groundY - 4) continue; // passing behind the station
+        drawShip(ship, null, pos);
+      }
 
       // crosshair
       const cur = cursorRef.current;
