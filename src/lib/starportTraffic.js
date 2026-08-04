@@ -5,9 +5,7 @@
 // Founder Sighting channel alongside the random travel encounter.
 import { SHIP_TYPES } from './shipRoster';
 import { getRandomFounderNameExcluding, getContributorCount } from './contributors';
-
-const NPC_FIRST = ['Vex', 'Korra', 'Dax', 'Rima', 'Solon', 'Tova', 'Nyx', 'Orin', 'Pax', 'Lira', 'Mira', 'Garr', 'Sable', 'Wren', 'Cade', 'Iolo', 'Rusk', 'Hela', 'Bram', 'Jovan', 'Sera', 'Kade', 'Nima', 'Roan'];
-const NPC_LAST = ['Vance', 'Okoro', 'Sund', 'Reza', 'Kell', 'Voss', 'Marr', 'Thane', 'Drake', 'Sol', 'Aza', 'Kor', 'Vell', 'Cross', 'Nimo', 'Hark', 'Falke', 'Orin', 'Bex', 'Sedgewick'];
+import { generateCommander } from './commanderGenerator';
 
 // Slowed down for a more leisurely, watchable dock scene.
 const DURATIONS = {
@@ -27,22 +25,26 @@ function randDur(range) {
 // appears when none of that alias is already on screen, and the chance drops
 // sharply while another founder is present. activeFounders is a Set of founder
 // aliases currently in the pads/queue.
-function randomPilot(activeFounders) {
-  const active = activeFounders || new Set();
-  const activeCount = active.size;
-  const chance = activeCount > 0 ? 0.04 : 0.12;
+// Founder sightings should feel special and stay uncommon: a founder only
+// appears when none of that alias is already on screen, and the chance drops
+// sharply while another founder is present. activeFounders = founder aliases
+// currently in the pads/queue; activeNames = ALL pilot names on screen, used
+// by the procedural generator so no two NPC commanders share a name at once.
+function randomPilot(activeFounders, activeNames) {
+  const founders = activeFounders || new Set();
+  const names = activeNames || new Set();
+  const chance = founders.size > 0 ? 0.04 : 0.12;
   if (getContributorCount() > 0 && Math.random() < chance) {
-    const alias = getRandomFounderNameExcluding(active);
+    const alias = getRandomFounderNameExcluding(names);
     if (alias) return { name: alias, founder: true };
   }
-  const f = NPC_FIRST[Math.floor(Math.random() * NPC_FIRST.length)];
-  const l = NPC_LAST[Math.floor(Math.random() * NPC_LAST.length)];
-  return { name: `CMDR ${f} ${l}`, founder: false };
+  const { name } = generateCommander(names);
+  return { name, founder: false };
 }
 
-export function spawnShip(activeFounders) {
+export function spawnShip(activeFounders, activeNames) {
   const t = SHIP_TYPES[Math.floor(Math.random() * SHIP_TYPES.length)];
-  const pilot = randomPilot(activeFounders);
+  const pilot = randomPilot(activeFounders, activeNames);
   return {
     id: 'npc_' + (++_id),
     shipName: t.name,

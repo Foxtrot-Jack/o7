@@ -54,7 +54,7 @@ const starterSteps = [
   {
     id: 'dockcam',
     title: 'Dock Camera',
-    text: 'Open [[cons]] > Station Services > Dock Camera to watch live starport traffic. Inbound ships circle a holding pattern above the deck, then descend onto numbered pads. Each ship is drawn as a manufacturer-specific silhouette scaled by its class. Tap any ship to identify the pilot and activity — founder-piloted ships glow green.',
+    text: 'Open [[cons]] > Station Services > Dock Camera to watch live starport traffic. Inbound ships circle a holding pattern above the deck, then descend onto numbered pads. Each ship is drawn as a manufacturer-specific silhouette scaled by its class. Tap any ship to identify the pilot and activity. Every NPC commander is procedurally generated and unique on screen — you will not see the same pilot twice while they are present. Founder-piloted ships glow green and are rare, special sightings.',
     target: { tab: 'cons', item: 'dockcam' },
   },
   {

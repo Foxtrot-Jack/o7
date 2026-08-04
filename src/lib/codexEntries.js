@@ -274,7 +274,8 @@ You must be docked to access the Station and Market screens from the nav bar.`,
 • HOLDING PATTERN — inbound ships circle a dashed holding ring above the deck while awaiting pad clearance. A faint descent corridor with descending chevrons and a PLATFORM marker shows which station they are holding over.
 • LANDING DECK — the bottom of the screen holds numbered pads. Ships break from the holding pattern, approach from any screen edge, descend vertically onto an assigned pad, and later depart toward a random edge.
 • SILHOUETTES — each ship is drawn as a manufacturer-specific hull (trader, hauler, combat, explorer, luxury, imperial) scaled by its class size, so traffic is visually varied.
-• IDENTIFY — tap or click any ship to identify the pilot, ship class, current status, and activity. Founder-piloted ships glow green and are tagged FOUNDER.
+• COMMANDERS — every NPC pilot is a procedurally generated, unique commander. No two pilots on screen share a name; the generator avoids repeating any commander while they are present, and a bounded recent-history buffer keeps freshly-departed names from reappearing too soon. The result is a living starport of distinct individuals rather than a loop of the same faces.
+• IDENTIFY — tap or click any ship to identify the pilot, ship class, current status, and activity. Founder-piloted ships glow green and are tagged FOUNDER — these are rare, special sightings of the contributors who built the galaxy, and a given founder never appears more than once at a time.
 • COMMS — a live traffic ticker below the deck streams docking clearances, landings, departures, and ambient chatter.
 
 The Dock Camera is purely observational — it costs no fuel or time.`,

@@ -250,11 +250,14 @@ export default function DockCameraScreen() {
       spawnTimerRef.current -= dt;
       const occupied = simRef.current.pads.filter(p => p.ship).length + simRef.current.queue.length;
       if (spawnTimerRef.current <= 0 && occupied < PAD_COUNT + 7) {
-        // Collect founder aliases already on screen so a founder never duplicates.
+        // Collect every pilot name currently on screen — founders so a founder
+        // never duplicates, and all names so the procedural generator never
+        // issues the same NPC commander twice at once.
         const activeFounders = new Set();
-        for (const pad of simRef.current.pads) if (pad.ship?.founder) activeFounders.add(pad.ship.pilot);
-        for (const s of simRef.current.queue) if (s.founder) activeFounders.add(s.pilot);
-        simRef.current.queue.push(spawnShip(activeFounders));
+        const activeNames = new Set();
+        for (const pad of simRef.current.pads) if (pad.ship) { activeNames.add(pad.ship.pilot); if (pad.ship.founder) activeFounders.add(pad.ship.pilot); }
+        for (const s of simRef.current.queue) { activeNames.add(s.pilot); if (s.founder) activeFounders.add(s.pilot); }
+        simRef.current.queue.push(spawnShip(activeFounders, activeNames));
         spawnTimerRef.current = 1.6 + Math.random() * 2.4;
       }
 
