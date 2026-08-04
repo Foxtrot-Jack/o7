@@ -30,9 +30,9 @@ export default function TutorialOverlay({ steps, categoryName, onClose, onTarget
   };
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-end justify-center pointer-events-none p-2 pb-1">
-      {/* No backdrop — the game remains fully visible and interactive while the
-          tutorial panel stays on screen. Only the panel itself captures clicks. */}
+    <div className="fixed bottom-0 inset-x-0 z-[200] flex justify-center pointer-events-none p-2 pb-1">
+      {/* The overlay only occupies the bottom strip where the panel lives, so the
+          nav bar and all menus remain fully visible and clickable. */}
       <div className="relative z-10 pointer-events-auto w-full max-w-md border border-cyan-700 bg-black/95 p-3 space-y-2 shadow-lg shadow-cyan-950/50">
         <div className="flex items-center gap-2 border-b border-cyan-900 pb-2">
           <GraduationCap className="w-5 h-5 text-cyan-500" />
