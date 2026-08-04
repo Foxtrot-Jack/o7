@@ -294,8 +294,11 @@ export default function NavBar({ currentScreen, onNavigate, location, tutorialTa
 
   return (
     <nav ref={navRef} className="relative z-[100] flex flex-col border-b border-orange-900/50 bg-black" style={{ zoom: (state.settings?.uiScale?.navPanel ?? 100) / 100, textShadow: navShadow }}>
-      {/* Tab bar — each tab owns its dropdown so panels anchor under their parent */}
-      <div className="flex items-stretch overflow-x-auto">
+      {/* Tab bar — each tab owns its dropdown so panels anchor under their parent.
+          overflow-visible (not overflow-x-auto) so dropdown panels are not clipped
+          vertically — setting one axis to auto forces the other to auto too, which
+          would cut off the dropdown. */}
+      <div className="flex items-stretch overflow-visible">
         {NAV_TABS.map((tab) => {
           const Icon = tab.icon;
           const allItems = getAllItems(tab);
