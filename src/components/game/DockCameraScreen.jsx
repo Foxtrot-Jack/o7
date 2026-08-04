@@ -96,20 +96,30 @@ export default function DockCameraScreen() {
     // detect state transition — record start anchor + travel direction
     if (meta.lastState !== ship.state) {
       if (ship.state === 'approaching') {
-        meta.dir = Math.random() < 0.5 ? 1 : -1; // enter from left or right
-        meta.startX = meta.dir > 0 ? -24 : w + 24;
-        meta.startY = approachAlt;
+        // enter from a random screen edge — simulates different origin systems
+        const r = Math.random();
+        if (r < 0.3) { meta.startX = -28; meta.startY = approachAlt - Math.random() * (approachAlt * 0.7); }
+        else if (r < 0.6) { meta.startX = w + 28; meta.startY = approachAlt - Math.random() * (approachAlt * 0.7); }
+        else if (r < 0.8) { meta.startX = Math.random() * w; meta.startY = -28; }
+        else { meta.startX = Math.random() * w * 0.5; meta.startY = -28; } // top-left bias
+        meta.dir = meta.startX < padX ? 1 : -1; // level heading toward pad
       } else if (ship.state === 'docking') {
         meta.startX = padX; meta.startY = approachAlt;
       } else if (ship.state === 'departing') {
-        meta.dir = padX < w / 2 ? -1 : 1; // exit toward nearest edge
+        // exit toward a random edge — simulates different destinations
+        const r = Math.random();
+        if (r < 0.3) { meta.exitX = -28; meta.exitY = approachAlt - Math.random() * (approachAlt * 0.7); }
+        else if (r < 0.6) { meta.exitX = w + 28; meta.exitY = approachAlt - Math.random() * (approachAlt * 0.7); }
+        else if (r < 0.8) { meta.exitX = Math.random() * w; meta.exitY = -28; }
+        else { meta.exitX = w - Math.random() * w * 0.5; meta.exitY = -28; } // top-right bias
+        meta.dir = meta.exitX < padX ? -1 : 1; // level heading toward exit
         meta.startX = padX; meta.startY = padY;
       }
       meta.lastState = ship.state;
     }
 
     const p = ship.duration > 0 ? Math.min(1, ship.timer / ship.duration) : 1;
-    const hdng = meta.dir > 0 ? 0 : Math.PI; // ships point left/right, not up/down
+    const hdng = meta.dir > 0 ? 0 : Math.PI; // level heading (left/right) for vertical maneuvers
     let x, y, heading;
     switch (ship.state) {
       case 'holding': {
@@ -120,14 +130,15 @@ export default function DockCameraScreen() {
         break;
       }
       case 'approaching': {
-        // horizontal glide at cruise altitude to above the pad
-        x = lerp(meta.startX, padX, smooth(p));
-        y = approachAlt;
-        heading = hdng;
+        // inbound from the chosen edge to above the pad
+        const sp = smooth(p);
+        x = lerp(meta.startX, padX, sp);
+        y = lerp(meta.startY, approachAlt, sp);
+        heading = Math.atan2(approachAlt - meta.startY, padX - meta.startX);
         break;
       }
       case 'docking': {
-        // vertical descent onto the pad
+        // level off and descend vertically onto the pad
         x = padX;
         y = lerp(meta.startY, padY, smooth(p));
         heading = hdng;
@@ -139,17 +150,18 @@ export default function DockCameraScreen() {
         break;
       }
       case 'departing': {
-        const exitX = meta.dir > 0 ? w + 24 : -24;
         if (p < 0.4) {
-          // vertical lift off the pad
+          // vertical lift off the pad, level
           x = padX;
           y = lerp(padY, approachAlt, smooth(p / 0.4));
+          heading = hdng;
         } else {
-          // horizontal exit to the edge
-          x = lerp(padX, exitX, smooth((p - 0.4) / 0.6));
-          y = approachAlt;
+          // outbound toward the chosen edge
+          const sp = smooth((p - 0.4) / 0.6);
+          x = lerp(padX, meta.exitX, sp);
+          y = lerp(approachAlt, meta.exitY, sp);
+          heading = Math.atan2(meta.exitY - approachAlt, meta.exitX - padX);
         }
-        heading = hdng;
         break;
       }
       default:
