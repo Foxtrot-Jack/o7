@@ -78,7 +78,7 @@ const NAV_TABS = [
     id: 'cons', label: 'Cons', icon: Store, align: 'left',
     items: [
       { id: 'station', label: 'Station Services', icon: Store },
-      { id: 'dockcam', label: 'Dock Camera', icon: Plane },
+      { id: 'dockcam', label: 'Missile Command', icon: Crosshair },
     ],
     folders: [
       {
