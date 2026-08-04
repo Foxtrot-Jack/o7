@@ -2,7 +2,6 @@
 // Classic Elite-style orrery with rotation and pinch zoom
 import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import * as THREE from 'three';
-import { Settings as SettingsIcon } from 'lucide-react';
 import { useGameState } from '@/lib/gameState';
 import { BODY_TYPES, GUARDIAN_BLUEPRINTS } from '@/lib/system';
 import { buildStationModel } from '@/lib/stationModelBuilder';
@@ -1093,17 +1092,8 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
         </button>
       )}
 
-      {/* Settings — quick access from the home orrery */}
-      <button
-        onClick={() => onNavigate && onNavigate('settings')}
-        className="absolute top-2 left-2 z-30 border border-orange-800 bg-black/80 p-1.5 text-orange-400 hover:bg-orange-950/40 hover:text-orange-300 pointer-events-auto"
-        title="Settings"
-      >
-        <SettingsIcon className="w-4 h-4" />
-      </button>
-
       {/* System info - top left */}
-      <div className="absolute top-9 left-2 text-xs space-y-0.5 pointer-events-none">
+      <div className="absolute top-2 left-2 text-xs space-y-0.5 pointer-events-none">
         <div className="text-orange-300 font-bold">{state.currentSystem?.name || '---'}</div>
         {!state.settings?.miniScreen && (
           <>

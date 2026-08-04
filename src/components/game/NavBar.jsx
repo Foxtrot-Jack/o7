@@ -354,11 +354,16 @@ export default function NavBar({ currentScreen, onNavigate, location, tutorialTa
                         >
                           <span className={`inline-block w-2 text-center transition-transform ${folderOpen ? 'rotate-90' : ''}`}>&#9656;</span>
                           <span>{folder.label}</span>
-                          <span className="ml-auto text-orange-800">{folder.items.filter(item => !(item.id === 'cheats' && !state.cheats?.unlocked)).length}</span>
+                          <span className="ml-auto text-orange-800">{folder.items.length}</span>
                         </button>
                         {folderOpen && (
                           <div className="bg-black/50">
                             {folder.items.map(item => renderItem(item, tutorialTarget))}
+                            {folder.items.length > 0 && folder.items.every(item => item.id === 'cheats' && !state.cheats?.unlocked) && (
+                              <div className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] text-orange-700 italic">
+                                <Lock className="w-3 h-3" /> Not yet unlocked
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>

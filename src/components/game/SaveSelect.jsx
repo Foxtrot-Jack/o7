@@ -1,6 +1,7 @@
 // Save Select — choose between Commander and Sandbox saves
 import React, { useState, useEffect } from 'react';
-import { Rocket, FlaskConical, ChevronRight } from 'lucide-react';
+import { Rocket, FlaskConical, ChevronRight, Settings as SettingsIcon } from 'lucide-react';
+import GlobalSettingsPanel from './GlobalSettingsPanel';
 
 const STYLES = {
   orange: {
@@ -19,6 +20,7 @@ const STYLES = {
 
 export default function SaveSelect({ onSelect }) {
   const [saves, setSaves] = useState({ normal: null, sandbox: null });
+  const [showSettings, setShowSettings] = useState(false);
 
   useEffect(() => {
     try {
@@ -37,7 +39,14 @@ export default function SaveSelect({ onSelect }) {
 
   return (
     <div className="crt-container w-full h-screen bg-black flex items-center justify-center p-4">
-      <div className="w-full max-w-2xl space-y-6">
+      <div className="w-full max-w-2xl space-y-6 relative">
+        <button
+          onClick={() => setShowSettings(true)}
+          className="absolute top-0 right-0 border border-orange-800 bg-black/80 p-2 text-orange-400 hover:bg-orange-950/40 hover:text-orange-300"
+          title="Settings"
+        >
+          <SettingsIcon className="w-4 h-4" />
+        </button>
         <div className="text-center">
           <h1 className="text-orange-300 text-2xl font-bold uppercase tracking-widest">o7</h1>
           <p className="text-orange-700 text-xs mt-1">Select Commander Profile</p>
@@ -45,6 +54,7 @@ export default function SaveSelect({ onSelect }) {
         <SaveCard icon={Rocket} title="Commander" subtitle="Main save — progress is permanent" save={saves.normal} fmt={fmt} s={STYLES.orange} onSelect={() => onSelect('normal')} />
         <SaveCard icon={FlaskConical} title="Sandbox" subtitle="Testing ground — everything unlocked & free" save={saves.sandbox} fmt={fmt} s={STYLES.cyan} badge="TESTING" onSelect={() => onSelect('sandbox')} />
       </div>
+      {showSettings && <GlobalSettingsPanel onClose={() => setShowSettings(false)} />}
     </div>
   );
 }
