@@ -3,15 +3,15 @@
 // Commander). Contents stay fully visible via the dropdown's scroll area.
 import React, { useState } from 'react';
 import { useGameState } from '@/lib/gameState';
-import { Compass, Home, TrendingUp, Package, Pickaxe, User, Menu } from 'lucide-react';
+import { Package, Crosshair, Users, User, LayoutGrid, Settings, Menu } from 'lucide-react';
 
 export const NAV_MENU_GROUPS = [
-  { id: 'explore', label: 'Explore', icon: Compass },
-  { id: 'station', label: 'Station', icon: Home },
-  { id: 'commerce', label: 'Commerce', icon: TrendingUp },
-  { id: 'fleet', label: 'Fleet', icon: Package },
-  { id: 'industry', label: 'Industry', icon: Pickaxe },
-  { id: 'commander', label: 'Commander', icon: User },
+  { id: 'internal', label: 'Internal', icon: Package },
+  { id: 'external', label: 'External', icon: Crosshair },
+  { id: 'cons', label: 'Cons', icon: Users },
+  { id: 'role', label: 'Role', icon: User },
+  { id: 'misc', label: 'Misc', icon: LayoutGrid },
+  { id: 'settings', label: 'Settings', icon: Settings },
 ];
 
 const DEFAULT_RGB = { r: 255, g: 136, b: 0 };

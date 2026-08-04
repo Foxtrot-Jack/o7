@@ -77,6 +77,7 @@ import ControllerConfigScreen from '@/components/game/ControllerConfigScreen';
 import CanisStellaScreen from '@/components/game/CanisStellaScreen';
 import RebuyScreen from '@/components/game/RebuyScreen';
 import SelfDestructScreen from '@/components/game/SelfDestructScreen';
+import TutorialOverlay from '@/components/game/TutorialOverlay';
 import { inputSystem } from '@/lib/inputSystem';
 import { soundEngine } from '@/lib/soundEngine';
 import { SCREEN_CONTEXTS } from '@/lib/soundPresets';
@@ -85,10 +86,12 @@ import { getScreenTextStyle } from '@/lib/uiTextCategories';
 const STATION_ONLY_SCREENS = ['station', 'market', 'outfitting', 'materialtrader', 'synthesis', 'crew', 'blackmarket', 'engineering', 'bountyboard', 'passengers', 'multicrew', 'cartography', 'maintenance'];
 
 function GameContent() {
-  const { state, manualSave } = useGameState();
+  const { state, update, manualSave } = useGameState();
   const [screen, setScreen] = useState('system');
   const [showSelfDestruct, setShowSelfDestruct] = useState(false);
   const [saveFlash, setSaveFlash] = useState(false);
+  const [tutorialActive, setTutorialActive] = useState(false);
+  const [tutorialTarget, setTutorialTarget] = useState(null);
 
   // Refs for input system — avoids stale closures in the useEffect[] subscription
   const screenRef = useRef(screen);
@@ -197,6 +200,19 @@ function GameContent() {
       setScreen('system');
     }
   }, [screen, state.currentLocation]);
+
+  // Auto-start tutorial for new players who haven't seen it
+  useEffect(() => {
+    if (!state.settings?.tutorialSeen && (state.totalJumps ?? 0) === 0) {
+      setTutorialActive(true);
+    }
+  }, []);
+
+  const closeTutorial = () => {
+    setTutorialActive(false);
+    setTutorialTarget(null);
+    update({ settings: { ...(state.settings || {}), tutorialSeen: true } });
+  };
 
   const handleNavigate = (target) => {
     screenHistoryRef.current.push(screen);
@@ -366,6 +382,7 @@ function GameContent() {
               currentScreen={screen}
               onNavigate={handleNavigate}
               location={state.currentLocation}
+              tutorialTarget={tutorialTarget}
             />
           </div>
           <div data-game-content className={`flex-1 relative z-0 ${isFullScreen ? 'overflow-hidden' : 'overflow-auto'} ${!isFullScreen && monoUI ? 'crt-mono-ui' : ''}`}>
@@ -378,6 +395,8 @@ function GameContent() {
           {showSelfDestruct && <SelfDestructScreen onCancel={() => setShowSelfDestruct(false)} />}
           {/* Rebuy screen overlay (ship destroyed) */}
           {state.rebuyPending && <RebuyScreen />}
+          {/* Tutorial overlay */}
+          {tutorialActive && <TutorialOverlay onClose={closeTutorial} onTargetChange={setTutorialTarget} />}
           {/* Footer status bar */}
           <div className={`border-t border-orange-900/50 px-3 py-1 flex items-center justify-between text-[10px] text-orange-800 bg-black ${monoUI ? 'crt-mono-ui' : ''}`}>
             <span>o7 v1.0 · {state.ship?.name || '---'}</span>
@@ -387,6 +406,12 @@ function GameContent() {
                 className={`hover:text-orange-400 ${saveFlash ? 'text-green-500' : ''}`}
               >
                 {saveFlash ? '✓ SAVED' : '💾 SAVE'}
+              </button>
+              <button
+                onClick={() => setTutorialActive(true)}
+                className="text-cyan-700 hover:text-cyan-500"
+              >
+                ⚑ TUTORIAL
               </button>
               <button
                 onClick={() => setShowSelfDestruct(true)}

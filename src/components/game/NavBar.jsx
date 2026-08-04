@@ -194,7 +194,7 @@ function getAllItems(tab) {
   return flat;
 }
 
-export default function NavBar({ currentScreen, onNavigate, location }) {
+export default function NavBar({ currentScreen, onNavigate, location, tutorialTarget }) {
   const [openTab, setOpenTab] = useState(null);
   const [openSubfolder, setOpenSubfolder] = useState(null);
   const navRef = useRef(null);
@@ -205,8 +205,22 @@ export default function NavBar({ currentScreen, onNavigate, location }) {
     : undefined;
   const navGroupStyles = state.settings?.navGroupStyles || {};
 
+  // Tutorial: auto-open the relevant tab/folder to reveal the highlighted item
   useEffect(() => {
-    if (!openTab) return;
+    if (!tutorialTarget) return;
+    if (tutorialTarget.tab) {
+      setOpenTab(tutorialTarget.tab);
+      if (tutorialTarget.folder) {
+        setOpenSubfolder(`${tutorialTarget.tab}:${tutorialTarget.folder}`);
+      } else {
+        setOpenSubfolder(null);
+      }
+    }
+  }, [tutorialTarget]);
+
+  // Click-outside closes dropdowns — disabled while a tutorial target is active
+  useEffect(() => {
+    if (!openTab || tutorialTarget) return;
     const handler = (e) => {
       if (navRef.current && !navRef.current.contains(e.target)) {
         setOpenTab(null);
@@ -219,7 +233,7 @@ export default function NavBar({ currentScreen, onNavigate, location }) {
       document.removeEventListener('mousedown', handler);
       document.removeEventListener('touchstart', handler);
     };
-  }, [openTab]);
+  }, [openTab, tutorialTarget]);
 
   const handleItemClick = (item) => {
     const isStationOnly = STATION_ONLY_SCREENS.includes(item.id);
@@ -228,8 +242,10 @@ export default function NavBar({ currentScreen, onNavigate, location }) {
     if (isCarrierRequired && (state.fleetCarriers || []).length === 0) { soundEngine.play('error'); return; }
     soundEngine.play('click');
     onNavigate(item.id);
-    setOpenTab(null);
-    setOpenSubfolder(null);
+    if (!tutorialTarget) {
+      setOpenTab(null);
+      setOpenSubfolder(null);
+    }
   };
 
   const handleTabClick = (tab) => {
@@ -249,14 +265,16 @@ export default function NavBar({ currentScreen, onNavigate, location }) {
     (STATION_ONLY_SCREENS.includes(itemId) && location !== 'station') ||
     (CARRIER_REQUIRED_SCREENS.includes(itemId) && (state.fleetCarriers || []).length === 0);
 
-  const renderItem = (item) => {
+  const renderItem = (item, tutTarget) => {
     if (item.id === 'cheats' && !state.cheats?.unlocked) return null;
     const ItemIcon = item.icon;
     const itemDisabled = isItemDisabled(item.id);
     const itemActive = currentScreen === item.id;
+    const tutItem = tutTarget?.item === item.id;
     return (
       <button
         key={item.id}
+        data-tut-item={item.id}
         onClick={() => handleItemClick(item)}
         disabled={itemDisabled}
         className={`flex items-center gap-2 w-full px-3 py-1.5 text-xs whitespace-nowrap text-left border-b border-orange-950/50 last:border-b-0 transition-all ${
@@ -265,7 +283,7 @@ export default function NavBar({ currentScreen, onNavigate, location }) {
             : itemDisabled
               ? 'text-gray-700 cursor-not-allowed'
               : 'text-orange-600 hover:bg-orange-950/30 hover:text-orange-400'
-        }`}
+        } ${tutItem ? 'ring-1 ring-cyan-400 animate-pulse' : ''}`}
       >
         <ItemIcon className="w-3.5 h-3.5 flex-shrink-0" />
         <span>{item.label}</span>
@@ -276,7 +294,7 @@ export default function NavBar({ currentScreen, onNavigate, location }) {
 
   return (
     <nav ref={navRef} className="relative z-[100] flex flex-col border-b border-orange-900/50 bg-black" style={{ zoom: (state.settings?.uiScale?.navPanel ?? 100) / 100, textShadow: navShadow }}>
-      {/* Tab bar — 6 ED4-style tabs */}
+      {/* Tab bar — each tab owns its dropdown so panels anchor under their parent */}
       <div className="flex items-stretch overflow-x-auto">
         {NAV_TABS.map((tab) => {
           const Icon = tab.icon;
@@ -286,6 +304,7 @@ export default function NavBar({ currentScreen, onNavigate, location }) {
           const gs = getNavGroupStyle(navGroupStyles, tab.id);
           const gsShadow = gs.rgb ? `0 0 3px rgba(${gs.rgb.r},${gs.rgb.g},${gs.rgb.b},0.8), 0 0 6px rgba(${gs.rgb.r},${gs.rgb.g},${gs.rgb.b},0.4)` : undefined;
           const tabStyle = (gs.size !== 100 || gsShadow) ? { zoom: gs.size / 100, textShadow: gsShadow } : undefined;
+          const tutTab = tutorialTarget?.tab === tab.id && !tutorialTarget?.item;
 
           return (
             <div key={tab.id} className="relative flex-shrink-0" style={tabStyle}>
@@ -297,58 +316,54 @@ export default function NavBar({ currentScreen, onNavigate, location }) {
                     : isOpen
                       ? 'border-orange-700 bg-orange-950/20 text-orange-300'
                       : 'border-transparent text-orange-600 hover:border-orange-800 hover:text-orange-400'
-                }`}
+                } ${tutTab ? 'ring-1 ring-cyan-400 animate-pulse' : ''}`}
               >
                 <Icon className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">{tab.label}</span>
                 <ChevronDown className={`w-2.5 h-2.5 ml-0.5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
               </button>
+
+              {/* Dropdown panel — positioned under THIS tab */}
+              {isOpen && (
+                <div className={`absolute top-full ${tab.align === 'right' ? 'right-0' : 'left-0'} mt-0.5 min-w-[180px] max-h-[70vh] overflow-y-auto border border-orange-800 bg-black z-[100] shadow-lg shadow-black`}>
+                  {/* Flat items (no folders) */}
+                  {tab.items && tab.items.map(item => renderItem(item, tutorialTarget))}
+
+                  {/* Foldered items with accordion expansion */}
+                  {tab.folders && tab.folders.map((folder) => {
+                    const folderKey = `${tab.id}:${folder.label}`;
+                    const folderOpen = openSubfolder === folderKey;
+                    const folderHasActive = folder.items.some(i => i.id === currentScreen);
+                    return (
+                      <div key={folder.label} className="border-b border-orange-950/50 last:border-b-0">
+                        <button
+                          onClick={() => handleFolderClick(folderKey)}
+                          className={`flex items-center gap-1.5 w-full px-3 py-1.5 text-[10px] uppercase tracking-wider font-bold whitespace-nowrap text-left transition-all ${
+                            folderHasActive
+                              ? 'text-orange-300'
+                              : folderOpen
+                                ? 'text-orange-400 bg-orange-950/20'
+                                : 'text-orange-700 hover:text-orange-500'
+                          }`}
+                        >
+                          <span className={`inline-block w-2 text-center transition-transform ${folderOpen ? 'rotate-90' : ''}`}>&#9656;</span>
+                          <span>{folder.label}</span>
+                          <span className="ml-auto text-orange-800">{folder.items.length}</span>
+                        </button>
+                        {folderOpen && (
+                          <div className="bg-black/50">
+                            {folder.items.map(item => renderItem(item, tutorialTarget))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           );
         })}
       </div>
-
-      {/* Dropdown panel for the open tab */}
-      {openTab && (() => {
-        const tab = NAV_TABS.find(t => t.id === openTab);
-        if (!tab) return null;
-        return (
-          <div className={`absolute top-full ${tab.align === 'right' ? 'right-0' : 'left-0'} mt-0.5 min-w-[180px] max-h-[70vh] overflow-y-auto border border-orange-800 bg-black z-[100] shadow-lg shadow-black`}>
-            {/* Flat items (no folders) */}
-            {tab.items && tab.items.map(item => renderItem(item))}
-
-            {/* Foldered items with accordion expansion */}
-            {tab.folders && tab.folders.map((folder) => {
-              const folderKey = `${tab.id}:${folder.label}`;
-              const folderOpen = openSubfolder === folderKey;
-              const folderHasActive = folder.items.some(i => i.id === currentScreen);
-              return (
-                <div key={folder.label} className="border-b border-orange-950/50 last:border-b-0">
-                  <button
-                    onClick={() => handleFolderClick(folderKey)}
-                    className={`flex items-center gap-1.5 w-full px-3 py-1.5 text-[10px] uppercase tracking-wider font-bold whitespace-nowrap text-left transition-all ${
-                      folderHasActive
-                        ? 'text-orange-300'
-                        : folderOpen
-                          ? 'text-orange-400 bg-orange-950/20'
-                          : 'text-orange-700 hover:text-orange-500'
-                    }`}
-                  >
-                    <span className={`inline-block w-2 text-center transition-transform ${folderOpen ? 'rotate-90' : ''}`}>&#9656;</span>
-                    <span>{folder.label}</span>
-                    <span className="ml-auto text-orange-800">{folder.items.length}</span>
-                  </button>
-                  {folderOpen && (
-                    <div className="bg-black/50">
-                      {folder.items.map(item => renderItem(item))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        );
-      })()}
     </nav>
   );
 }
