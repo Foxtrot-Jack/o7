@@ -298,6 +298,30 @@ export default function DockCameraScreen() {
       ctx.fillStyle = 'rgba(255,136,0,0.45)';
       ctx.font = 'bold 8px "Courier New", monospace';
       ctx.fillText('HOLDING PATTERN', ox - orx + 8, oy - 2);
+      // platform indicator — a faint descent corridor from the holding ring down
+      // to the landing deck with descending chevrons, so pilots can see which
+      // station they're holding over without the orbit path touching the docks
+      ctx.strokeStyle = 'rgba(255,136,0,0.13)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([2, 5]);
+      ctx.beginPath();
+      ctx.moveTo(ox, oy);
+      ctx.lineTo(ox, groundY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = 'rgba(255,136,0,0.3)';
+      const cTop = oy + ory * 0.5, cBot = groundY - 8;
+      for (let i = 0; i < 4; i++) {
+        const cy = cTop + (cBot - cTop) * (i / 3);
+        ctx.beginPath();
+        ctx.moveTo(ox - 3, cy); ctx.lineTo(ox, cy + 4); ctx.lineTo(ox + 3, cy); ctx.closePath();
+        ctx.fill();
+      }
+      ctx.fillStyle = 'rgba(255,136,0,0.5)';
+      ctx.font = 'bold 7px "Courier New", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('▼ PLATFORM', ox, oy - ory - 4);
+      ctx.textAlign = 'left';
 
       // station landing deck — bottom quarter of the screen
       const deckH = h - groundY;
