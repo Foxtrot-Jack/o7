@@ -34,7 +34,7 @@ The bottom status bar tracks your ship, jumps, and lets you SAVE at any time.`,
 
 • SANDBOX — Unrestricted mode. You start with 1 billion credits and a Roc. All ship parts are unlocked, purchases are free, carrier jumps cost no tritium, and you can teleport to any searched system instantly. Ideal for experimentation.
 
-Switch saves anytime from the Settings screen. Each slot persists independently.`,
+Switch saves anytime from the [[settings]] screen. Each slot persists independently.`,
       },
       {
         title: 'Navigation Bar',
@@ -79,11 +79,11 @@ KEYBOARD (default bindings, all rebindable):
 GAMEPAD:
 • D-pad / left stick — Navigate focus. A / Cross — Select. B / Circle — Back. Shoulder buttons cycle groups.
 
-REBINDING: Open Settings > Controller Config to rebind any key or gamepad button. Each action supports multiple bindings. The focus system enables full controller play without a mouse.`,
+REBINDING: Open [[settings]] > Controller Config to rebind any key or gamepad button. Each action supports multiple bindings. The focus system enables full controller play without a mouse.`,
       },
       {
         title: 'Display & Accessibility',
-        body: `Settings are organized into eight tabs: Display, Color, Mono, Type, Audio, Controls, Data, and Support.
+        body: `[[settings]] are organized into eight tabs: Display, Color, Mono, Type, Audio, Controls, Data, and Support.
 
 • DISPLAY — CRT effects, fullscreen, display scale, UI element sizing, screen orientation lock, mini-screen mode for compact external displays.
 • COLOR — 8 color themes + a custom RGB override.
@@ -258,7 +258,7 @@ You must be docked to access the Station and Market screens from the nav bar.`,
       },
       {
         title: 'Dock Camera',
-        body: `Open Cons > Station Services > Dock Camera while docked to watch live starport traffic on a vector-style landing deck.
+        body: `Open [[cons]] > Station Services > Dock Camera while docked to watch live starport traffic on a vector-style landing deck.
 
 • HOLDING PATTERN — inbound ships circle a dashed holding ring above the deck while awaiting pad clearance. A faint descent corridor with descending chevrons and a PLATFORM marker shows which station they are holding over.
 • LANDING DECK — the bottom of the screen holds numbered pads. Ships break from the holding pattern, approach from any screen edge, descend vertically onto an assigned pad, and later depart toward a random edge.
@@ -296,7 +296,7 @@ While on the surface you can deploy probes to discover biological, geological, a
 
 The FSS lets you tune into four frequency bands (Low, Mid, High, Ultra) to discover all bodies in a system. Each band reveals the stellar/planetary bodies resonating at that frequency. Completing all four bands registers a full system scan, boosting exploration data value and revealing all bodies on the orrery.
 
-Access the FSS Scanner from the External menu while in a system.`,
+Access the FSS Scanner from the [[external]] menu while in a system.`,
       },
       {
         title: 'Detailed Body Scans',
@@ -334,7 +334,7 @@ Completed analyses pay out immediately (base value 10K–25K CR per species) and
         title: 'Discovery Database',
         body: `A living catalogue of everything you've encountered. Tracks 12 stellar body types (O-class through White Dwarfs, Neutron Stars, Black Holes), 9 planet types (Rocky, Icy, Gas Giants, Earth-Like, Ammonia, Water Worlds, etc.), special milestones (first Earth-Like, first Neutron Star, first Black Hole), and biological species from your exobiology Codex.
 
-Completing categories unlocks cosmetic badges and progression bonuses. Access from the Role menu.`,
+Completing categories unlocks cosmetic badges and progression bonuses. Access from the [[role]] menu.`,
       },
       {
         title: 'Cartography & Data Sale',
@@ -346,7 +346,7 @@ You can only sell data while docked at a station. First discoveries and mapped b
         title: 'Salvage & Wreckage',
         body: `Deep space is littered with derelict vessels, crashed probes, battle remnants, and far older ruins. The further you explore, the more salvageable wreckage your scanners flag on arrival — uninhabited systems yield the richest finds, while core systems are picked clean.
 
-Open Internal > Data > Salvage to review any wreck detected in your current system. Salvage the wreck to recover unique components — distinct from regular materials — ranging from common Salvage Alloy to legendary Precursor Navigation Stones. Higher exploration tiers surface rarer, more valuable components.
+Open [[internal]] > Data > Salvage to review any wreck detected in your current system. Salvage the wreck to recover unique components — distinct from regular materials — ranging from common Salvage Alloy to legendary Precursor Navigation Stones. Higher exploration tiers surface rarer, more valuable components.
 
 Collected components are stored in your Salvaged Components locker and can be sold for credits at any time. Wreckage discoveries scale with your exploration rank and total light years travelled.`,
       },
@@ -544,7 +544,7 @@ Access from station services. Use this to convert surplus materials into what yo
         title: 'Loadout Presets',
         body: `Save your current module configuration as a named preset (e.g., "Exploration Build", "Combat Build"). Apply presets instantly at stations to switch between roles without manual module swapping.
 
-Presets are ship-type-specific — a preset saved for an Albatross won't work on a Roc. The summary shows module type counts per preset. Access from the Internal > Ship menu.`,
+Presets are ship-type-specific — a preset saved for an Albatross won't work on a Roc. The summary shows module type counts per preset. Access from the [[internal]] > Ship menu.`,
       },
       {
         title: 'Ship Maintenance & AFMU',
@@ -653,13 +653,13 @@ Access from the Commerce > Missions menu while docked.`,
         title: 'Conflict Zones',
         body: `Join an active warzone from the Conflict Zones screen. Choose a faction to fight for, then engage enemy ships. Conflict zones pay combat bonds per kill — cash them at a station. Higher-intensity zones pay more but are far more dangerous. Bring a combat-fitted ship.
 
-Access from the External > Field Ops menu.`,
+Access from the [[external]] > Field Ops menu.`,
       },
       {
         title: 'Resource Extraction Sites (RES)',
         body: `Resource Extraction Sites are asteroid fields with a high concentration of wanted pirates. They double as combat arenas — patrol the site, scan ships, and destroy wanted ones for bounties while also mining. Security ships patrol high-security RES, offering some backup.
 
-Access from the External > Field Ops menu.`,
+Access from the [[external]] > Field Ops menu.`,
       },
       {
         title: 'Multi-Crew System',
@@ -696,7 +696,7 @@ Assign a wingmate as pilot for full effectiveness, or run autonomous (reduced da
         title: 'Wingmates',
         body: `Hire NPC escort pilots from the Wingmates screen. Wingmates assist in combat, mining, and trade, sharing kills and protecting you. A full wing of three escorts turns a solo operation into a formidable force. Manage their loadouts and orders from this screen.
 
-Access from the External > Squadron menu.`,
+Access from the [[external]] > Squadron menu.`,
       },
       {
         title: 'Piracy & Interdiction',
@@ -777,13 +777,13 @@ Save designs, share them via encoded share codes, and apply saved designs to you
         title: 'Carrier Command Dashboard',
         body: `A unified management view for all fleet carriers. See tritium levels, pending revenue, active orders, docked ships, and service status for every carrier in one screen.
 
-Collect all pending revenue, check docked ship rosters, and review which services are enabled — all without switching between individual carrier screens. Access from the External > Squadron menu.`,
+Collect all pending revenue, check docked ship rosters, and review which services are enabled — all without switching between individual carrier screens. Access from the [[external]] > Squadron menu.`,
       },
       {
         title: 'Carrier Logistics',
         body: `Plan multi-jump routes for your fleet carrier using bookmarked systems as waypoints. The route planner calculates total tritium cost and distance across all jumps.
 
-Execute jumps one at a time, with tritium automatically deducted per jump. The carrier stays at its current system until you execute the next jump. Access from the External > Squadron menu.`,
+Execute jumps one at a time, with tritium automatically deducted per jump. The carrier stays at its current system until you execute the next jump. Access from the [[external]] > Squadron menu.`,
       },
       {
         title: 'Warp Gates',
@@ -1059,31 +1059,31 @@ Achievements persist with your save and provide long-term progression goals.`,
         title: 'Cabin',
         body: `Decorate your commander's cabin with customizable cockpit-style parts and surfaces. The cabin is your personal space aboard your ship or carrier — furnished with rooms you build.
 
-From here you can walk around, view your collections, and manage your living quarters. Cabin modules are installed in optional internal slots via Outfitting. Access from the Misc > Cabin menu.`,
+From here you can walk around, view your collections, and manage your living quarters. Cabin modules are installed in optional internal slots via Outfitting. Access from the [[misc]] > Cabin menu.`,
       },
       {
         title: 'Room Manager',
         body: `Add, remove, and arrange rooms on a grid layout inside your carrier or a station you own. Each room type — quarters, lounge, lab, greenhouse — provides different bonuses or functions.
 
-Place rooms to fit your playstyle; the layout is fully customizable and saved per ship or carrier. Access from the Misc > Cabin menu.`,
+Place rooms to fit your playstyle; the layout is fully customizable and saved per ship or carrier. Access from the [[misc]] > Cabin menu.`,
       },
       {
         title: 'Aquarium',
         body: `Collect and display aquatic specimens caught during your travels. Fish are procedurally generated with unique traits. A stocked aquarium provides a small morale bonus to crew and is a living record of the worlds you have visited.
 
-Catch fish with specialized equipment on water worlds. Stock is limited by tank capacity. Access from the Misc > Cabin menu.`,
+Catch fish with specialized equipment on water worlds. Stock is limited by tank capacity. Access from the [[misc]] > Cabin menu.`,
       },
       {
         title: 'Garden',
         body: `Plant and grow flora collected from habitable planets. Plants grow over time and provide materials, oxygen, or morale bonuses. A well-tended garden is both decorative and functional — harvest it periodically for usable resources.
 
-Saved plants persist per carrier. Access from the Misc > Cabin menu.`,
+Saved plants persist per carrier. Access from the [[misc]] > Cabin menu.`,
       },
       {
         title: 'Genetics Lab',
         body: `Cross-breed specimens from your aquarium and garden. Combining traits can produce rare and valuable new species. The genetics lab is the endgame of specimen collection — experiment with pairings to discover unique organisms worth credits and achievements.
 
-Access from the Misc > Cabin menu.`,
+Access from the [[misc]] > Cabin menu.`,
       },
     ],
   },

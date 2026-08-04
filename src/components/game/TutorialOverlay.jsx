@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { soundEngine } from '@/lib/soundEngine';
 import { ChevronLeft, ChevronRight, X, GraduationCap } from 'lucide-react';
+import NavIconText from './NavIconText';
 
 export default function TutorialOverlay({ steps, categoryName, onClose, onTargetChange }) {
   const [step, setStep] = useState(0);
@@ -40,7 +41,7 @@ export default function TutorialOverlay({ steps, categoryName, onClose, onTarget
           <span className="text-cyan-700 text-[10px] whitespace-nowrap">{categoryName || 'TUTORIAL'}</span>
           <button onClick={skip} className="text-cyan-700 hover:text-cyan-400"><X className="w-4 h-4" /></button>
         </div>
-        <p className="text-cyan-200 text-xs leading-relaxed">{current.text}</p>
+        <p className="text-cyan-200 text-xs leading-relaxed"><NavIconText text={current.text} /></p>
         <div className="flex items-center justify-between pt-1">
           <button onClick={prev} disabled={step === 0} className="flex items-center gap-1 px-3 py-1.5 border border-cyan-800 text-cyan-500 hover:bg-cyan-950/30 text-xs disabled:opacity-30">
             <ChevronLeft className="w-3.5 h-3.5" /> PREV

@@ -2,6 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { BookOpen, Search, GraduationCap } from 'lucide-react';
 import CODEX from '@/lib/codexEntries';
+import NavIconText from './NavIconText';
 
 export default function Codex({ onStartTutorial }) {
   const [activeCategory, setActiveCategory] = useState(0);
@@ -86,7 +87,7 @@ export default function Codex({ onStartTutorial }) {
                 {currentCategory?.category}
               </div>
               <div className="text-orange-500/90 text-xs sm:text-sm leading-relaxed whitespace-pre-line">
-                {currentEntry.body}
+                <NavIconText text={currentEntry.body} />
               </div>
               {currentEntry.tutorialId && onStartTutorial && (
                 <button
