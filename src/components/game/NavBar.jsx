@@ -13,6 +13,7 @@ const NAV_TABS = [
         label: 'Navigation', items: [
           { id: 'galaxy', label: 'Galaxy Map', icon: Map },
           { id: 'system', label: 'System', icon: Compass },
+          { id: 'journey', label: 'Auto Journey', icon: Route },
         ],
       },
       {
