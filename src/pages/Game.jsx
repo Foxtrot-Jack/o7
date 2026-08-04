@@ -393,7 +393,7 @@ function GameContent() {
       <div className="w-full h-screen" style={state.settings?.displayScale && state.settings.displayScale !== 100 ? { zoom: state.settings.displayScale / 100 } : undefined}>
       <CRTFrame enabled={state.settings.crtEffect} brightness={state.settings.textBrightness || 100} theme={effectiveTheme} customColor={state.settings.customColor} textRGB={state.settings.textRGB} fontFamily={state.settings.fontFamily} fontScale={state.settings.fontScale} display={display}>
         <div className="flex flex-col h-full">
-          <div className={`relative z-40 ${monoUI ? 'crt-mono-ui' : ''}`}>
+          <div className={`relative z-[300] ${monoUI ? 'crt-mono-ui' : ''}`}>
             <StatusHeader />
             <NavBar
               currentScreen={screen}
