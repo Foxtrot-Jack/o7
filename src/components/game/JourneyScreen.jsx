@@ -10,6 +10,7 @@ import {
   planJourney, summarizeRoute, refuelMethod, hopFuelCost,
   getShipJumpRange, getShipFuelCapacity, hasInfiniteFuel, hasFuelScoop, isScoopable,
 } from '@/lib/journeySystem';
+import EntertainmentHub from '@/components/game/EntertainmentHub';
 import { soundEngine } from '@/lib/soundEngine';
 import { Navigation, Route, Search, Star, MapPin, AlertTriangle, Bot, CheckCircle } from 'lucide-react';
 
@@ -28,7 +29,7 @@ function drawStarNode(ctx, x, y, r, color) {
 }
 
 export default function JourneyScreen() {
-  const { state, setCurrentSystem, refuel, addCredits } = useGameState();
+  const { state, setCurrentSystem, refuel, addCredits, update } = useGameState();
   const [phase, setPhase] = useState('plan'); // plan | travel | arrived | halted
   const [dest, setDest] = useState(null);
   const [search, setSearch] = useState('');
@@ -41,6 +42,7 @@ export default function JourneyScreen() {
   const [log, setLog] = useState([]);
   const [hopIndex, setHopIndex] = useState(0);
   const [phaseLabel, setPhaseLabel] = useState('');
+  const [showActivities, setShowActivities] = useState(false);
 
   const canvasRef = useRef(null);
   const rafRef = useRef(null);
@@ -152,6 +154,8 @@ export default function JourneyScreen() {
     if (i >= route.length - 1) {
       runningRef.current = false;
       addLog(`Destination reached: ${star.name}. Journey complete.`, 'success');
+      const totalDist = route.reduce((s, h) => s + h.jumpDist, 0);
+      update(prev => ({ commanderLog: [...(prev.commanderLog || []), { id: Date.now() + Math.random(), ts: Date.now(), text: `Completed journey to ${star.name} — ${route.length} jumps, ${totalDist.toFixed(0)} LY.`, type: 'journey' }].slice(-200) }));
       setPhaseLabel('JOURNEY COMPLETE');
       setPhase('arrived');
       return;
@@ -195,7 +199,7 @@ export default function JourneyScreen() {
         setPhase('halted');
       }
     }
-  }, [setCurrentSystem, refuel, addCredits, addLog, startHop]);
+  }, [setCurrentSystem, refuel, addCredits, update, addLog, startHop]);
 
   // ---- abort ----
   const abort = () => {
@@ -413,7 +417,10 @@ export default function JourneyScreen() {
           <div className="px-3 py-1.5 border-b border-orange-900/50 flex items-center justify-between text-[10px] flex-shrink-0">
             <span className="text-orange-400 uppercase flex items-center gap-1"><Bot className="w-3 h-3" /> {phaseLabel}</span>
             {phase === 'travel' ? (
-              <button onClick={abort} className="px-2 py-0.5 border border-red-800 text-red-400 hover:bg-red-950/30 text-[10px] font-bold">ABORT</button>
+              <div className="flex items-center gap-1.5">
+                <button onClick={() => setShowActivities(v => !v)} className={`px-2 py-0.5 border text-[10px] font-bold ${showActivities ? 'border-cyan-500 text-cyan-300 bg-cyan-950/30' : 'border-cyan-800 text-cyan-500 hover:bg-cyan-950/30'}`}>ACTIVITIES</button>
+                <button onClick={abort} className="px-2 py-0.5 border border-red-800 text-red-400 hover:bg-red-950/30 text-[10px] font-bold">ABORT</button>
+              </div>
             ) : (
               <button onClick={() => { setPhase('plan'); setPlan(null); setSummary(null); setDest(null); }} className="px-2 py-0.5 border border-orange-700 text-orange-400 hover:bg-orange-950/30 text-[10px] font-bold">RETURN</button>
             )}
@@ -422,7 +429,17 @@ export default function JourneyScreen() {
           {/* point-to-point transit view */}
           <div className="relative flex-1 min-h-0">
             {phase === 'travel' ? (
-              <canvas ref={canvasRef} className="absolute inset-0" />
+              <>
+                <canvas ref={canvasRef} className="absolute inset-0" />
+                {showActivities && (
+                  <div className="absolute inset-0 z-20 bg-black/95 overflow-y-auto">
+                    <div className="sticky top-0 z-10 flex justify-end p-1 bg-black border-b border-orange-900/50">
+                      <button onClick={() => setShowActivities(false)} className="px-2 py-0.5 border border-orange-700 text-orange-400 hover:bg-orange-950/30 text-[10px] font-bold">CLOSE ACTIVITIES</button>
+                    </div>
+                    <EntertainmentHub embedded />
+                  </div>
+                )}
+              </>
             ) : (
               <div className="absolute inset-0 flex items-center justify-center p-6 text-center">
                 {phase === 'arrived' ? (

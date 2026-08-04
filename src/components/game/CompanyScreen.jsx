@@ -21,7 +21,7 @@ function timeAgo(ts) {
 }
 
 export default function CompanyScreen() {
-  const { state, isSandbox, createCompany, assignShipToContract, recallShipFromContract, collectCompanyIncome, setCarrierOrder, removeCarrierOrder, collectCarrierIncome } = useGameState();
+  const { state, isSandbox, createCompany, assignShipToContract, recallShipFromContract, collectCompanyIncome, setCarrierOrder, removeCarrierOrder, collectCarrierIncome, update } = useGameState();
   const [name, setName] = useState('');
   const [, setTick] = useState(0);
 
@@ -98,7 +98,7 @@ export default function CompanyScreen() {
           <span><TrendingUp className="w-3 h-3 inline" /> Rate: {rate.toLocaleString()} CR/hr</span>
           <span><Clock className="w-3 h-3 inline" /> Last collected: {timeAgo(company.lastCollection)} ago</span>
         </div>
-        <button onClick={collectCompanyIncome} disabled={pending <= 0} className="w-full py-2 border border-green-500 text-green-300 hover:bg-green-950/50 text-xs font-bold disabled:opacity-30 disabled:cursor-not-allowed">
+        <button onClick={() => { if (pending > 0) { collectCompanyIncome(); update(prev => ({ commanderLog: [...(prev.commanderLog || []), { id: Date.now() + Math.random(), ts: Date.now(), text: `Company income collected: ${pending.toLocaleString()} CR from ${company.contracts.length} contract(s).`, type: 'company' }].slice(-200) })); } }} disabled={pending <= 0} className="w-full py-2 border border-green-500 text-green-300 hover:bg-green-950/50 text-xs font-bold disabled:opacity-30 disabled:cursor-not-allowed">
           COLLECT INCOME
         </button>
       </div>

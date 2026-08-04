@@ -1,12 +1,14 @@
 // Commander Profile — career statistics, fleet record, exploration log
-import React from 'react';
+import React, { useState } from 'react';
 import { useGameState, SHIP_MAP } from '@/lib/gameState';
 import { SOL_SYSTEM, distance3D } from '@/lib/galaxy';
-import { User, Rocket, Ship, Map, Globe, DollarSign, Route, Trophy, Anchor, Clock, Zap, Telescope, Pickaxe, BookOpen } from 'lucide-react';
+import { User, Rocket, Ship, Map, Globe, DollarSign, Route, Trophy, Anchor, Clock, Zap, Telescope, Pickaxe, BookOpen, Gamepad2 } from 'lucide-react';
 import BadgeDisplay from './BadgeDisplay';
+import EntertainmentHub from './EntertainmentHub';
 
 export default function CommanderProfile() {
   const { state, updateNotebook } = useGameState();
+  const [tab, setTab] = useState('career');
 
   const fmt = (n) => {
     if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
@@ -37,6 +39,19 @@ export default function CommanderProfile() {
         </div>
       </div>
 
+      <div className="flex gap-1 border-b border-orange-900">
+        <button onClick={() => setTab('career')} className={`px-3 py-1.5 text-xs uppercase border-b-2 ${tab === 'career' ? 'border-orange-500 text-orange-300' : 'border-transparent text-orange-700 hover:text-orange-500'}`}>Career</button>
+        <button onClick={() => setTab('entertainment')} className={`px-3 py-1.5 text-xs uppercase border-b-2 flex items-center gap-1 ${tab === 'entertainment' ? 'border-orange-500 text-orange-300' : 'border-transparent text-orange-700 hover:text-orange-500'}`}><Gamepad2 className="w-3 h-3" /> Entertainment</button>
+      </div>
+
+      {tab === 'entertainment' && (
+        <div className="h-[68vh] border border-orange-900">
+          <EntertainmentHub embedded />
+        </div>
+      )}
+
+      {tab === 'career' && (
+      <>
       <Section title="Career Statistics" icon={DollarSign}>
         <Stat label="Current Credits" value={`${fmt(state.credits)} CR`} icon={DollarSign} />
         <Stat label="Lifetime Earnings" value={`${fmt(state.lifetimeEarnings || 0)} CR`} icon={DollarSign} />
@@ -79,6 +94,8 @@ export default function CommanderProfile() {
           className="w-full h-40 bg-black border border-orange-900 p-2 text-xs text-orange-300 font-mono resize-none focus:outline-none focus:border-orange-500"
         />
       </div>
+      </>
+      )}
     </div>
   );
 }
