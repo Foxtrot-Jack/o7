@@ -50,7 +50,7 @@ import PassengerScreen from '@/components/game/PassengerScreen';
 import MultiCrewScreen from '@/components/game/MultiCrewScreen';
 import StationBuilderScreen from '@/components/game/StationBuilderScreen';
 import CartographyScreen from '@/components/game/CartographyScreen';
-import MissileCommandScreen from '@/components/game/MissileCommandScreen';
+import DockCameraScreen from '@/components/game/DockCameraScreen';
 import WreckageScreen from '@/components/game/WreckageScreen';
 import FighterScreen from '@/components/game/FighterScreen';
 import BGSScreen from '@/components/game/BGSScreen';
@@ -329,7 +329,7 @@ function GameContent() {
       case 'cartography':
         return <CartographyScreen />;
       case 'dockcam':
-        return <MissileCommandScreen />;
+        return <DockCameraScreen />;
       case 'wreckage':
         return <WreckageScreen />;
       case 'fighters':
