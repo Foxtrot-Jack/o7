@@ -153,6 +153,10 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
           shipsPurchased: parsed.shipsPurchased || 0,
           version: CURRENT_SAVE_VERSION,
         };
+          // Apply shared global personalization settings over this save's
+          // settings (preserving per-save progress like tutorialsSeen), seeding
+          // the global store from this save on first run.
+          merged.settings = applyGlobalSettings(merged.settings);
           // Regenerate system data for the current system (not persisted since it's large)
           if (merged.currentSystem) {
             merged.currentSystemData = generateSystemFromStar(merged.currentSystem);
