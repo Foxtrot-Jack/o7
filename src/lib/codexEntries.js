@@ -1,5 +1,6 @@
 // Codex entries — in-game encyclopedia data
 // Extracted from Codex.jsx for maintainability
+import { TUTORIAL_CATEGORIES } from './tutorialSteps';
 
 const CODEX = [
   {
@@ -1513,6 +1514,16 @@ Check Commander > Public Holidays at any time to see what's active, what's upcom
 • CRT retro aesthetic with burnt-orange-on-black styling`,
       },
     ],
+  },
+  // Tutorials category — built from tutorial definitions; each entry offers a replay button
+  {
+    category: 'Tutorials',
+    icon: '🎓',
+    entries: Object.values(TUTORIAL_CATEGORIES).map(cat => ({
+      title: cat.name,
+      body: cat.desc + '\n\n' + cat.steps.map((s, i) => `${i + 1}. ${s.title}\n   ${s.text}`).join('\n\n'),
+      tutorialId: cat.id,
+    })),
   },
 ];
 

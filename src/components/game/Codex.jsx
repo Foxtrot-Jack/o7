@@ -1,9 +1,9 @@
 // Codex — detailed tutorial/reference for every game mechanic
 import React, { useState, useMemo } from 'react';
-import { BookOpen, Search } from 'lucide-react';
+import { BookOpen, Search, GraduationCap } from 'lucide-react';
 import CODEX from '@/lib/codexEntries';
 
-export default function Codex() {
+export default function Codex({ onStartTutorial }) {
   const [activeCategory, setActiveCategory] = useState(0);
   const [activeEntry, setActiveEntry] = useState(0);
   const [search, setSearch] = useState('');
@@ -88,6 +88,14 @@ export default function Codex() {
               <div className="text-orange-500/90 text-xs sm:text-sm leading-relaxed whitespace-pre-line">
                 {currentEntry.body}
               </div>
+              {currentEntry.tutorialId && onStartTutorial && (
+                <button
+                  onClick={() => onStartTutorial(currentEntry.tutorialId)}
+                  className="mt-4 px-4 py-2 border border-cyan-700 text-cyan-300 hover:bg-cyan-950/30 text-xs font-bold flex items-center gap-2"
+                >
+                  <GraduationCap className="w-4 h-4" /> REPLAY TUTORIAL
+                </button>
+              )}
             </div>
           ) : (
             <div className="flex items-center justify-center h-full text-orange-800 text-xs">

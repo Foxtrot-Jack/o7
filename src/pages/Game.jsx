@@ -78,6 +78,7 @@ import CanisStellaScreen from '@/components/game/CanisStellaScreen';
 import RebuyScreen from '@/components/game/RebuyScreen';
 import SelfDestructScreen from '@/components/game/SelfDestructScreen';
 import TutorialOverlay from '@/components/game/TutorialOverlay';
+import { TUTORIAL_CATEGORIES, TUTORIAL_CATEGORY_LIST } from '@/lib/tutorialSteps';
 import { inputSystem } from '@/lib/inputSystem';
 import { soundEngine } from '@/lib/soundEngine';
 import { SCREEN_CONTEXTS } from '@/lib/soundPresets';
@@ -90,8 +91,9 @@ function GameContent() {
   const [screen, setScreen] = useState('system');
   const [showSelfDestruct, setShowSelfDestruct] = useState(false);
   const [saveFlash, setSaveFlash] = useState(false);
-  const [tutorialActive, setTutorialActive] = useState(false);
+  const [tutorialCategory, setTutorialCategory] = useState(null);
   const [tutorialTarget, setTutorialTarget] = useState(null);
+  const prevStateRef = useRef(state);
 
   // Refs for input system — avoids stale closures in the useEffect[] subscription
   const screenRef = useRef(screen);
@@ -201,17 +203,32 @@ function GameContent() {
     }
   }, [screen, state.currentLocation]);
 
-  // Auto-start tutorial for new players who haven't seen it
+  // Tutorial queue — checks each category's trigger against the previous state.
+  // Fires the first un-seen category whose milestone was just reached.
   useEffect(() => {
-    if (!state.settings?.tutorialSeen && (state.totalJumps ?? 0) === 0) {
-      setTutorialActive(true);
+    const prev = prevStateRef.current;
+    for (const cat of TUTORIAL_CATEGORY_LIST) {
+      if (state.settings?.tutorialsSeen?.[cat.id]) continue;
+      if (cat.trigger && cat.trigger(state, prev)) {
+        setTutorialCategory(cat);
+        break;
+      }
     }
-  }, []);
+    prevStateRef.current = state;
+  }, [state]);
+
+  const startTutorial = (categoryId) => {
+    const cat = TUTORIAL_CATEGORIES[categoryId];
+    if (cat) setTutorialCategory(cat);
+  };
 
   const closeTutorial = () => {
-    setTutorialActive(false);
+    if (tutorialCategory) {
+      const seen = state.settings?.tutorialsSeen || {};
+      update({ settings: { ...(state.settings || {}), tutorialsSeen: { ...seen, [tutorialCategory.id]: true } } });
+    }
+    setTutorialCategory(null);
     setTutorialTarget(null);
-    update({ settings: { ...(state.settings || {}), tutorialSeen: true } });
   };
 
   const handleNavigate = (target) => {
@@ -266,7 +283,7 @@ function GameContent() {
       case 'shipcreator':
         return <ShipCreator />;
       case 'codex':
-        return <Codex />;
+        return <Codex onStartTutorial={startTutorial} />;
       case 'company':
         return <CompanyScreen />;
       case 'cheats':
@@ -396,7 +413,14 @@ function GameContent() {
           {/* Rebuy screen overlay (ship destroyed) */}
           {state.rebuyPending && <RebuyScreen />}
           {/* Tutorial overlay */}
-          {tutorialActive && <TutorialOverlay onClose={closeTutorial} onTargetChange={setTutorialTarget} />}
+          {tutorialCategory && (
+            <TutorialOverlay
+              steps={tutorialCategory.steps}
+              categoryName={tutorialCategory.name}
+              onClose={closeTutorial}
+              onTargetChange={setTutorialTarget}
+            />
+          )}
           {/* Footer status bar */}
           <div className={`border-t border-orange-900/50 px-3 py-1 flex items-center justify-between text-[10px] text-orange-800 bg-black ${monoUI ? 'crt-mono-ui' : ''}`}>
             <span>o7 v1.0 · {state.ship?.name || '---'}</span>
@@ -408,7 +432,7 @@ function GameContent() {
                 {saveFlash ? '✓ SAVED' : '💾 SAVE'}
               </button>
               <button
-                onClick={() => setTutorialActive(true)}
+                onClick={() => startTutorial('starter')}
                 className="text-cyan-700 hover:text-cyan-500"
               >
                 ⚑ TUTORIAL
