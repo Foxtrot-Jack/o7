@@ -52,6 +52,12 @@ const starterSteps = [
     target: null,
   },
   {
+    id: 'dockcam',
+    title: 'Dock Camera',
+    text: 'Open Cons > Station Services > Dock Camera to watch live starport traffic. Inbound ships circle a holding pattern above the deck, then descend onto numbered pads. Each ship is drawn as a manufacturer-specific silhouette scaled by its class. Tap any ship to identify the pilot and activity — founder-piloted ships glow green.',
+    target: { tab: 'cons', item: 'dockcam' },
+  },
+  {
     id: 'outfitting',
     title: 'Outfitting',
     text: 'Open Internal > Modules > Outfitting to buy and equip modules. Browse by category — Core Internals, Optional Internals, Hardpoints, and Utility. Each slot accepts a specific size. Purchase with credits; sell your old module for a partial refund.',
@@ -837,7 +843,7 @@ const settingsSteps = [
   {
     id: 'set-settings',
     title: 'Settings Screen',
-    text: 'Open the Settings tab to access eight categories: Display (CRT, fullscreen, scale, orientation), Color (themes, custom RGB), Mono (grayscale with per-category color), Type (fonts, sizes), Audio (volume, presets), Controls (gestures, filters), Data (save management), and Support (donations). Each has nested collapsible sections.',
+    text: 'Open the Settings tab to access eight categories: Display (CRT, fullscreen, scale, orientation), Color (themes, custom RGB), Mono (grayscale with per-category color), Type (fonts, sizes), Audio (volume, presets), Controls (gestures, filters), Data (save management), and Support (donations). Each has nested collapsible sections. Your appearance, display, audio, and control preferences are saved globally — they persist across both save slots and preview reloads, so your chosen theme applies no matter which save you load.',
     target: { tab: 'settings', item: 'settings' },
   },
   {

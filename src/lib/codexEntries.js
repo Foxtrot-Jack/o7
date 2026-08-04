@@ -94,7 +94,9 @@ REBINDING: Open Settings > Controller Config to rebind any key or gamepad button
 • DATA — Switch save, export/import save file, reset progress.
 • SUPPORT — Donations and contributor credits.
 
-Text brightness scales up to 600% for a high-contrast glow. Every font is resizable independently.`,
+Text brightness scales up to 600% for a high-contrast glow. Every font is resizable independently.
+
+Appearance, display, audio, and control preferences are saved globally — they persist across Commander and Sandbox slots and survive preview reloads, so your chosen theme and layout apply no matter which save you load.`,
       },
     ],
   },
@@ -253,6 +255,18 @@ Uninhabited systems (population 0) may have zero stations — these are frontier
 Stations are either ORBITAL (floating in space around a planet) or SURFACE (on a planet's surface). Both types function identically once docked.
 
 You must be docked to access the Station and Market screens from the nav bar.`,
+      },
+      {
+        title: 'Dock Camera',
+        body: `Open Cons > Station Services > Dock Camera while docked to watch live starport traffic on a vector-style landing deck.
+
+• HOLDING PATTERN — inbound ships circle a dashed holding ring above the deck while awaiting pad clearance. A faint descent corridor with descending chevrons and a PLATFORM marker shows which station they are holding over.
+• LANDING DECK — the bottom of the screen holds numbered pads. Ships break from the holding pattern, approach from any screen edge, descend vertically onto an assigned pad, and later depart toward a random edge.
+• SILHOUETTES — each ship is drawn as a manufacturer-specific hull (trader, hauler, combat, explorer, luxury, imperial) scaled by its class size, so traffic is visually varied.
+• IDENTIFY — tap or click any ship to identify the pilot, ship class, current status, and activity. Founder-piloted ships glow green and are tagged FOUNDER.
+• COMMS — a live traffic ticker below the deck streams docking clearances, landings, departures, and ambient chatter.
+
+The Dock Camera is purely observational — it costs no fuel or time.`,
       },
       {
         title: 'Scanning Bodies',
