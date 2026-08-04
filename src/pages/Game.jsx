@@ -50,6 +50,7 @@ import PassengerScreen from '@/components/game/PassengerScreen';
 import MultiCrewScreen from '@/components/game/MultiCrewScreen';
 import StationBuilderScreen from '@/components/game/StationBuilderScreen';
 import CartographyScreen from '@/components/game/CartographyScreen';
+import WreckageScreen from '@/components/game/WreckageScreen';
 import FighterScreen from '@/components/game/FighterScreen';
 import BGSScreen from '@/components/game/BGSScreen';
 import ExobiologyScreen from '@/components/game/ExobiologyScreen';
@@ -326,6 +327,8 @@ function GameContent() {
         return <StationBuilderScreen />;
       case 'cartography':
         return <CartographyScreen />;
+      case 'wreckage':
+        return <WreckageScreen />;
       case 'fighters':
         return <FighterScreen />;
       case 'bgs':

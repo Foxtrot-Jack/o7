@@ -884,6 +884,13 @@ const settingsSteps = [
   },
 ];
 
+const salvageSteps = [
+  { id: 'salvage-intro', title: 'Salvageable Wreckage', text: 'Your wake scanner has flagged salvageable wreckage in deep space. The further you explore, the more wreckage you find — and the rarer the components. These wrecks drop unique salvage components distinct from regular materials.', target: null },
+  { id: 'salvage-open', title: 'Open the Salvage Screen', text: 'Open Internal > Data > Salvage to review the wreck your scanners detected in this system.', target: { tab: 'internal', folder: 'Data', item: 'wreckage' } },
+  { id: 'salvage-collect', title: 'Salvage the Wreck', text: 'Press SALVAGE WRECK to recover the unique components aboard. They are stored in your Salvaged Components locker, separate from regular materials.', target: { tab: 'internal', folder: 'Data', item: 'wreckage' } },
+  { id: 'salvage-sell', title: 'Sell for Credits', text: 'Collected components can be sold for credits anytime from the Salvage screen — rarer components are worth far more. Keep exploring to find legendary wrecks.', target: { tab: 'internal', folder: 'Data', item: 'wreckage' } },
+];
+
 export const TUTORIAL_CATEGORIES = {
   starter: {
     id: 'starter',
@@ -991,6 +998,17 @@ export const TUTORIAL_CATEGORIES = {
     trigger: (state, prev) => {
       const scans = s => Object.keys(s?.scannedBodies || {}).length;
       return scans(state) > 0 && scans(prev) === 0;
+    },
+  },
+  salvage: {
+    id: 'salvage',
+    name: 'Salvage & Wreckage',
+    icon: '🧲',
+    desc: 'Deep-space wreckage, unique salvage components, and selling salvage.',
+    steps: salvageSteps,
+    trigger: (state, prev) => {
+      const w = s => s?.achievements?.milestones?.first_wreckage;
+      return !!w(state) && !w(prev);
     },
   },
   commander: {

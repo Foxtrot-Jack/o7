@@ -132,6 +132,8 @@ export function createInitialState() {
     heatSinkCharges: 0,
     shieldCellCharges: 0,
     activeEncounter: null,
+    activeWreckage: null,
+    salvageComponents: {},
     crime: { notoriety: 0, bounty: 0, crimes: [], lastCrime: 0 },
     bountyMissions: [],
     wingmates: [],

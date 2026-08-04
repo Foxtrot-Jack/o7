@@ -328,6 +328,14 @@ Completing categories unlocks cosmetic badges and progression bonuses. Access fr
 
 You can only sell data while docked at a station. First discoveries and mapped bodies both contribute to total payout. Always cash in before risking your ship — unsold data is lost on destruction.`,
       },
+      {
+        title: 'Salvage & Wreckage',
+        body: `Deep space is littered with derelict vessels, crashed probes, battle remnants, and far older ruins. The further you explore, the more salvageable wreckage your scanners flag on arrival — uninhabited systems yield the richest finds, while core systems are picked clean.
+
+Open Internal > Data > Salvage to review any wreck detected in your current system. Salvage the wreck to recover unique components — distinct from regular materials — ranging from common Salvage Alloy to legendary Precursor Navigation Stones. Higher exploration tiers surface rarer, more valuable components.
+
+Collected components are stored in your Salvaged Components locker and can be sold for credits at any time. Wreckage discoveries scale with your exploration rank and total light years travelled.`,
+      },
     ],
   },
 

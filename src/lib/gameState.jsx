@@ -14,6 +14,7 @@ import { getCrewBonuses } from './crew';
 import { generateCommunityGoals } from './communityGoals';
 import { SYNTHESIS_MAP } from './synthesis';
 import { shouldTriggerEncounter, generateEncounter } from './encounters';
+import { shouldDiscoverWreckage, generateWreckage, COMPONENT_MAP } from './wreckage';
 import { CRIME_TYPES, getCleanRecordCost } from './crime';
 import { STATION_BUILD_COST, STATION_SERVICES, calculateStationRevenue } from './stationBuilder';
 import { FIGHTER_TYPES, getFighterHangarCapacity } from './fighters';
@@ -113,6 +114,8 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
           heatSinkCharges: parsed.heatSinkCharges || 0,
           shieldCellCharges: parsed.shieldCellCharges || 0,
           activeEncounter: parsed.activeEncounter || null,
+          activeWreckage: parsed.activeWreckage || null,
+          salvageComponents: parsed.salvageComponents || {},
           crime: parsed.crime || { notoriety: 0, bounty: 0, crimes: [], lastCrime: 0 },
           bountyMissions: parsed.bountyMissions || [],
           wingmates: parsed.wingmates || [],
@@ -255,6 +258,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
       const hasFuelCheat = prev.cheats?.unlocked && (prev.cheats?.active?.instant_jumps || prev.cheats?.active?.infinite_fuel);
       const fuelCost = hasFuelCheat ? 0 : Math.ceil(dist * (prev.fsdBoost ? 0.25 : 0.5) * getHolidayFuelMultiplier());
       const newFuel = Math.max(0, (prev.ship.fuel ?? 0) - fuelCost);
+      const wreckage = shouldDiscoverWreckage(system, prev) ? generateWreckage(system, prev) : null;
       return {
         ...prev,
         currentSystem: system,
@@ -277,16 +281,18 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
         fsdBoost: false,
         heatSinkCharges: Math.max(0, (prev.heatSinkCharges || 0) - (isNeutron ? 1 : 0)),
         ship: { ...prev.ship, fuel: newFuel, integrity: newIntegrity, moduleWear: newModuleWear },
+        achievements: {
+          ...prev.achievements,
+          milestones: {
+            ...(prev.achievements?.milestones || {}),
+            ...(wreckage && !prev.achievements?.milestones?.first_wreckage ? { first_wreckage: { system: system.name, date: Date.now() } } : {}),
+            ...(system.seed === SOL_SYSTEM.seed && !prev.cheats?.unlocked && !prev.achievements?.milestones?.found_sol ? { found_sol: { date: Date.now() } } : {}),
+          },
+        },
         ...(system.seed === SOL_SYSTEM.seed && !prev.cheats?.unlocked ? {
           cheats: { ...prev.cheats, unlocked: true },
-          achievements: {
-            ...prev.achievements,
-            milestones: {
-              ...prev.achievements?.milestones,
-              found_sol: prev.achievements?.milestones?.found_sol || { date: Date.now() },
-            },
-          },
         } : {}),
+        activeWreckage: wreckage,
         activeEncounter: shouldTriggerEncounter(system) ? generateEncounter(system) : null,
         passengerMissions: (prev.passengerMissions || []).map(m =>
           m.jumpsCompleted < m.jumpsRequired ? { ...m, jumpsCompleted: m.jumpsCompleted + 1 } : m
@@ -2300,6 +2306,44 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     });
   }, []);
 
+  // ===== SALVAGE / WRECKAGE =====
+  const salvageWreckage = useCallback(() => {
+    setState(prev => {
+      const wreck = prev.activeWreckage;
+      if (!wreck) return prev;
+      const comps = { ...(prev.salvageComponents || {}) };
+      for (const c of wreck.components) {
+        comps[c.componentId] = (comps[c.componentId] || 0) + c.qty;
+      }
+      return { ...prev, salvageComponents: comps, activeWreckage: null };
+    });
+  }, []);
+
+  const dismissWreckage = useCallback(() => {
+    setState(prev => ({ ...prev, activeWreckage: null }));
+  }, []);
+
+  const sellSalvageComponent = useCallback((componentId, qty) => {
+    setState(prev => {
+      const have = prev.salvageComponents?.[componentId] || 0;
+      if (have <= 0) return prev;
+      const comp = COMPONENT_MAP[componentId];
+      if (!comp) return prev;
+      const sellQty = Math.min(qty, have);
+      const credits = comp.value * sellQty;
+      const comps = { ...(prev.salvageComponents || {}) };
+      const remaining = have - sellQty;
+      if (remaining <= 0) delete comps[componentId];
+      else comps[componentId] = remaining;
+      return {
+        ...prev,
+        credits: prev.credits + credits,
+        lifetimeEarnings: (prev.lifetimeEarnings || 0) + credits,
+        salvageComponents: comps,
+      };
+    });
+  }, []);
+
   const value = {
     state,
     isSandbox,
@@ -2405,6 +2449,9 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     buildFighter,
     dismissFighter,
     recordExobiology,
+    salvageWreckage,
+    dismissWreckage,
+    sellSalvageComponent,
     updateNotebook,
     lockSurfaceMap,
     unlockSurfaceMaps,

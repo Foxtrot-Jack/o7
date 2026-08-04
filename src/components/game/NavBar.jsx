@@ -1,6 +1,6 @@
 // Navigation bar — ED4-style six-tab menu flow (Internal, External, Cons, Role, Misc, Settings)
 import React, { useState, useRef, useEffect } from 'react';
-import { Package, Crosshair, Users, User, LayoutGrid, Settings, Cpu, Radar, Boxes, Map, Compass, Telescope, Radio, MapPin, Store, ScrollText, Wrench, FlaskConical, ArrowLeftRight, Anchor, Route, LayoutDashboard, Hammer, DoorOpen, Layers, Plane, ClipboardList, ListChecks, TrendingUp, Brain, Briefcase, Skull, UserCheck, Newspaper, Activity, Crown, AlertTriangle, Target, Calendar, Zap, BookOpen, Sparkles, Medal, Palette, Award, Trophy, Pickaxe, Rocket, Building, Network, Fish, Leaf, Eye, Gamepad2, ChevronDown, Lock, Save, Swords, Gem } from 'lucide-react';
+import { Package, Crosshair, Users, User, LayoutGrid, Settings, Cpu, Radar, Boxes, Map, Compass, Telescope, Radio, MapPin, Store, ScrollText, Wrench, FlaskConical, ArrowLeftRight, Anchor, Route, LayoutDashboard, Hammer, DoorOpen, Layers, Plane, ClipboardList, ListChecks, TrendingUp, Brain, Briefcase, Skull, UserCheck, Newspaper, Activity, Crown, AlertTriangle, Target, Calendar, Zap, BookOpen, Sparkles, Medal, Palette, Award, Trophy, Pickaxe, Rocket, Building, Network, Fish, Leaf, Eye, Gamepad2, ChevronDown, Lock, Save, Swords, Gem, Recycle } from 'lucide-react';
 import { useGameState } from '@/lib/gameState';
 import { soundEngine } from '@/lib/soundEngine';
 import { getNavGroupStyle } from '@/components/game/MenuTextStyleSettings';
@@ -35,6 +35,7 @@ const NAV_TABS = [
         label: 'Data', items: [
           { id: 'exploration', label: 'Exploration', icon: Telescope },
           { id: 'cartography', label: 'Cartographics', icon: ScrollText },
+          { id: 'wreckage', label: 'Salvage', icon: Recycle },
         ],
       },
     ],
