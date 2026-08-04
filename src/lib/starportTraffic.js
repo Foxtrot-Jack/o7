@@ -41,6 +41,8 @@ export function spawnShip() {
     id: 'npc_' + (++_id),
     shipName: t.name,
     shipClass: t.class || 1,
+    manufacturer: t.manufacturer || 'Independent',
+    multirole: !!t.multirole,
     pilot: pilot.name,
     founder: pilot.founder,
     // Per-ship pace multiplier — some pilots fly briskly, others lumber.

@@ -6,6 +6,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Radar, Radio, X, Rocket, Anchor, Award, MapPin } from 'lucide-react';
 import { useGameState } from '@/lib/gameState';
 import { spawnShip, createPads, tickStarport } from '@/lib/starportTraffic';
+import { drawSilhouette, shipVisualRadius } from '@/lib/dockShipSilhouettes';
 import { generateChatter } from '@/lib/radioChatter';
 import { LANDMARK_SYSTEMS } from '@/lib/galaxy';
 import { soundEngine } from '@/lib/soundEngine';
@@ -80,9 +81,9 @@ export default function DockCameraScreen() {
 
   const orbitPoint = (angle) => {
     const { w, h } = sizeRef.current;
-    const groundY = Math.floor(h * 0.74);
-    // orbit centered on the station body, arcing over the deck
-    const cx = w / 2, cy = groundY - 10, rx = w * 0.42, ry = h * 0.34;
+    // holding pattern ring — kept well above the landing deck so it reads as a
+    // separate traffic queue, not tethered to the docks
+    const cx = w / 2, cy = h * 0.26, rx = w * 0.40, ry = h * 0.15;
     return { x: cx + Math.cos(angle) * rx, y: cy + Math.sin(angle) * ry };
   };
 
@@ -206,10 +207,11 @@ export default function DockCameraScreen() {
       cursorRef.current = p;
       // find nearest ship
       const ships = collectShips();
-      let best = null, bd = SHIP_HIT_RADIUS;
+      let best = null, bd = Infinity;
       for (const s of ships) {
+        const r = Math.max(SHIP_HIT_RADIUS, shipVisualRadius(s.ship));
         const d = Math.hypot(s.pos.x - p.x, s.pos.y - p.y);
-        if (d < bd) { bd = d; best = s; }
+        if (d < r && d < bd) { bd = d; best = s; }
       }
       soundEngine.play(best ? 'select' : 'click');
       setSelectedId(best ? best.ship.id : null);
@@ -283,15 +285,19 @@ export default function DockCameraScreen() {
         const sx = (i * 97.3) % w, sy = (i * 53.7) % (groundY - 40);
         ctx.fillRect(sx, sy, 1, 1);
       }
-      // orbit arc (dashed) — centered on the station, arcs over the deck
-      const ox = w / 2, oy = groundY - 10, orx = w * 0.42, ory = h * 0.34;
+      // holding-pattern ring (dashed) — a separate traffic lane above the deck
+      const ox = w / 2, oy = h * 0.26, orx = w * 0.40, ory = h * 0.15;
       ctx.strokeStyle = 'rgba(255,136,0,0.22)';
       ctx.lineWidth = 1;
       ctx.setLineDash([4, 6]);
       ctx.beginPath();
-      ctx.ellipse(ox, oy, orx, ory, 0, Math.PI, Math.PI * 2); // upper arc only
+      ctx.ellipse(ox, oy, orx, ory, 0, 0, Math.PI * 2);
       ctx.stroke();
       ctx.setLineDash([]);
+      // a small "HOLDING PATTERN" tag on the ring
+      ctx.fillStyle = 'rgba(255,136,0,0.45)';
+      ctx.font = 'bold 8px "Courier New", monospace';
+      ctx.fillText('HOLDING PATTERN', ox - orx + 8, oy - 2);
 
       // station landing deck — bottom quarter of the screen
       const deckH = h - groundY;
@@ -366,41 +372,32 @@ export default function DockCameraScreen() {
         ctx.fillText('P' + (i + 1), px - 7, groundY - 7);
       }
 
-      // ships
+      // ships — silhouettes vary by manufacturer and scale with ship class
       const drawShip = (ship, pad, pos) => {
         const sel = selectedId === ship.id;
         const color = ship.founder ? '#44ff88' : '#ffaa44';
+        const glow = ship.founder ? 'rgba(68,255,136,0.85)' : 'rgba(255,170,68,0.85)';
+        const vr = shipVisualRadius(ship);
         ctx.save();
         ctx.translate(pos.x, pos.y);
         ctx.rotate(pos.heading);
-        // trail
+        // trail (longer for bigger ships)
         ctx.strokeStyle = ship.founder ? 'rgba(68,255,136,0.35)' : 'rgba(255,170,68,0.3)';
         ctx.lineWidth = 1;
-        ctx.beginPath(); ctx.moveTo(-10, 0); ctx.lineTo(-2, 0); ctx.stroke();
-        // hull (triangle)
-        ctx.fillStyle = color;
-        // elongated hull pointing in travel direction (left/right)
-        ctx.beginPath();
-        ctx.moveTo(10, 0); ctx.lineTo(-2, -5); ctx.lineTo(-7, -3); ctx.lineTo(-5, 0);
-        ctx.lineTo(-7, 3); ctx.lineTo(-2, 5); ctx.closePath();
-        ctx.fill();
-        ctx.strokeStyle = '#000';
-        ctx.lineWidth = 0.5;
-        ctx.stroke();
-        // engine glow
-        ctx.fillStyle = ship.founder ? 'rgba(68,255,136,0.8)' : 'rgba(255,170,68,0.8)';
-        ctx.fillRect(-7, -1.5, 2, 3);
+        ctx.beginPath(); ctx.moveTo(-vr - 4, 0); ctx.lineTo(-vr * 0.4, 0); ctx.stroke();
+        // hull silhouette (manufacturer shape, class-scaled)
+        drawSilhouette(ctx, ship, color, glow);
         ctx.restore();
         // selection ring
         if (sel) {
           ctx.strokeStyle = '#44ff88';
           ctx.lineWidth = 1;
-          ctx.beginPath(); ctx.arc(pos.x, pos.y, 12, 0, Math.PI * 2); ctx.stroke();
+          ctx.beginPath(); ctx.arc(pos.x, pos.y, vr + 4, 0, Math.PI * 2); ctx.stroke();
         }
         // founder marker
         if (ship.founder) {
           ctx.fillStyle = '#44ff88';
-          ctx.beginPath(); ctx.arc(pos.x + 6, pos.y - 6, 1.5, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(pos.x + vr - 2, pos.y - vr + 2, 1.5, 0, Math.PI * 2); ctx.fill();
         }
       };
       for (const pad of res.pads) if (pad.ship) drawShip(pad.ship, pad, computePos(pad.ship, pad));
