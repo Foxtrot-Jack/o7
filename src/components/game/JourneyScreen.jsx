@@ -11,6 +11,7 @@ import {
   getShipJumpRange, getShipFuelCapacity, hasInfiniteFuel, hasFuelScoop, isScoopable,
 } from '@/lib/journeySystem';
 import EntertainmentHub from '@/components/game/EntertainmentHub';
+import FSDTuningGame from '@/components/game/FSDTuningGame';
 import { soundEngine } from '@/lib/soundEngine';
 import { Navigation, Route, Search, Star, MapPin, AlertTriangle, Bot, CheckCircle } from 'lucide-react';
 
@@ -43,6 +44,7 @@ export default function JourneyScreen() {
   const [hopIndex, setHopIndex] = useState(0);
   const [phaseLabel, setPhaseLabel] = useState('');
   const [showActivities, setShowActivities] = useState(false);
+  const [showFSD, setShowFSD] = useState(false);
 
   const canvasRef = useRef(null);
   const rafRef = useRef(null);
@@ -58,6 +60,7 @@ export default function JourneyScreen() {
   const sandboxRef = useRef(false);
   const hasScoopRef = useRef(false);
   const runningRef = useRef(false);
+  const boostRef = useRef(0); // FSD tuning fuel-saving fraction for next jump (0..1)
 
   const jumpRange = getShipJumpRange(state);
 
@@ -147,7 +150,8 @@ export default function JourneyScreen() {
     const route = routeRef.current;
     const hop = route[i];
     const star = hop.star;
-    const cost = infiniteRef.current ? 0 : Math.ceil(hop.jumpDist * FUEL_PER_LY);
+    const boost = boostRef.current; boostRef.current = 0;
+    const cost = infiniteRef.current ? 0 : Math.max(0, Math.ceil(hop.jumpDist * FUEL_PER_LY * (1 - boost)));
     if (!infiniteRef.current) fuelRef.current = Math.max(0, fuelRef.current - cost);
     setCurrentSystem(star);
     addLog(`Arrived ${star.name} — ${hop.jumpDist.toFixed(1)} LY${hop.fromNeutron ? ' [neutron boost]' : ''}. Fuel ${fuelRef.current.toFixed(1)}/${capRef.current}T.`, 'jump');
@@ -200,6 +204,14 @@ export default function JourneyScreen() {
       }
     }
   }, [setCurrentSystem, refuel, addCredits, update, addLog, startHop]);
+
+  // ---- FSD resonance tuning: spend charge to cut the next jump's fuel ----
+  const applyFSDTune = (score) => {
+    const frac = Math.min(1, score / 500); // max ~500 charge over 5 rounds
+    boostRef.current = frac;
+    setShowFSD(false);
+    addLog(`FSD resonance locked — next jump fuel −${Math.round(frac * 100)}%.`, 'charge');
+  };
 
   // ---- abort ----
   const abort = () => {
@@ -419,6 +431,7 @@ export default function JourneyScreen() {
             {phase === 'travel' ? (
               <div className="flex items-center gap-1.5">
                 <button onClick={() => setShowActivities(v => !v)} className={`px-2 py-0.5 border text-[10px] font-bold ${showActivities ? 'border-cyan-500 text-cyan-300 bg-cyan-950/30' : 'border-cyan-800 text-cyan-500 hover:bg-cyan-950/30'}`}>ACTIVITIES</button>
+                <button onClick={() => setShowFSD(true)} className="px-2 py-0.5 border border-orange-700 text-orange-400 hover:bg-orange-950/30 text-[10px] font-bold">TUNE FSD</button>
                 <button onClick={abort} className="px-2 py-0.5 border border-red-800 text-red-400 hover:bg-red-950/30 text-[10px] font-bold">ABORT</button>
               </div>
             ) : (
@@ -438,6 +451,9 @@ export default function JourneyScreen() {
                     </div>
                     <EntertainmentHub embedded />
                   </div>
+                )}
+                {showFSD && (
+                  <FSDTuningGame onComplete={applyFSDTune} onClose={() => setShowFSD(false)} />
                 )}
               </>
             ) : (

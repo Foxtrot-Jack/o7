@@ -41,14 +41,48 @@ export function getCrewTotalXp(member) {
   return (member.xp || 0) + Math.floor(hoursServed * 50);
 }
 
-export function getCrewBonuses(crew) {
+// ---- Morale / shore leave ----
+export const MORALE_MAX = 100;
+export const MORALE_DOCK_RECOVERY = 6;   // +morale per hour while docked
+export const MORALE_FLIGHT_DECAY = 2;     // -morale per hour in flight
+export const MORALE_LEAVE_RECOVERY = 20; // +morale per hour on shore leave
+export const SHORE_LEAVE_DURATION = 12 * 3600000; // 12h
+
+// Morale is derived from a stored baseline + elapsed time, so it advances
+// without needing a periodic tick. Shore leave auto-expires when leaveUntil passes.
+export function getCrewMorale(member, isDocked = false) {
+  const now = Date.now();
+  const last = member.lastMoraleTs || member.hireDate || now;
+  const hours = (now - last) / 3600000;
+  const onLeave = !!(member.onLeave && member.leaveUntil && now < member.leaveUntil);
+  const rate = onLeave ? MORALE_LEAVE_RECOVERY : (isDocked ? MORALE_DOCK_RECOVERY : -MORALE_FLIGHT_DECAY);
+  const m = (member.morale ?? 75) + rate * hours;
+  return Math.max(0, Math.min(MORALE_MAX, Math.round(m)));
+}
+
+export function moraleLabel(morale) {
+  if (morale >= 85) return 'Energised';
+  if (morale >= 60) return 'Content';
+  if (morale >= 35) return 'Weary';
+  return 'Burnt Out';
+}
+
+// Snapshot current morale, then send a crew member on shore leave (docked only).
+export function grantShoreLeave(crew, crewId, isDocked) {
+  return crew.map(c => c.id === crewId
+    ? { ...c, morale: getCrewMorale(c, isDocked), lastMoraleTs: Date.now(), onLeave: true, leaveUntil: Date.now() + SHORE_LEAVE_DURATION }
+    : c);
+}
+
+export function getCrewBonuses(crew, isDocked = false) {
   const bonuses = { jumpRange: 0, shield: 0, damage: 0, scanValue: 0, wearReduction: 0 };
   for (const member of crew || []) {
     const role = CREW_ROLE_MAP[member.role];
     if (!role) continue;
     const level = getCrewLevel(getCrewTotalXp(member));
+    const moraleMult = 0.5 + getCrewMorale(member, isDocked) / 100; // 0.5x at 0 morale, 1.5x at 100
     for (const [key, val] of Object.entries(role.bonus)) {
-      bonuses[key] = (bonuses[key] || 0) + val * level.bonusMult;
+      bonuses[key] = (bonuses[key] || 0) + val * level.bonusMult * moraleMult;
     }
   }
   return bonuses;
@@ -61,7 +95,8 @@ export function calculateSalaryOwed(crew) {
     const role = CREW_ROLE_MAP[member.role];
     if (!role) continue;
     const hours = (now - (member.lastPaid || member.hireDate)) / 3600000;
-    total += role.salary * hours;
+    const moralePayMult = 1 + (100 - getCrewMorale(member, false)) / 200; // up to +50% at 0 morale
+    total += role.salary * hours * moralePayMult;
   }
   return Math.floor(total);
 }

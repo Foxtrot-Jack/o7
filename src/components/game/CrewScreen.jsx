@@ -1,7 +1,7 @@
 // Crew Screen — hire and manage NPC co-pilots
 import React, { useState, useEffect } from 'react';
 import { useGameState } from '@/lib/gameState';
-import { CREW_ROLES, CREW_ROLE_MAP, generateCrewName, calculateSalaryOwed, getCrewLevel, CREW_LEVELS, getCrewTotalXp } from '@/lib/crew';
+import { CREW_ROLES, CREW_ROLE_MAP, generateCrewName, calculateSalaryOwed, getCrewLevel, CREW_LEVELS, getCrewTotalXp, getCrewMorale, grantShoreLeave, moraleLabel, MORALE_MAX } from '@/lib/crew';
 import { Users, UserPlus, UserMinus, Coins } from 'lucide-react';
 
 export default function CrewScreen() {
@@ -52,6 +52,10 @@ export default function CrewScreen() {
     }));
   };
 
+  const handleShoreLeave = (crewId) => {
+    update({ crew: grantShoreLeave(crew, crewId, state.currentLocation === 'station') });
+  };
+
   return (
     <div className="w-full h-full overflow-y-auto p-4 space-y-4">
       <div className="border border-orange-700 p-4 flex items-center gap-2">
@@ -76,7 +80,7 @@ export default function CrewScreen() {
             {isSandbox ? 'PAY (FREE)' : `PAY ${salaryOwed.toLocaleString()} CR`}
           </button>
         </div>
-        <div className="text-orange-700 text-[10px]">Salary accrues over time based on crew role rates. Unpaid crew remain active but debt grows.</div>
+        <div className="text-orange-700 text-[10px]">Salary accrues over time based on crew role rates. Low morale raises salary demand; grant shore leave at a station to recover it.</div>
       </div>
 
       {/* Current crew */}
@@ -115,6 +119,35 @@ export default function CrewScreen() {
                       <div className="w-full h-1.5 bg-black border border-orange-950">
                         <div className="h-full bg-cyan-600" style={{ width: `${pct}%` }} />
                       </div>
+                      {(() => {
+                        const isDocked = state.currentLocation === 'station';
+                        const morale = getCrewMorale(member, isDocked);
+                        const onLeave = !!(member.onLeave && member.leaveUntil && Date.now() < member.leaveUntil);
+                        const mColor = morale >= 85 ? 'bg-green-600' : morale >= 60 ? 'bg-cyan-600' : morale >= 35 ? 'bg-yellow-600' : 'bg-red-600';
+                        return (
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between text-[10px]">
+                              <span className="text-orange-600">Morale: <span className="text-orange-300">{moraleLabel(morale)}</span></span>
+                              <span className="text-orange-700">{morale}/{MORALE_MAX}</span>
+                            </div>
+                            <div className="w-full h-1.5 bg-black border border-orange-950">
+                              <div className={`h-full ${mColor}`} style={{ width: `${morale}%` }} />
+                            </div>
+                            {onLeave ? (
+                              <div className="text-center text-[9px] text-green-500 border border-green-900 py-1">ON SHORE LEAVE — morale recovering</div>
+                            ) : (
+                              <button
+                                onClick={() => handleShoreLeave(member.id)}
+                                disabled={!isDocked}
+                                className="w-full py-1 border border-green-700 text-green-400 hover:bg-green-950/30 text-[9px] font-bold disabled:opacity-30 disabled:cursor-not-allowed"
+                                title={isDocked ? 'Grant 12h shore leave for fast morale recovery' : 'Must be docked to grant shore leave'}
+                              >
+                                GRANT SHORE LEAVE
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })()}
                       <button
                         onClick={() => handleTrain(member.id)}
                         disabled={!isSandbox && state.credits < 50000}

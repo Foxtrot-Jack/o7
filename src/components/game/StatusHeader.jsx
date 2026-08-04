@@ -3,6 +3,7 @@ import React from 'react';
 import { useGameState } from '@/lib/gameState';
 import { getCommodityById } from '@/lib/commodities';
 import { getActiveHolidays, getNextHoliday } from '@/lib/publicHolidays';
+import GalacticTicker from '@/components/game/GalacticTicker';
 
 export default function StatusHeader() {
   const { state } = useGameState();
@@ -109,6 +110,7 @@ export default function StatusHeader() {
           </div>
         ) : null}
       </div>
+      <div className="w-full basis-full"><GalacticTicker /></div>
     </div>
   );
 }
