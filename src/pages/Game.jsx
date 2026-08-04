@@ -50,6 +50,7 @@ import PassengerScreen from '@/components/game/PassengerScreen';
 import MultiCrewScreen from '@/components/game/MultiCrewScreen';
 import StationBuilderScreen from '@/components/game/StationBuilderScreen';
 import CartographyScreen from '@/components/game/CartographyScreen';
+import StarportDockScreen from '@/components/game/StarportDockScreen';
 import WreckageScreen from '@/components/game/WreckageScreen';
 import FighterScreen from '@/components/game/FighterScreen';
 import BGSScreen from '@/components/game/BGSScreen';
@@ -85,7 +86,7 @@ import { soundEngine } from '@/lib/soundEngine';
 import { SCREEN_CONTEXTS } from '@/lib/soundPresets';
 import { getScreenTextStyle } from '@/lib/uiTextCategories';
 
-const STATION_ONLY_SCREENS = ['station', 'market', 'outfitting', 'materialtrader', 'synthesis', 'crew', 'blackmarket', 'engineering', 'bountyboard', 'passengers', 'multicrew', 'cartography', 'maintenance'];
+const STATION_ONLY_SCREENS = ['station', 'market', 'outfitting', 'materialtrader', 'synthesis', 'crew', 'blackmarket', 'engineering', 'bountyboard', 'passengers', 'multicrew', 'cartography', 'maintenance', 'dockcam'];
 
 function GameContent() {
   const { state, update, manualSave } = useGameState();
@@ -141,7 +142,7 @@ function GameContent() {
 
   // Physical input system — keyboard + gamepad navigation and screen hotkeys
   useEffect(() => {
-    const STATION_ONLY = ['station', 'market', 'outfitting', 'materialtrader', 'synthesis', 'crew', 'blackmarket', 'engineering', 'bountyboard', 'passengers', 'multicrew', 'cartography', 'maintenance'];
+    const STATION_ONLY = ['station', 'market', 'outfitting', 'materialtrader', 'synthesis', 'crew', 'blackmarket', 'engineering', 'bountyboard', 'passengers', 'multicrew', 'cartography', 'maintenance', 'dockcam'];
     const CARRIER_REQUIRED = ['carriercreator'];
 
     const focusElement = (direction) => {
@@ -327,6 +328,8 @@ function GameContent() {
         return <StationBuilderScreen />;
       case 'cartography':
         return <CartographyScreen />;
+      case 'dockcam':
+        return <StarportDockScreen />;
       case 'wreckage':
         return <WreckageScreen />;
       case 'fighters':

@@ -78,6 +78,7 @@ const NAV_TABS = [
     id: 'cons', label: 'Cons', icon: Store, align: 'left',
     items: [
       { id: 'station', label: 'Station Services', icon: Store },
+      { id: 'dockcam', label: 'Dock Camera', icon: Plane },
     ],
     folders: [
       {
@@ -185,7 +186,7 @@ const NAV_TABS = [
   },
 ];
 
-const STATION_ONLY_SCREENS = ['station', 'market', 'outfitting', 'materialtrader', 'synthesis', 'crew', 'blackmarket', 'engineering', 'bountyboard', 'passengers', 'multicrew', 'cartography', 'maintenance'];
+const STATION_ONLY_SCREENS = ['station', 'market', 'outfitting', 'materialtrader', 'synthesis', 'crew', 'blackmarket', 'engineering', 'bountyboard', 'passengers', 'multicrew', 'cartography', 'maintenance', 'dockcam'];
 const CARRIER_REQUIRED_SCREENS = ['carriercreator'];
 
 // Flatten all items from a tab (whether foldered or flat) for active-check

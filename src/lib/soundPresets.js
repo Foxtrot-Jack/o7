@@ -182,6 +182,7 @@ export const SCREEN_CONTEXTS = {
   materialtrader: 'station',
   synthesis: 'station',
   crew: 'station',
+  dockcam: 'station',
   ship: 'station',
   cabin: 'station',
   roommanager: 'station',
