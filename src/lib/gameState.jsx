@@ -61,6 +61,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
   const stateRef = useRef(state);
   stateRef.current = state;
   const loadedRef = useRef(false);
+  const [loaded, setLoaded] = useState(false);
 
   const storageKey = saveSlot === 'sandbox' ? STORAGE_KEY_SANDBOX : STORAGE_KEY;
 
@@ -173,10 +174,10 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
           settings: applyGlobalSettings(prev.settings),
         }));
       }
-      loadedRef.current = true;
+      loadedRef.current = true; setLoaded(true);
     } catch (e) {
       console.error('Failed to load save:', e);
-      loadedRef.current = true;
+      loadedRef.current = true; setLoaded(true);
     }
   }, []);
 
@@ -184,10 +185,17 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
   useEffect(() => {
     const timer = setTimeout(() => {
       safeWriteSave(storageKey, state);
-      if (loadedRef.current) saveGlobalSettings(state.settings);
     }, 500);
     return () => clearTimeout(timer);
   }, [state, storageKey]);
+
+  // Global personalization store — written when settings change (not on every
+  // state tick), so the shared store never lags the active save and never gets
+  // stamped "newer" with unchanged values. See globalSettings.js for the
+  // timestamp + deep-merge stability model.
+  useEffect(() => {
+    if (loaded) saveGlobalSettings(state.settings);
+  }, [state.settings, loaded]);
 
   // ---------------------------------------------------------------------------
   // Periodic autosave (every 120s) + lifecycle-event safety flushes.

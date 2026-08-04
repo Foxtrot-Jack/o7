@@ -9,18 +9,11 @@ import { loadGlobalSettings, saveGlobalSettings } from '@/lib/globalSettings';
 import { THEME_LIST } from '@/lib/themes';
 import { FONT_LIST } from '@/lib/fonts';
 
-const DEFAULTS = {
-  crtEffect: true,
-  textBrightness: 100,
-  colorTheme: 'elite',
-  fontFamily: 'courier',
-  fontScale: 100,
-  miniScreen: false,
-  sound: { enabled: true, sfxVolume: 0.7, musicVolume: 0.4 },
-};
-
 export default function GlobalSettingsPanel({ onClose }) {
-  const [s, setS] = useState(() => ({ ...DEFAULTS, ...(loadGlobalSettings() || {}) }));
+  // Only fields the user actually sets are persisted; absent fields fall back
+  // in the UI below. This prevents the panel from seeding a default colorTheme
+  // into the shared global store and overriding a customized save on load.
+  const [s, setS] = useState(() => ({ ...(loadGlobalSettings() || {}) }));
 
   const update = (patch) => {
     setS(prev => {
@@ -46,21 +39,21 @@ export default function GlobalSettingsPanel({ onClose }) {
 
         <Section icon={Monitor} title="Display">
           <Row label="CRT Effects" hint="Scanlines, glow, flicker">
-            <Toggle on={!!s.crtEffect} onClick={() => set('crtEffect', !s.crtEffect)} />
+            <Toggle on={s.crtEffect ?? true} onClick={() => set('crtEffect', !(s.crtEffect ?? true))} />
           </Row>
           <Row label="Text Brightness">
             <input type="range" min="100" max="600" value={s.textBrightness || 100} onChange={e => set('textBrightness', parseInt(e.target.value))} className="flex-1" />
             <span className="text-orange-300 text-xs w-12 text-right">{s.textBrightness || 100}%</span>
           </Row>
           <Row label="Mini Screen">
-            <Toggle on={!!s.miniScreen} onClick={() => set('miniScreen', !s.miniScreen)} />
+            <Toggle on={s.miniScreen ?? false} onClick={() => set('miniScreen', !(s.miniScreen ?? false))} />
           </Row>
         </Section>
 
         <Section icon={Palette} title="Color Theme">
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {THEME_LIST.map(t => (
-              <button key={t.id} onClick={() => set('colorTheme', t.id)} className={`border p-2 text-xs flex items-center gap-2 ${s.colorTheme === t.id ? 'border-orange-500 bg-orange-950/30' : 'border-orange-900 hover:border-orange-700'}`}>
+              <button key={t.id} onClick={() => set('colorTheme', t.id)} className={`border p-2 text-xs flex items-center gap-2 ${(s.colorTheme ?? 'elite') === t.id ? 'border-orange-500 bg-orange-950/30' : 'border-orange-900 hover:border-orange-700'}`}>
                 <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: t.color, boxShadow: `0 0 4px ${t.color}` }} />
                 <span className="text-orange-400 truncate">{t.name}</span>
               </button>
