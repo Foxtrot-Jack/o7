@@ -2,7 +2,8 @@
 // development. Calls create-checkout with only a tier id; the price is resolved server-side.
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Coffee, Heart, Loader2 } from 'lucide-react';
+import { Coffee, Heart, Loader2, Users } from 'lucide-react';
+import { CONTRIBUTORS, getCreditLine, getContributorCount } from '@/lib/contributors';
 
 // Mirror of base44/shared/donations.ts for display only. The authoritative price is
 // resolved server-side in create-checkout, so these values are never trusted for charging.
@@ -70,6 +71,27 @@ export default function SupportTab() {
       </div>
 
       {error && <div className="text-red-500 text-xs border border-red-900 p-2">{error}</div>}
+
+      {getContributorCount() > 0 && (
+        <div className="border border-cyan-900 p-4 space-y-2">
+          <div className="flex items-center gap-2">
+            <Users className="w-5 h-5 text-cyan-500" />
+            <h2 className="text-cyan-300 font-bold uppercase">Credits</h2>
+          </div>
+          <p className="text-orange-600 text-xs leading-relaxed">
+            The people who helped build the galaxy. Each founder's alias appears as a background
+            NPC — you may encounter them flying the stars during your travels.
+          </p>
+          <div className="space-y-1">
+            {CONTRIBUTORS.map((c, i) => (
+              <div key={i} className="flex items-baseline justify-between border-b border-orange-950/50 pb-1">
+                <span className="text-orange-300 text-xs font-bold">{c.alias}</span>
+                <span className="text-orange-700 text-[10px]">played by {c.firstName} {c.lastName}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

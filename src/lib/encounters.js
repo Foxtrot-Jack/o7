@@ -1,5 +1,6 @@
 // Encounter System — random events during interstellar travel
 // Menu-driven: pirate ambush, distress beacons, smugglers, salvage, scans, anomalies
+import { getRandomFounderName, getContributorCount } from './contributors';
 
 export const ENCOUNTER_TYPES = [
   {
@@ -80,6 +81,17 @@ export const ENCOUNTER_TYPES = [
       { id: 'ignore', label: 'Discard', desc: 'Delete the data — not worth the risk' },
     ],
   },
+  {
+    id: 'founder_sighting',
+    name: 'Founder Sighting',
+    icon: 'user',
+    description: '', // Set dynamically in generateEncounter
+    securityWeight: { anarchy: 1, low: 1, medium: 1, high: 1 },
+    options: [
+      { id: 'hail', label: 'Hail', desc: 'Return the greeting and exchange data' },
+      { id: 'wave', label: 'Wave Off', desc: 'Nod and continue on your way' },
+    ],
+  },
 ];
 
 const CONTRABAND_GOODS = ['narcotics', 'performance_enhancers', 'pathogen_culture', 'encrypted_data', 'combat_drones'];
@@ -96,11 +108,20 @@ export function generateEncounter(system) {
   const security = system?.security || 'medium';
   const weighted = [];
   for (const enc of ENCOUNTER_TYPES) {
+    // Founder sightings only appear if there are contributors to name.
+    if (enc.id === 'founder_sighting' && getContributorCount() === 0) continue;
     const w = enc.securityWeight[security] || 1;
     for (let i = 0; i < w; i++) weighted.push(enc);
   }
   const chosen = weighted[Math.floor(Math.random() * weighted.length)];
-  return { ...chosen, systemName: system?.name || 'Unknown', timestamp: Date.now() };
+  const result = { ...chosen, systemName: system?.name || 'Unknown', timestamp: Date.now() };
+  // Founder sighting — assign a founder alias as the pilot and customize text.
+  if (chosen.id === 'founder_sighting') {
+    const name = getRandomFounderName();
+    result.pilotName = name;
+    result.description = `A lone pilot hails you on a clear channel. "Commander, you're a long way from home. I'm ${name} — one of the old hands who helped chart these stars. Safe skies." Their ship banks gracefully and accelerates away into the black.`;
+  }
+  return result;
 }
 
 export function resolveEncounter(encounter, optionId, gameState) {
@@ -271,6 +292,15 @@ export function resolveEncounter(encounter, optionId, gameState) {
         }
       } else {
         outcome.message = 'You purge the intercepted data and continue on your way.';
+      }
+      break;
+    }
+    case 'founder_sighting': {
+      if (optionId === 'hail') {
+        outcome.message = `You return the hail and exchange exploration data. ${encounter.pilotName} transmits a bundle of old survey charts as a gesture of goodwill — a memento from the early days of the galaxy.`;
+        outcome.creditsChange = Math.floor(Math.random() * 20000) + 10000;
+      } else {
+        outcome.message = `You nod and continue on your way. The founder's ship vanishes into the dark.`;
       }
       break;
     }

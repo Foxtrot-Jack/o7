@@ -871,6 +871,12 @@ const settingsSteps = [
     target: { tab: 'settings', item: 'settings' },
   },
   {
+    id: 'set-support',
+    title: 'Support & Credits',
+    text: 'In Settings > Support, you can support development with a one-time donation via Base44 Payments, and view the Credits — the list of founders and contributors who helped build the galaxy. Each contributor\'s alias appears as a background NPC you can meet while flying. The credits list grows over time as more people contribute.',
+    target: { tab: 'settings', item: 'settings' },
+  },
+  {
     id: 'set-done',
     title: 'Make It Yours',
     text: 'o7 is designed to be played your way — mouse, keyboard, touch, or controller; color or monochrome; portrait or landscape. Spend a few minutes in Settings to configure it to your hardware and taste. Replay this guide anytime from the Codex.',

@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useGameState } from '@/lib/gameState';
 import { resolveEncounter } from '@/lib/encounters';
-import { Skull, Radio, Package, Ghost, Shield, Zap, AlertTriangle } from 'lucide-react';
+import { Skull, Radio, Package, Ghost, Shield, Zap, User, AlertTriangle } from 'lucide-react';
 
 const ENCOUNTER_ICONS = {
   skull: Skull,
@@ -11,6 +11,7 @@ const ENCOUNTER_ICONS = {
   ghost: Ghost,
   shield: Shield,
   zap: Zap,
+  user: User,
 };
 
 export default function EncounterScreen() {
@@ -42,6 +43,9 @@ export default function EncounterScreen() {
               <div>
                 <h2 className="text-orange-300 font-bold uppercase text-lg">{encounter.name}</h2>
                 <div className="text-orange-700 text-[10px]">IN-SYSTEM: {encounter.systemName}</div>
+                {encounter.pilotName && (
+                  <div className="text-cyan-600 text-[10px] uppercase">PILOT: {encounter.pilotName}</div>
+                )}
               </div>
             </div>
             <p className="text-orange-400 text-sm leading-relaxed">{encounter.description}</p>
