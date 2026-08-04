@@ -1188,6 +1188,88 @@ A single cargo hold of spirits purchased at normal prices can yield tens of mill
   },
 
   // ============================================================
+  // CARD DECKS & ARENA
+  // ============================================================
+  {
+    category: 'Card Decks & Arena',
+    icon: '🃏',
+    entries: [
+      {
+        title: 'Card Collection',
+        body: `o7 includes a collectible card meta-game spanning over 1,000 cards across ten decks:
+
+• EIGHT MANUFACTURER DECKS (100 cards each) — Drake-Voss, Orion Heavy, Sentinel Forge, Kepler Aeroworks, Meridian Luxe, Solaris Dynasty, Proxima Corp, and Omega Corp. Each card is a ship stat block (Firepower, Speed, Armor, Cargo, Power) with a rarity tier: Common, Rare, Epic, or Legendary.
+• CANIS STELLA DECK (150 cards) — earned through corporate faction service, not station visits.
+• SPECIAL CLASS DECK (one card per achievement) — a card is granted automatically the moment you earn any achievement. First-discovery cards are Legendary.
+
+Cards are earned purely through play — there is no real-money purchase. Access your collection from the Commander Profile > Cards tab.`,
+      },
+      {
+        title: 'Earning Cards',
+        body: `Three paths fill your binder:
+
+• STATION VISITS — The first time you dock at a given station, you draw one card keyed to that station's economy (e.g., a High Tech station yields a Kepler card). Anarchy and low-security stations, and high-population systems, skew rarer. Re-visiting the same station does not grant another card.
+• CANIS STELLA — Join the corporation and gain reputation (each Canis Stella mission gives +rep) to earn Canis Stella cards. You receive three on joining.
+• ACHIEVEMENTS — Every achievement you earn grants a matching Special Class card automatically, themed to the deed.
+
+Cards are awarded the moment the trigger fires — check the on-screen "Card Acquired" flash.`,
+      },
+      {
+        title: 'Foils',
+        body: `About 1 in 14 granted cards comes as a FOIL — a rare cosmetic variant:
+
+• Gold border, a ✦ marker, and a stamped 4-digit serial number on the card.
+• Tracked separately in state.cards.foils and shown in the binder with an amber ✦ badge and count.
+• A foil copy also counts as a normal owned copy, so it satisfies deck completion.
+
+Foils are the long-tail collector goal once the base decks are complete. There is no separate "foil deck" — they are cosmetic variants of existing cards.`,
+      },
+      {
+        title: 'The Binder',
+        body: `The Binder (Commander Profile > Cards tab) shows every deck as a grid of 100/150 slots. Owned cards render in full color; missing ones are dimmed.
+
+CONTROLS:
+• DECK SELECTOR — switch between the ten decks; each shows your count and progress bar.
+• SORT — by card number, Power, Name, or Rarity.
+• RARITY FILTER — All, Common, Rare, Epic, or Legendary.
+• MISSING ONLY — hide cards you already own to spot gaps.
+• FOIL COUNT — a running tally of your foil copies.
+
+Tap any owned card for full stats, flavor text, and foil status. Duplicate counts appear as cyan ×N badges; foil counts as amber ✦N badges.`,
+      },
+      {
+        title: 'Duplicate Trader',
+        body: `The Trader tab (inside the Binder) converts duplicates into missing cards:
+
+• TRADE 3 → RANDOM — Spend 3 duplicates of one card for a random missing card (any manufacturer deck).
+• TRADE 5 → CHOOSE — Spend 5 duplicates for a specific missing card of your choice. Pick the manufacturer, then the card from its missing list.
+
+Trading only covers the eight manufacturer decks. Canis Stella and Special Class cards cannot be traded for — they must be earned directly, preserving their prestige.`,
+      },
+      {
+        title: 'Card Arena',
+        body: `The Arena tab (inside the Binder) lets you duel the AI with your collection:
+
+• DECK — choose which manufacturer's cards form your battle deck (your owned cards for that maker).
+• GAMES — Lane Skirmish (3 lanes, most firepower wins), Stat Duel (top-trumps, best of 5), Void Trick (follow-suit trick-taking over 7 tricks).
+• WAGER — optionally stake a card. Win to claim a foe card you're missing; lose and forfeit your wagered card. Victories also pay 75,000 CR.
+
+You need at least one owned card in the chosen manufacturer deck to play.`,
+      },
+      {
+        title: 'Deck Completion Rewards',
+        body: `Completing a full deck grants a permanent title and credit reward:
+
+• MANUFACTURER DECK (100 cards) — 50,000,000 CR + a "Master of <Manufacturer>" title.
+• CANIS STELLA DECK (150 cards) — 150,000,000 CR + "Master of Canis Stella" title.
+• SPECIAL CLASS DECK (all achievements) — 250,000,000 CR + "Grand Archivist of o7" title.
+
+Rewards fire automatically when the deck fills. Each completion also logs a deck_<key> achievement milestone.`,
+      },
+    ],
+  },
+
+  // ============================================================
   // TUTORIALS — replayable from the Codex
   // ============================================================
   {

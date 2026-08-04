@@ -11,7 +11,7 @@ import { COMMODITIES, COMMODITY_MAP, COMMODITY_CATEGORIES } from './commodities'
 import { computeCustomShipStats } from './shipParts';
 import { getDefaultModules, computeShipStats } from './shipOutfitting';
 import { getCrewBonuses } from './crew';
-import { generateCommunityGoals } from './communityGoals';
+
 import { SYNTHESIS_MAP } from './synthesis';
 import { shouldTriggerEncounter, generateEncounter } from './encounters';
 import { shouldDiscoverWreckage, generateWreckage, COMPONENT_MAP } from './wreckage';
@@ -23,6 +23,8 @@ import { generateFish, generateFlora } from './specimens';
 import { SHIP_TYPES } from './shipRoster';
 import { getHolidayFuelMultiplier } from './publicHolidays';
 import { useCanisStellaFunctions } from './canisStellaFunctions';
+import { useCommunityGoals } from './useCommunityGoals';
+import { useCarrierRoomGrid } from './useCarrierRoomGrid';
 import { DEFAULT_GESTURE_SETTINGS, DEFAULT_DISPLAY_SETTINGS } from './screenSettings';
 import { CANIS_STELLA_RANKS, CEO_TITLE, MISSION_REP_REWARD } from './canisStella';
 import { CURRENT_SAVE_VERSION, validateShip, createInitialState, createSandboxState } from './gameStateInitializers';
@@ -584,6 +586,8 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
 
   // Canis Stella faction functions (extracted hook)
   const { joinCanisStella, opposeCanisStella, addCanisStellaRep, buyGuildedCarrier, claimGuildedCarrierAsCEO, startOwnFaction } = useCanisStellaFunctions(setState);
+  const { refreshCommunityGoals, contributeToGoal, contributeCombatKill, claimGoalReward } = useCommunityGoals(setState);
+  const { initCarrierRoomGrid, addCarrierRoomAt, customizeCarrierRoomSurface, setCarrierCurrentRoom, placeRoomContainer, removeRoomContainer, setRoomHologram } = useCarrierRoomGrid(setState);
 
   // Scan a body — tracks achievements and first discoveries
   const scanBody = useCallback((body) => {
@@ -1691,105 +1695,6 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     });
   }, []);
 
-  // ===== CARRIER ROOM GRID =====
-  const initCarrierRoomGrid = useCallback((carrierId) => {
-    setState(prev => {
-      if (prev.carrierRoomGrid?.[carrierId]) return prev;
-      const rooms = {};
-      const defaults = [
-        ['0,0', 'observation', 'Observation Lounge'],
-        ['1,0', 'command', 'Command Deck'],
-        ['2,0', 'quarters', 'Living Quarters'],
-        ['3,0', 'bar', 'The Driftwood Tavern'],
-        ['4,0', 'garden', 'Botanical Wing'],
-        ['5,0', 'trophy', 'Hall of Records'],
-      ];
-      for (const [key, type, name] of defaults) {
-        rooms[key] = { id: `cr_${carrierId}_${key}`, type, name, surfaces: {} };
-      }
-      return {
-        ...prev,
-        carrierRoomGrid: { ...prev.carrierRoomGrid, [carrierId]: rooms },
-        carrierCurrentRoom: { ...prev.carrierCurrentRoom, [carrierId]: '2,0' },
-      };
-    });
-  }, []);
-
-  const addCarrierRoomAt = useCallback((carrierId, gridX, gridY, roomType, roomName) => {
-    const gridKey = `${gridX},${gridY}`;
-    let success = true;
-    setState(prev => {
-      const carrierGrid = prev.carrierRoomGrid?.[carrierId] || {};
-      if (carrierGrid[gridKey]) { success = false; return prev; }
-      const isSb = prev.saveMode === 'sandbox';
-      const cost = 500000;
-      if (!isSb && prev.credits < cost) { success = false; return prev; }
-      const roomDef = ROOM_TYPES[roomType] || { name: roomName || 'New Room' };
-      const newRoom = { id: `cr_${carrierId}_${Date.now()}`, type: roomType, name: roomName || roomDef.name, surfaces: {}, custom: true };
-      return {
-        ...prev,
-        credits: prev.credits - (isSb ? 0 : cost),
-        carrierRoomGrid: { ...prev.carrierRoomGrid, [carrierId]: { ...carrierGrid, [gridKey]: newRoom } },
-      };
-    });
-    return success;
-  }, []);
-
-  const customizeCarrierRoomSurface = useCallback((carrierId, gridKey, surface, field, value) => {
-    setState(prev => {
-      const carrierGrid = prev.carrierRoomGrid?.[carrierId] || {};
-      const room = carrierGrid[gridKey];
-      if (!room) return prev;
-      const surfaces = { ...(room.surfaces || {}) };
-      const current = surfaces[surface] || { texture: 'solid', rgb: [26, 13, 0] };
-      surfaces[surface] = { ...current, [field]: value };
-      return {
-        ...prev,
-        carrierRoomGrid: { ...prev.carrierRoomGrid, [carrierId]: { ...carrierGrid, [gridKey]: { ...room, surfaces } } },
-      };
-    });
-  }, []);
-
-  const setCarrierCurrentRoom = useCallback((carrierId, gridKey) => {
-    setState(prev => ({ ...prev, carrierCurrentRoom: { ...prev.carrierCurrentRoom, [carrierId]: gridKey } }));
-  }, []);
-
-  const placeRoomContainer = useCallback((carrierId, gridKey, slotIndex, containerType) => {
-    setState(prev => {
-      const cg = prev.carrierRoomGrid?.[carrierId] || {};
-      const room = cg[gridKey];
-      if (!room) return prev;
-      const containers = room.containers || [];
-      if (containers.find(c => c.slotIndex === slotIndex)) return prev;
-      const newRoom = { ...room, containers: [...containers, { id: `cnt_${Date.now()}`, type: containerType, slotIndex }] };
-      const newCg = { ...cg, [gridKey]: newRoom };
-      return { ...prev, carrierRoomGrid: { ...prev.carrierRoomGrid, [carrierId]: newCg } };
-    });
-  }, []);
-
-  const removeRoomContainer = useCallback((carrierId, gridKey, containerId) => {
-    setState(prev => {
-      const cg = prev.carrierRoomGrid?.[carrierId] || {};
-      const room = cg[gridKey];
-      if (!room) return prev;
-      const newContainers = (room.containers || []).filter(c => c.id !== containerId);
-      const newRoom = { ...room, containers: newContainers };
-      const newCg = { ...cg, [gridKey]: newRoom };
-      return { ...prev, carrierRoomGrid: { ...prev.carrierRoomGrid, [carrierId]: newCg } };
-    });
-  }, []);
-
-  const setRoomHologram = useCallback((carrierId, gridKey, systemData) => {
-    setState(prev => {
-      const cg = prev.carrierRoomGrid?.[carrierId] || {};
-      const room = cg[gridKey];
-      if (!room) return prev;
-      const newRoom = { ...room, hologramSystem: systemData };
-      const newCg = { ...cg, [gridKey]: newRoom };
-      return { ...prev, carrierRoomGrid: { ...prev.carrierRoomGrid, [carrierId]: newCg } };
-    });
-  }, []);
-
   // ===== REBUY & SELF-DESTRUCT =====
   const getRebuyCost = useCallback((shipTypeId) => {
     const shipType = SHIP_MAP[shipTypeId];
@@ -1920,89 +1825,6 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
   }, [storageKey]);
 
   const isSandbox = state.saveMode === 'sandbox';
-
-  // ===== COMMUNITY GOALS =====
-  const refreshCommunityGoals = useCallback(() => {
-    setState(prev => {
-      const now = Date.now();
-      const goals = prev.communityGoals || [];
-      const hasActive = goals.some(g => !g.claimed && g.deadline > now);
-      if (hasActive && goals.length > 0) return prev;
-      return { ...prev, communityGoals: generateCommunityGoals(), lastGoalRefresh: now };
-    });
-  }, []);
-
-  const contributeToGoal = useCallback((goalId) => {
-    let result = { contributed: 0 };
-    setState(prev => {
-      const goal = (prev.communityGoals || []).find(g => g.id === goalId);
-      if (!goal || goal.completed || goal.claimed) return prev;
-      if (goal.type === 'trade' || goal.type === 'construction') {
-        const cargo = prev.ship.cargo.map(c => ({ ...c }));
-        let contributed = 0;
-        for (const item of cargo) {
-          const comm = COMMODITY_MAP[item.commodity];
-          if (comm && comm.category === goal.commodityCategory) {
-            const need = goal.target - goal.progress;
-            const give = Math.min(item.qty, need);
-            item.qty -= give;
-            contributed += give;
-          }
-        }
-        if (contributed === 0) return prev;
-        result.contributed = contributed;
-        return {
-          ...prev,
-          ship: { ...prev.ship, cargo: cargo.filter(c => c.qty > 0) },
-          communityGoals: prev.communityGoals.map(g => g.id === goalId ? { ...g, progress: Math.min(g.target, g.progress + contributed), completed: g.progress + contributed >= g.target } : g),
-        };
-      }
-      if (goal.type === 'mining') {
-        const matId = goal.materialId;
-        const have = prev.materials?.[matId] || 0;
-        if (have === 0) return prev;
-        const need = goal.target - goal.progress;
-        const give = Math.min(have, need);
-        result.contributed = give;
-        return {
-          ...prev,
-          materials: { ...prev.materials, [matId]: have - give },
-          communityGoals: prev.communityGoals.map(g => g.id === goalId ? { ...g, progress: Math.min(g.target, g.progress + give), completed: g.progress + give >= g.target } : g),
-        };
-      }
-      if (goal.type === 'exploration') {
-        const scanCount = Object.keys(prev.scannedBodies || {}).length;
-        const mapCount = Object.keys(prev.mappedBodies || {}).length;
-        const available = goal.desc.includes('Map') ? mapCount : scanCount;
-        const alreadyCounted = goal.lastContributedCount || 0;
-        const newScans = Math.max(0, available - alreadyCounted);
-        if (newScans === 0) return prev;
-        const need = goal.target - goal.progress;
-        const give = Math.min(newScans, need);
-        result.contributed = give;
-        return {
-          ...prev,
-          communityGoals: prev.communityGoals.map(g => g.id === goalId ? { ...g, progress: Math.min(g.target, g.progress + give), completed: g.progress + give >= g.target, lastContributedCount: alreadyCounted + give } : g),
-        };
-      }
-      return prev;
-    });
-    return result;
-  }, []);
-
-  const contributeCombatKill = useCallback(() => { setState(prev => ({ ...prev, communityGoals: (prev.communityGoals || []).map(g => g.type === 'combat' && !g.completed && !g.claimed ? { ...g, progress: Math.min(g.target, g.progress + 1), completed: g.progress + 1 >= g.target } : g) })); }, []);
-  const claimGoalReward = useCallback((goalId) => {
-    setState(prev => {
-      const goal = (prev.communityGoals || []).find(g => g.id === goalId);
-      if (!goal || !goal.completed || goal.claimed) return prev;
-      return {
-        ...prev,
-        credits: prev.credits + goal.reward,
-        lifetimeEarnings: (prev.lifetimeEarnings || 0) + goal.reward,
-        communityGoals: prev.communityGoals.map(g => g.id === goalId ? { ...g, claimed: true } : g),
-      };
-    });
-  }, []);
 
   // ===== SYNTHESIS =====
   const synthesize = useCallback((recipeId) => {

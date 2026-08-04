@@ -152,7 +152,7 @@ export function createInitialState() {
     surfaceMaps: {},
     minedDeposits: {},
     warpGates: [],
-    cards: { owned: {}, drawnStations: {}, deckRewards: {}, specialAwarded: {} },
+    cards: { owned: {}, drawnStations: {}, deckRewards: {}, specialAwarded: {}, foils: {} },
     eventCooldownUntil: 0,
     canisStella: { stance: 'neutral', reputation: 0, isCEO: false, ownFactionName: null },
     carrierRooms: {},

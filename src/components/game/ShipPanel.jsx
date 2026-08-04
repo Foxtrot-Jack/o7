@@ -236,11 +236,13 @@ function Shipyard({ currentShip, credits, isDocked, onBuy, onSwitch, onTransfer,
   if (manufacturerFilter !== 'all') {
     shipsToShow = shipsToShow.filter(s => s.manufacturer === manufacturerFilter);
   }
+  // Sort keys that don't match the ship field name 1:1.
+  const SORT_FIELD = { cargo: 'cargoCapacity', jumpRange: 'jumpRange', cost: 'cost', class: 'class' };
   shipsToShow.sort((a, b) => {
     let cmp = 0;
     if (sortBy === 'name') cmp = a.name.localeCompare(b.name);
     else if (sortBy === 'manufacturer') cmp = a.manufacturer.localeCompare(b.manufacturer);
-    else cmp = (a[sortBy] || 0) - (b[sortBy] || 0);
+    else cmp = (a[SORT_FIELD[sortBy] || sortBy] || 0) - (b[SORT_FIELD[sortBy] || sortBy] || 0);
     return sortAsc ? cmp : -cmp;
   });
 

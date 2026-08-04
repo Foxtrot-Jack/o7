@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { useGameState } from '@/lib/gameState';
 import { useCardSystem } from '@/lib/useCardSystem';
-import { CARD_MANUFACTURERS, CARD_DECKS, getCard, mfrCardIds, getMissingCardIds, isMfrDeckComplete, DECK_REWARD_BY_KEY, DECK_TITLE_BY_MFR } from '@/lib/cardDeck';
+import { CARD_MANUFACTURERS, CARD_DECKS, getCard, mfrCardIds, getMissingCardIds, isMfrDeckComplete, DECK_REWARD_BY_KEY, DECK_TITLE_BY_MFR, idxOfId, RARITY_ORDER } from '@/lib/cardDeck';
 import { soundEngine } from '@/lib/soundEngine';
 import PlayCard from './PlayCard';
 import CardArena from './CardArena';
@@ -23,11 +23,29 @@ export default function CardBinder() {
   const [mfr, setMfr] = useState(CARD_MANUFACTURERS[0].key);
   const [detail, setDetail] = useState(null);
   const [flash, setFlash] = useState(null);
+  const [sortBy, setSortBy] = useState('index');
+  const [rarityFilter, setRarityFilter] = useState('all');
+  const [missingOnly, setMissingOnly] = useState(false);
 
   const ids = useMemo(() => mfrCardIds(mfr), [mfr]);
   const ownedCount = ids.filter(id => owned[id] > 0).length;
   const complete = isMfrDeckComplete(owned, mfr);
   const mfrObj = CARD_DECKS.find(m => m.key === mfr);
+  const foils = state.cards?.foils || {};
+
+  const sortedIds = useMemo(() => {
+    let list = ids;
+    if (rarityFilter !== 'all') list = list.filter(id => (getCard(id)?.rarity || '').toLowerCase() === rarityFilter);
+    if (missingOnly) list = list.filter(id => !(owned[id] > 0));
+    const cmp = {
+      index: (a, b) => idxOfId(a) - idxOfId(b),
+      power: (a, b) => (getCard(b)?.power || 0) - (getCard(a)?.power || 0),
+      name: (a, b) => (getCard(a)?.name || '').localeCompare(getCard(b)?.name || ''),
+      rarity: (a, b) => ((RARITY_ORDER[getCard(a)?.rarity] || 0) - (RARITY_ORDER[getCard(b)?.rarity] || 0)) || (idxOfId(a) - idxOfId(b)),
+    }[sortBy];
+    return [...list].sort(cmp);
+  }, [ids, rarityFilter, missingOnly, sortBy, owned]);
+  const foilCount = Object.values(foils).reduce((a, b) => a + (b || 0), 0);
 
   return (
     <div className="w-full h-full flex flex-col bg-black">
@@ -71,18 +89,35 @@ export default function CardBinder() {
               <div className="w-full h-1.5 bg-black border border-orange-900 mt-1"><div className="h-full" style={{ width: `${ownedCount}%`, background: mfrObj.color }} /></div>
             </div>
 
+            <div className="flex flex-wrap items-center gap-1 text-[9px]">
+              <span className="text-orange-700 uppercase">Sort:</span>
+              {[['index','No.'],['power','Pwr'],['name','Name'],['rarity','Rarity']].map(([k,l]) => (
+                <button key={k} onClick={() => { setSortBy(k); soundEngine.play('click'); }} className={`px-1.5 py-0.5 border ${sortBy === k ? 'border-orange-500 bg-orange-950/40 text-orange-300' : 'border-orange-900 text-orange-700'}`}>{l}</button>
+              ))}
+              <span className="text-orange-700 uppercase ml-1">Rarity:</span>
+              <button onClick={() => { setRarityFilter('all'); soundEngine.play('click'); }} className={`px-1.5 py-0.5 border ${rarityFilter === 'all' ? 'border-orange-500 bg-orange-950/40 text-orange-300' : 'border-orange-900 text-orange-700'}`}>All</button>
+              {['common','rare','epic','legendary'].map(r => (
+                <button key={r} onClick={() => { setRarityFilter(r); soundEngine.play('click'); }} className={`px-1.5 py-0.5 border capitalize ${rarityFilter === r ? 'border-orange-500 bg-orange-950/40 text-orange-300' : 'border-orange-900 text-orange-700'}`}>{r}</button>
+              ))}
+              <button onClick={() => { setMissingOnly(v => !v); soundEngine.play('click'); }} className={`px-1.5 py-0.5 border ${missingOnly ? 'border-cyan-600 bg-cyan-950/40 text-cyan-300' : 'border-orange-900 text-orange-700'}`}>Missing only</button>
+              <span className="text-amber-500/80 ml-auto">✦ {foilCount} foil</span>
+            </div>
+
             <div className="grid grid-cols-10 gap-1">
-              {ids.map(id => {
+              {sortedIds.map(id => {
                 const card = getCard(id);
                 const has = owned[id] > 0;
                 const qty = owned[id] || 0;
+                const foilQty = foils[id] || 0;
                 return (
                   <div key={id} className="relative" onClick={() => has && setDetail(card)}>
-                    <PlayCard card={card} size="sm" dim={!has} />
+                    <PlayCard card={card} size="sm" dim={!has} foil={foilQty > 0} />
                     {qty > 1 && <span className="absolute -top-1 -right-1 bg-cyan-700 text-black text-[7px] font-bold px-0.5">×{qty}</span>}
+                    {foilQty > 0 && <span className="absolute -top-1 -left-1 bg-amber-600 text-black text-[7px] font-bold px-0.5">✦{foilQty}</span>}
                   </div>
                 );
               })}
+              {sortedIds.length === 0 && <div className="col-span-full text-orange-800 text-[10px] py-4 text-center">No cards match this filter.</div>}
             </div>
           </div>
         )}
@@ -97,10 +132,11 @@ export default function CardBinder() {
       {detail && (
         <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4" onClick={() => setDetail(null)}>
           <div className="border border-orange-700 bg-black p-3 flex gap-3 items-start" onClick={e => e.stopPropagation()}>
-            <PlayCard card={detail} size="lg" />
+            <PlayCard card={detail} size="lg" foil={foils[detail.id] > 0} />
             <div className="space-y-1 max-w-[14rem]">
               <div className="text-orange-300 font-bold text-sm">{detail.name}</div>
               <div className="text-orange-700 text-[10px]">{detail.manufacturer} · {detail.rarity} · Class {detail.class}</div>
+              {foils[detail.id] > 0 && <div className="text-amber-400 text-[10px] font-bold">✦ FOIL COPY (×{foils[detail.id]})</div>}
               <div className="grid grid-cols-2 gap-1 text-[10px] text-orange-400">
                 <span>Firepower: {detail.firepower}</span><span>Speed: {detail.speed}</span>
                 <span>Armor: {detail.armor}</span><span>Cargo: {detail.cargo}</span>

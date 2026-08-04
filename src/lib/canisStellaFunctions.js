@@ -1,20 +1,18 @@
 // Canis Stella faction functions — extracted as a hook to keep gameState.jsx lean
 import { useCallback } from 'react';
 import { CANIS_STELLA_RANKS, CEO_TITLE, GUILDED_CARRIER_COST } from './canisStella';
-import { getMissingCardIds, randomCardFromMfr } from './cardDeck';
+import { getMissingCardIds, randomCardFromMfr, makeCardGrant } from './cardDeck';
 
-// Grant n Canis Stella cards (missing-first) into prev.cards.owned.
+// Grant n Canis Stella cards (missing-first) into prev.cards.owned, with foil rolls.
 function grantCanisCards(prev, n) {
-  const cards = prev.cards || { owned: {}, drawnStations: {}, deckRewards: {}, specialAwarded: {} };
-  const o = { ...cards.owned };
+  const o = prev.cards?.owned || {};
   const missing = getMissingCardIds(o, 'canis_stella');
+  const ids = [];
   for (let i = 0; i < n; i++) {
-    let id;
-    if (missing.length) id = missing.splice(Math.floor(Math.random() * missing.length), 1)[0];
-    else id = randomCardFromMfr('canis_stella').id;
-    o[id] = (o[id] || 0) + 1;
+    if (missing.length) ids.push(missing.splice(Math.floor(Math.random() * missing.length), 1)[0]);
+    else ids.push(randomCardFromMfr('canis_stella').id);
   }
-  return { cards: { ...cards, owned: o } };
+  return makeCardGrant(prev, ids);
 }
 
 export function useCanisStellaFunctions(setState) {

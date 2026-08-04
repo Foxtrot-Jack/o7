@@ -54,6 +54,8 @@ const RARITY_TIERS = [
 ];
 function rarityOfIdx(idx) { for (const t of RARITY_TIERS) if (idx < t.max) return t.name; return 'Common'; }
 
+export const RARITY_ORDER = { Common: 0, Rare: 1, Epic: 2, Legendary: 3 };
+
 function hashStr(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
 function mulberry(seed) { return function () { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 
@@ -167,6 +169,26 @@ export function earnedAchievementIds(state) {
   }
   return out;
 }
+
+// Foils — a rare cosmetic variant of any owned card. A foil copy also counts as
+// a normal owned copy (so deck completion is unaffected); the foil marker is
+// tracked separately in state.cards.foils. ~7% of granted cards come foil.
+export const FOIL_CHANCE = 0.07;
+
+// Returns a partial state patch granting the given card ids, rolling foils.
+export function makeCardGrant(prev, cardIds) {
+  const cards = prev.cards || { owned: {}, drawnStations: {}, deckRewards: {}, specialAwarded: {} };
+  const o = { ...cards.owned };
+  const foils = { ...(cards.foils || {}) };
+  for (const id of cardIds) {
+    o[id] = (o[id] || 0) + 1;
+    if (Math.random() < FOIL_CHANCE) foils[id] = (foils[id] || 0) + 1;
+  }
+  return { cards: { ...cards, owned: o, foils } };
+}
+
+// Deterministic 4-digit serial stamped on a foil copy.
+export function foilSerial(id) { return String((hashStr('foil_' + id) % 9000) + 1000); }
 
 export const DECK_REWARD_CREDITS = 50000000;
 export const DECK_REWARD_BY_KEY = { canis_stella: 150000000, special: 250000000 };

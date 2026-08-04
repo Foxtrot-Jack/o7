@@ -3,7 +3,7 @@
 // Functions compute from the current render's `state` and persist via `update`.
 import { useCallback } from 'react';
 import { useGameState } from './gameState';
-import { pickStationCard, getCard, MANUFACTURER_CARD_IDS } from './cardDeck';
+import { pickStationCard, getCard, MANUFACTURER_CARD_IDS, makeCardGrant } from './cardDeck';
 
 export function useCardSystem() {
   const { state, update } = useGameState();
@@ -18,10 +18,10 @@ export function useCardSystem() {
     update(prev => {
       const cards = prev.cards || { owned: {}, drawnStations: {}, deckRewards: {} };
       if (cards.drawnStations?.[drawKey]) return {};
+      const grant = makeCardGrant(prev, [card.id]);
       return {
         cards: {
-          ...cards,
-          owned: { ...cards.owned, [card.id]: (cards.owned[card.id] || 0) + 1 },
+          ...grant.cards,
           drawnStations: { ...cards.drawnStations, [drawKey]: card.id },
         },
       };

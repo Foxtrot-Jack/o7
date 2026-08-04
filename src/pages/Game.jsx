@@ -1,5 +1,5 @@
 // Main Game Page — orchestrates all screens with persistent navigation
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { GameStateProvider, useGameState } from '@/lib/gameState';
 import CRTFrame from '@/components/game/CRTFrame';
 import SaveSelect from '@/components/game/SaveSelect';
@@ -87,7 +87,7 @@ import { soundEngine } from '@/lib/soundEngine';
 import { SCREEN_CONTEXTS } from '@/lib/soundPresets';
 import { getScreenTextStyle } from '@/lib/uiTextCategories';
 import { useCardSystem } from '@/lib/useCardSystem';
-import { isMfrDeckComplete, DECK_REWARD_CREDITS, DECK_REWARD_BY_KEY, DECK_TITLE_BY_MFR, earnedAchievementIds } from '@/lib/cardDeck';
+import { isMfrDeckComplete, DECK_REWARD_CREDITS, DECK_REWARD_BY_KEY, DECK_TITLE_BY_MFR, earnedAchievementIds, makeCardGrant } from '@/lib/cardDeck';
 
 const STATION_ONLY_SCREENS = ['station', 'market', 'outfitting', 'materialtrader', 'synthesis', 'crew', 'blackmarket', 'engineering', 'bountyboard', 'passengers', 'multicrew', 'cartography', 'maintenance', 'dockcam'];
 
@@ -247,22 +247,29 @@ function GameContent() {
   }, [state.cards]);
 
   // Special Class cards — award one card per achievement as it is earned.
+  // The earned-id list is memoized on the achievement-relevant slices so the
+  // ~130-def scan only re-runs when those change, not on every state tick.
+  const earnedIds = useMemo(() => earnedAchievementIds(state), [
+    state.achievements?.milestones, state.achievements?.firstDiscoveries,
+    state.totalJumps, state.totalKills, state.credits, state.lifetimeEarnings,
+    state.shipsPurchased, state.lightYearsTraveled, state.discoveredSystems,
+    state.scannedBodies, state.mappedBodies, state.fssScannedSystems,
+    state.bookmarkedSystems, state.surfaceDiscoveries, state.customShips,
+    state.colonies, state.fleetCarriers, state.ownedStations, state.warpGates,
+    state.cards?.owned, state.company, state.cheats?.unlocked,
+  ]);
   useEffect(() => {
     const awarded = state.cards?.specialAwarded || {};
-    const fresh = earnedAchievementIds(state).filter(id => !awarded[id]);
+    const fresh = earnedIds.filter(id => !awarded[id]);
     if (!fresh.length) return;
     update(prev => {
       const cards = prev.cards || { owned: {}, drawnStations: {}, deckRewards: {}, specialAwarded: {} };
-      const o = { ...cards.owned };
       const aw = { ...(cards.specialAwarded || {}) };
-      for (const id of fresh) {
-        aw[id] = true;
-        const cid = `special_${id}`;
-        o[cid] = (o[cid] || 0) + 1;
-      }
-      return { cards: { ...cards, owned: o, specialAwarded: aw } };
+      for (const id of fresh) aw[id] = true;
+      const grant = makeCardGrant(prev, fresh.map(id => `special_${id}`));
+      return { cards: { ...grant.cards, specialAwarded: aw } };
     });
-  }, [state]);
+  }, [earnedIds, state.cards?.specialAwarded, update]);
 
   // Tutorial queue — checks each category's trigger against the previous state.
   // Fires the first un-seen category whose milestone was just reached.

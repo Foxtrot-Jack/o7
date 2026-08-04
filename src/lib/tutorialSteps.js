@@ -897,6 +897,58 @@ const salvageSteps = [
   { id: 'salvage-sell', title: 'Sell for Credits', text: 'Collected components can be sold for credits anytime from the Salvage screen — rarer components are worth far more. Keep exploring to find legendary wrecks.', target: { tab: 'internal', folder: 'Data', item: 'wreckage' } },
 ];
 
+// --- Card Decks, Foils & Arena ---
+const cardsSteps = [
+  {
+    id: 'crd-welcome',
+    title: 'Card Collection',
+    text: 'o7 has a collectible card meta-game. Every ship manufacturer has a 100-card deck, the Canis Stella corporation has a 150-card deck, and each achievement grants a Special Class card. Cards are earned through play — never bought with real money.',
+    target: null,
+  },
+  {
+    id: 'crd-binder',
+    title: 'The Binder',
+    text: 'Open Role > Identity > Profile and switch to the Cards tab to view your binder. Each deck shows your collection progress. Sort by number, power, name, or rarity; filter by rarity; or toggle "Missing only" to find gaps. Tap a card you own for full stats and flavor.',
+    target: { tab: 'role', folder: 'Identity', item: 'profile' },
+  },
+  {
+    id: 'crd-grant',
+    title: 'Earning Cards',
+    text: 'Visit a station for the first time to draw one card themed to that station\'s economy. Join Canis Stella and gain corporate reputation to earn Canis Stella cards. Every achievement you earn grants a matching Special Class card automatically.',
+    target: { tab: 'role', folder: 'Identity', item: 'profile' },
+  },
+  {
+    id: 'crd-foil',
+    title: 'Foils',
+    text: 'About 1 in 14 granted cards comes as a foil — a rare cosmetic variant with a gold border, a ✦ marker, and a stamped serial number. Foils are tracked separately and shown in the binder with an amber badge. A foil copy still counts toward deck completion.',
+    target: { tab: 'role', folder: 'Identity', item: 'profile' },
+  },
+  {
+    id: 'crd-trader',
+    title: 'Duplicate Trader',
+    text: 'In the Binder\'s Trader tab, spend duplicate cards for ones you\'re missing: 3 duplicates for a random missing card, or 5 duplicates for a specific missing card of your choice. Trading only covers the eight manufacturer decks — Canis Stella and Special cards keep their prestige.',
+    target: { tab: 'role', folder: 'Identity', item: 'profile' },
+  },
+  {
+    id: 'crd-arena',
+    title: 'Card Arena',
+    text: 'In the Binder\'s Arena tab, duel the AI with your collection. Pick a manufacturer deck, choose a game (Lane Skirmish, Stat Duel, or Void Trick), and optionally stake a card. Win to claim a foe card you\'re missing; lose and forfeit your wager. Victories also pay credits.',
+    target: { tab: 'role', folder: 'Identity', item: 'profile' },
+  },
+  {
+    id: 'crd-deck',
+    title: 'Deck Completion',
+    text: 'Complete a full 100-card manufacturer deck to earn a "Master of..." title and 50M credits. The Canis Stella deck pays 150M and the Special Class deck 250M plus the "Grand Archivist of o7" title. Check the binder header for each deck\'s reward.',
+    target: null,
+  },
+  {
+    id: 'crd-done',
+    title: 'Collect Them All',
+    text: 'With over 1,000 cards across ten decks, the binder is a long-term collection goal. Explore, trade, and join Canis Stella to fill it out. Replay this guide anytime from the Codex.',
+    target: null,
+  },
+];
+
 export const TUTORIAL_CATEGORIES = {
   starter: {
     id: 'starter',
@@ -1067,6 +1119,17 @@ export const TUTORIAL_CATEGORIES = {
     desc: 'Display, color, mono, fonts, audio, controller config, and save management.',
     steps: settingsSteps,
     // Manual trigger only — always available from the Codex and footer button
+  },
+  cards: {
+    id: 'cards',
+    name: 'Card Decks & Arena',
+    icon: '🃏',
+    desc: 'Collectible manufacturer decks, foils, the duplicate trader, and the card arena.',
+    steps: cardsSteps,
+    trigger: (state, prev) => {
+      const n = s => Object.keys(s?.cards?.owned || {}).length;
+      return n(state) > 0 && n(prev) === 0;
+    },
   },
 };
 
