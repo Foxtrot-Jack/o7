@@ -72,7 +72,7 @@ const starterSteps = [
   {
     id: 'scoop',
     title: 'Fuel Scooping',
-    text: 'In the System view, travel near a scoopable star (O, B, A, F, G, K, or M class). When in orbit, a Fuel Scoop panel appears in the body info. Press Start Fuel Scooping to refill your tank. Stop when the tank is full to avoid overheating.',
+    text: 'In the System view, travel near a scoopable star. Remember the mnemonic "KGB FOAM" — K, G, B, F, O, A, M class stars are all scoopable (click stars on the galaxy map and look for those letters). When in orbit, a Fuel Scoop panel appears in the body info. Press Start Fuel Scooping to refill your tank. Stop when the tank is full to avoid overheating.',
     target: { tab: 'internal', folder: 'Navigation', item: 'system' },
   },
   {
