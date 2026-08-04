@@ -4,6 +4,7 @@
 import { useCallback } from 'react';
 import { useGameState } from './gameState';
 import { pickStationCard, getCard, MANUFACTURER_CARD_IDS, makeCardGrant } from './cardDeck';
+import { buildCardOrigin } from './cardArt';
 
 export function useCardSystem() {
   const { state, update } = useGameState();
@@ -15,19 +16,25 @@ export function useCardSystem() {
     if (state.cards?.drawnStations?.[drawKey]) return null;
     const card = pickStationCard(station, owned);
     if (!card) return null;
+    // Snapshot the origin system so the card's procedural art can reflect where
+    // it was acquired (planet types, population, faction, security).
+    const origin = buildCardOrigin(station, state);
     update(prev => {
       const cards = prev.cards || { owned: {}, drawnStations: {}, deckRewards: {} };
       if (cards.drawnStations?.[drawKey]) return {};
       const grant = makeCardGrant(prev, [card.id]);
+      const origins = { ...(cards.origins || {}) };
+      if (!origins[card.id]) origins[card.id] = origin;
       return {
         cards: {
           ...grant.cards,
           drawnStations: { ...cards.drawnStations, [drawKey]: card.id },
+          origins,
         },
       };
     });
     return card;
-  }, [state.cards, update]);
+  }, [state.cards, state.currentSystem, state.currentSystemData, update]);
 
   const tradeDuplicates = useCallback((giveId, wantId) => {
     const owned = state.cards?.owned || {};

@@ -1215,6 +1215,17 @@ Cards are earned purely through play — there is no real-money purchase. Access
 Cards are awarded the moment the trigger fires — check the on-screen "Card Acquired" flash.`,
       },
       {
+        title: 'Card Art',
+        body: `Every card renders procedural art so no two feel alike:
+
+• MANUFACTURER GLYPH — the primary emblem, unique per deck, so a Drake-Voss card always reads as Drake-Voss.
+• ORIGIN STARFIELD — a dot pattern seeded by the system where you drew the card. Higher-population systems yield denser fields.
+• ORIGIN PLANET SIGIL — a small disc in the corner, colored by that system's dominant planet type (Earth-Like, Water World, Gas Giant, and so on), with a ring for gas giants.
+• FACTION ACCENT — the starfield tint is chosen from the origin system's faction.
+
+Cards drawn before this art system use a deterministic fallback seeded from the card itself. Tap any owned card in the binder to view its art, full stats, and origin system.`,
+      },
+      {
         title: 'Foils',
         body: `About 1 in 14 granted cards comes as a FOIL — a rare cosmetic variant:
 

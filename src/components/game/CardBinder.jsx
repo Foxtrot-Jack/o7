@@ -111,7 +111,7 @@ export default function CardBinder() {
                 const foilQty = foils[id] || 0;
                 return (
                   <div key={id} className="relative" onClick={() => has && setDetail(card)}>
-                    <PlayCard card={card} size="sm" dim={!has} foil={foilQty > 0} />
+                    <PlayCard card={card} size="sm" dim={!has} foil={foilQty > 0} origin={state.cards?.origins?.[id]} />
                     {qty > 1 && <span className="absolute -top-1 -right-1 bg-cyan-700 text-black text-[7px] font-bold px-0.5">×{qty}</span>}
                     {foilQty > 0 && <span className="absolute -top-1 -left-1 bg-amber-600 text-black text-[7px] font-bold px-0.5">✦{foilQty}</span>}
                   </div>
@@ -123,7 +123,7 @@ export default function CardBinder() {
         )}
 
         {tab === 'trader' && (
-          <Trader owned={owned} tradeDuplicates={tradeDuplicates} onResult={(msg) => { setFlash(msg); setTimeout(() => setFlash(null), 2500); }} />
+          <Trader owned={owned} origins={state.cards?.origins || {}} tradeDuplicates={tradeDuplicates} onResult={(msg) => { setFlash(msg); setTimeout(() => setFlash(null), 2500); }} />
         )}
 
         {tab === 'arena' && <CardArena />}
@@ -132,7 +132,7 @@ export default function CardBinder() {
       {detail && (
         <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4" onClick={() => setDetail(null)}>
           <div className="border border-orange-700 bg-black p-3 flex gap-3 items-start" onClick={e => e.stopPropagation()}>
-            <PlayCard card={detail} size="lg" foil={foils[detail.id] > 0} />
+            <PlayCard card={detail} size="lg" foil={foils[detail.id] > 0} origin={state.cards?.origins?.[detail.id]} />
             <div className="space-y-1 max-w-[14rem]">
               <div className="text-orange-300 font-bold text-sm">{detail.name}</div>
               <div className="text-orange-700 text-[10px]">{detail.manufacturer} · {detail.rarity} · Class {detail.class}</div>
@@ -143,6 +143,9 @@ export default function CardBinder() {
                 <span className="text-orange-300 font-bold">Power: {detail.power}</span>
               </div>
               <div className="text-orange-700 text-[9px] leading-relaxed">{detail.flavor}</div>
+              {state.cards?.origins?.[detail.id] && (
+                <div className="text-cyan-700 text-[9px]">Origin: {state.cards.origins[detail.id].systemName} · {state.cards.origins[detail.id].economy || '—'} · {state.cards.origins[detail.id].faction || '—'}</div>
+              )}
             </div>
             <button onClick={() => setDetail(null)} className="text-orange-700"><X className="w-4 h-4" /></button>
           </div>
@@ -152,7 +155,7 @@ export default function CardBinder() {
   );
 }
 
-function Trader({ owned, tradeDuplicates, onResult }) {
+function Trader({ owned, origins, tradeDuplicates, onResult }) {
   const [giveId, setGiveId] = useState(null);
   const [pickMode, setPickMode] = useState(null); // 'random' | 'choose'
   const [chooseMfr, setChooseMfr] = useState(CARD_MANUFACTURERS[0].key);
@@ -186,7 +189,7 @@ function Trader({ owned, tradeDuplicates, onResult }) {
         <div className="flex flex-wrap gap-1 max-h-40 overflow-y-auto">
           {dups.map(id => (
             <div key={id} className="relative">
-              <PlayCard card={getCard(id)} size="sm" selected={giveId === id} onClick={() => { setGiveId(giveId === id ? null : id); setPickMode(null); }} />
+              <PlayCard card={getCard(id)} size="sm" selected={giveId === id} origin={origins[id]} onClick={() => { setGiveId(giveId === id ? null : id); setPickMode(null); }} />
               <span className="absolute -top-1 -right-1 bg-cyan-700 text-black text-[7px] font-bold px-0.5">×{owned[id]}</span>
             </div>
           ))}

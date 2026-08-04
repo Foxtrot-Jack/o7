@@ -918,6 +918,12 @@ const cardsSteps = [
     target: { tab: 'role', folder: 'Identity', item: 'profile' },
   },
   {
+    id: 'crd-art',
+    title: 'Card Art',
+    text: 'Every card carries procedural art: a manufacturer glyph keeps each deck themed, while a starfield and planet sigil are seeded from the system where you acquired the card — so two cards from different worlds look different even within the same deck. Denser starfields come from higher-population systems; the sigil is colored by the system\'s dominant planet type. Tap a card in the binder to see its art, stats, and origin system.',
+    target: { tab: 'role', folder: 'Identity', item: 'profile' },
+  },
+  {
     id: 'crd-foil',
     title: 'Foils',
     text: 'About 1 in 14 granted cards comes as a foil — a rare cosmetic variant with a gold border, a ✦ marker, and a stamped serial number. Foils are tracked separately and shown in the binder with an amber badge. A foil copy still counts toward deck completion.',
