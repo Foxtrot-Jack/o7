@@ -27,6 +27,8 @@ export const TITLES = [
   { id: 'mfr_solaris', name: 'Master of Solaris Dynasty', desc: 'Complete the Solaris Dynasty 100-card deck.', condition: (s) => isMfrDeckComplete(s.cards?.owned || {}, 'Solaris Dynasty') },
   { id: 'mfr_proxima', name: 'Master of Proxima Corp', desc: 'Complete the Proxima Corp 100-card deck.', condition: (s) => isMfrDeckComplete(s.cards?.owned || {}, 'Proxima Corp') },
   { id: 'mfr_omega', name: 'Master of Omega Corp', desc: 'Complete the Omega Corp 100-card deck.', condition: (s) => isMfrDeckComplete(s.cards?.owned || {}, 'Omega Corp') },
+  { id: 'mfr_canis_stella', name: 'Master of Canis Stella', desc: 'Complete the Canis Stella 150-card deck.', condition: (s) => isMfrDeckComplete(s.cards?.owned || {}, 'canis_stella') },
+  { id: 'mfr_special', name: 'Grand Archivist of o7', desc: 'Complete the Special Class achievement deck.', condition: (s) => isMfrDeckComplete(s.cards?.owned || {}, 'special') },
 ];
 
 export function getEarnedTitles(state) {

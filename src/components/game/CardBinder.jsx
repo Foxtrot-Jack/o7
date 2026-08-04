@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { useGameState } from '@/lib/gameState';
 import { useCardSystem } from '@/lib/useCardSystem';
-import { CARD_MANUFACTURERS, getCard, mfrCardIds, getMissingCardIds, isMfrDeckComplete, DECK_REWARD_CREDITS, DECK_TITLE_BY_MFR } from '@/lib/cardDeck';
+import { CARD_MANUFACTURERS, CARD_DECKS, getCard, mfrCardIds, getMissingCardIds, isMfrDeckComplete, DECK_REWARD_BY_KEY, DECK_TITLE_BY_MFR } from '@/lib/cardDeck';
 import { soundEngine } from '@/lib/soundEngine';
 import PlayCard from './PlayCard';
 import CardArena from './CardArena';
@@ -27,7 +27,7 @@ export default function CardBinder() {
   const ids = useMemo(() => mfrCardIds(mfr), [mfr]);
   const ownedCount = ids.filter(id => owned[id] > 0).length;
   const complete = isMfrDeckComplete(owned, mfr);
-  const mfrObj = CARD_MANUFACTURERS.find(m => m.key === mfr);
+  const mfrObj = CARD_DECKS.find(m => m.key === mfr);
 
   return (
     <div className="w-full h-full flex flex-col bg-black">
@@ -50,12 +50,12 @@ export default function CardBinder() {
         {tab === 'binder' && (
           <div className="space-y-3">
             <div className="flex flex-wrap gap-1">
-              {CARD_MANUFACTURERS.map(m => {
+              {CARD_DECKS.map(m => {
                 const c = mfrCardIds(m.key).filter(id => owned[id] > 0).length;
                 return (
                   <button key={m.key} onClick={() => { setMfr(m.key); setDetail(null); soundEngine.play('click'); }}
                     className={`px-2 py-1 border text-[10px] ${mfr === m.key ? 'border-orange-500 text-orange-300 bg-orange-950/30' : 'border-orange-900 text-orange-700'}`}>
-                    <span style={{ color: m.color }}>{m.short}</span> {c}/100
+                    <span style={{ color: m.color }}>{m.short}</span> {c}/{m.size}
                   </button>
                 );
               })}
@@ -67,7 +67,7 @@ export default function CardBinder() {
                 <div className="text-[10px] text-orange-700">{ownedCount}/100{complete && <span className="text-green-500 ml-1">✓ COMPLETE</span>}</div>
               </div>
               <div className="text-[9px] text-orange-700">{mfrObj.desc}</div>
-              <div className="text-[8px] text-orange-800 mt-0.5">Reward for full deck: {DECK_REWARD_CREDITS.toLocaleString()} CR + title "{DECK_TITLE_BY_MFR[mfr]}"</div>
+              <div className="text-[8px] text-orange-800 mt-0.5">Reward for full deck: {(DECK_REWARD_BY_KEY[mfr] || 50000000).toLocaleString()} CR + title "{DECK_TITLE_BY_MFR[mfr]}"</div>
               <div className="w-full h-1.5 bg-black border border-orange-900 mt-1"><div className="h-full" style={{ width: `${ownedCount}%`, background: mfrObj.color }} /></div>
             </div>
 

@@ -15,7 +15,8 @@ import BrickBreakerGame from './BrickBreakerGame';
 import SpaceBattleshipGame from './SpaceBattleshipGame';
 import SudokuGame from './SudokuGame';
 import SolitaireGame from './SolitaireGame';
-import { Gamepad2, BookOpen, Newspaper, StickyNote, ScrollText, Play, X, Zap, Radio, Terminal, Radar, Clock, Square, Crosshair, LayoutGrid, Layers } from 'lucide-react';
+import ChessGame from './ChessGame';
+import { Gamepad2, BookOpen, Newspaper, StickyNote, ScrollText, Play, X, Zap, Radio, Terminal, Radar, Clock, Square, Crosshair, LayoutGrid, Layers, Crown } from 'lucide-react';
 
 const GAMES = [
   { id: 'fsd', name: 'FSD Tuning', desc: 'Stop the resonance marker in the green zone to charge your drive.', Comp: FSDTuningGame, icon: Zap },
@@ -26,6 +27,7 @@ const GAMES = [
   { id: 'battleship', name: 'Voidstrike', desc: 'Space-themed fleet duel. Deploy ships, then hunt the enemy fleet across the grid.', Comp: SpaceBattleshipGame, icon: Crosshair },
   { id: 'sudoku', name: 'Sudoku', desc: 'Fill the 9×9 grid so every row, column, and box holds 1–9 with no repeats.', Comp: SudokuGame, icon: LayoutGrid },
   { id: 'solitaire', name: 'Solitaire', desc: 'Klondike — build the four foundations up by suit, A through K, to win.', Comp: SolitaireGame, icon: Layers },
+  { id: 'chess', name: 'Chess', desc: 'Full chess vs the ship AI. No castling or en passant.', Comp: ChessGame, icon: Crown },
 ];
 
 const TABS = [

@@ -200,6 +200,8 @@ export const ACHIEVEMENT_DEFS = [
   { id: 'deck_solaris', name: 'Solaris Dynasty Deck Complete', desc: 'Collect all 100 Solaris Dynasty cards', section: 'milestones', icon: 'cards' },
   { id: 'deck_proxima', name: 'Proxima Corp Deck Complete', desc: 'Collect all 100 Proxima Corp cards', section: 'milestones', icon: 'cards' },
   { id: 'deck_omega', name: 'Omega Corp Deck Complete', desc: 'Collect all 100 Omega Corp cards', section: 'milestones', icon: 'cards' },
+  { id: 'deck_canis_stella', name: 'Canis Stella Deck Complete', desc: 'Collect all 150 Canis Stella cards', section: 'milestones', icon: 'cards' },
+  { id: 'deck_special', name: 'Special Class Deck Complete', desc: 'Collect every achievement card', section: 'milestones', icon: 'cards' },
 
   // ===== LIFETIME EARNINGS MILESTONES (4) =====
   milestone('earnings_1m', 'First Million Earned', 'Earn 1,000,000 credits total', 'coins', s => num(s.lifetimeEarnings), 1000000),

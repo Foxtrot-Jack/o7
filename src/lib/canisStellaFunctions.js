@@ -1,10 +1,25 @@
 // Canis Stella faction functions — extracted as a hook to keep gameState.jsx lean
 import { useCallback } from 'react';
 import { CANIS_STELLA_RANKS, CEO_TITLE, GUILDED_CARRIER_COST } from './canisStella';
+import { getMissingCardIds, randomCardFromMfr } from './cardDeck';
+
+// Grant n Canis Stella cards (missing-first) into prev.cards.owned.
+function grantCanisCards(prev, n) {
+  const cards = prev.cards || { owned: {}, drawnStations: {}, deckRewards: {}, specialAwarded: {} };
+  const o = { ...cards.owned };
+  const missing = getMissingCardIds(o, 'canis_stella');
+  for (let i = 0; i < n; i++) {
+    let id;
+    if (missing.length) id = missing.splice(Math.floor(Math.random() * missing.length), 1)[0];
+    else id = randomCardFromMfr('canis_stella').id;
+    o[id] = (o[id] || 0) + 1;
+  }
+  return { cards: { ...cards, owned: o } };
+}
 
 export function useCanisStellaFunctions(setState) {
   const joinCanisStella = useCallback(() => {
-    setState(prev => ({ ...prev, canisStella: { ...prev.canisStella, stance: 'member', reputation: prev.canisStella?.reputation || 0 } }));
+    setState(prev => ({ ...prev, canisStella: { ...prev.canisStella, stance: 'member', reputation: prev.canisStella?.reputation || 0 }, ...grantCanisCards(prev, 3) }));
   }, [setState]);
 
   const opposeCanisStella = useCallback(() => {
@@ -20,6 +35,7 @@ export function useCanisStellaFunctions(setState) {
         ...prev,
         canisStella: { ...prev.canisStella, reputation: newRep, isCEO: prev.canisStella.isCEO || nowCEO },
         ...(nowCEO && !prev.canisStella.isCEO ? { playerTitle: CEO_TITLE } : {}),
+        ...grantCanisCards(prev, 1),
       };
     });
   }, [setState]);

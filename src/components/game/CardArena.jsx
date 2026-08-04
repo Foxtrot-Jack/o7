@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { useGameState } from '@/lib/gameState';
 import { useCardSystem } from '@/lib/useCardSystem';
-import { CARD_MANUFACTURERS, getOwnedCardIds, getCard, mfrCardIds, getMissingCardIds } from '@/lib/cardDeck';
+import { CARD_DECKS, getOwnedCardIds, getCard, mfrCardIds, getMissingCardIds } from '@/lib/cardDeck';
 import { soundEngine } from '@/lib/soundEngine';
 import PlayCard from './PlayCard';
 import LaneSkirmishGame from './LaneSkirmishGame';
@@ -21,7 +21,7 @@ export default function CardArena() {
   const { state, addCredits, update } = useGameState();
   const { wagerResolve } = useCardSystem();
   const owned = state.cards?.owned || {};
-  const [mfr, setMfr] = useState(CARD_MANUFACTURERS[0].key);
+  const [mfr, setMfr] = useState(CARD_DECKS[0].key);
   const [gameId, setGameId] = useState(null);
   const [wagerId, setWagerId] = useState(null);
   const [active, setActive] = useState(null);
@@ -31,7 +31,7 @@ export default function CardArena() {
   const canPlay = playerCards.length >= 1;
 
   const oppMfr = useMemo(() => {
-    const others = CARD_MANUFACTURERS.filter(m => m.key !== mfr);
+    const others = CARD_DECKS.filter(m => m.key !== mfr);
     return others[Math.floor(Math.random() * others.length)].key;
   }, [mfr, active]);
   const opponentCards = useMemo(() => mfrCardIds(oppMfr).map(getCard), [oppMfr]);
@@ -76,7 +76,7 @@ export default function CardArena() {
         <div className="text-orange-500 text-[10px] uppercase font-bold">Your Deck</div>
         <div className="text-orange-700 text-[9px]">Choose the manufacturer whose cards you'll play with. Your collection for that maker forms your battle deck.</div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-1">
-          {CARD_MANUFACTURERS.map(m => {
+          {CARD_DECKS.map(m => {
             const count = getOwnedCardIds(owned, m.key).length;
             return (
               <button key={m.key} onClick={() => { setMfr(m.key); }} className={`border p-1.5 text-left ${mfr === m.key ? 'border-orange-500 bg-orange-950/30' : 'border-orange-900'}`}>

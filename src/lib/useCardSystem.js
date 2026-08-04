@@ -3,7 +3,7 @@
 // Functions compute from the current render's `state` and persist via `update`.
 import { useCallback } from 'react';
 import { useGameState } from './gameState';
-import { pickStationCard, getCard, ALL_CARD_IDS } from './cardDeck';
+import { pickStationCard, getCard, MANUFACTURER_CARD_IDS } from './cardDeck';
 
 export function useCardSystem() {
   const { state, update } = useGameState();
@@ -35,7 +35,7 @@ export function useCardSystem() {
     if ((owned[giveId] || 0) <= cost) return null;
     let target = wantId;
     if (!target) {
-      const missing = ALL_CARD_IDS.filter(id => !(owned[id] > 0));
+      const missing = MANUFACTURER_CARD_IDS.filter(id => !(owned[id] > 0));
       if (!missing.length) return null;
       target = missing[Math.floor(Math.random() * missing.length)];
     } else if (owned[target] > 0) {

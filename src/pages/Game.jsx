@@ -87,7 +87,7 @@ import { soundEngine } from '@/lib/soundEngine';
 import { SCREEN_CONTEXTS } from '@/lib/soundPresets';
 import { getScreenTextStyle } from '@/lib/uiTextCategories';
 import { useCardSystem } from '@/lib/useCardSystem';
-import { isMfrDeckComplete, DECK_REWARD_CREDITS, DECK_TITLE_BY_MFR } from '@/lib/cardDeck';
+import { isMfrDeckComplete, DECK_REWARD_CREDITS, DECK_REWARD_BY_KEY, DECK_TITLE_BY_MFR, earnedAchievementIds } from '@/lib/cardDeck';
 
 const STATION_ONLY_SCREENS = ['station', 'market', 'outfitting', 'materialtrader', 'synthesis', 'crew', 'blackmarket', 'engineering', 'bountyboard', 'passengers', 'multicrew', 'cartography', 'maintenance', 'dockcam'];
 
@@ -237,13 +237,32 @@ function GameContent() {
       for (const key of completions) {
         if (deckRewards[key]) continue;
         deckRewards[key] = true;
-        credits += DECK_REWARD_CREDITS; lifetime += DECK_REWARD_CREDITS;
+        const reward = DECK_REWARD_BY_KEY[key] || DECK_REWARD_CREDITS;
+        credits += reward; lifetime += reward;
         milestones[`deck_${key}`] = { date: Date.now() };
         title = DECK_TITLE_BY_MFR[key];
       }
       return { credits, lifetimeEarnings: lifetime, playerTitle: title, achievements: { ...prev.achievements, milestones }, cards: { ...cards, deckRewards } };
     });
   }, [state.cards]);
+
+  // Special Class cards — award one card per achievement as it is earned.
+  useEffect(() => {
+    const awarded = state.cards?.specialAwarded || {};
+    const fresh = earnedAchievementIds(state).filter(id => !awarded[id]);
+    if (!fresh.length) return;
+    update(prev => {
+      const cards = prev.cards || { owned: {}, drawnStations: {}, deckRewards: {}, specialAwarded: {} };
+      const o = { ...cards.owned };
+      const aw = { ...(cards.specialAwarded || {}) };
+      for (const id of fresh) {
+        aw[id] = true;
+        const cid = `special_${id}`;
+        o[cid] = (o[cid] || 0) + 1;
+      }
+      return { cards: { ...cards, owned: o, specialAwarded: aw } };
+    });
+  }, [state]);
 
   // Tutorial queue — checks each category's trigger against the previous state.
   // Fires the first un-seen category whose milestone was just reached.
