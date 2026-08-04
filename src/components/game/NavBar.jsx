@@ -341,7 +341,7 @@ export default function NavBar({ currentScreen, onNavigate, location, tutorialTa
                       <div key={folder.label} className="border-b border-orange-950/50 last:border-b-0">
                         <button
                           onClick={() => handleFolderClick(folderKey)}
-                          className={`flex items-center gap-1.5 w-full px-3 py-1.5 text-[10px] whitespace-nowrap text-left transition-all ${
+                          className={`flex items-center gap-1.5 w-full px-3 py-1.5 text-xs whitespace-nowrap text-left transition-all ${
                             folderHasActive
                               ? 'text-orange-300'
                               : folderOpen
