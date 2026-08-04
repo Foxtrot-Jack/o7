@@ -108,7 +108,7 @@ export default function DockCameraScreen() {
     let x, y, heading;
     switch (ship.state) {
       case 'holding': {
-        meta.orbitAngle += 0.0035;
+        meta.orbitAngle += 0.0025;
         const op = orbitPoint(meta.orbitAngle);
         x = op.x; y = op.y;
         heading = Math.atan2(Math.cos(meta.orbitAngle), -Math.sin(meta.orbitAngle)) + Math.PI / 2;
@@ -221,9 +221,9 @@ export default function DockCameraScreen() {
       // spawn ships into the holding queue
       spawnTimerRef.current -= dt;
       const occupied = simRef.current.pads.filter(p => p.ship).length + simRef.current.queue.length;
-      if (spawnTimerRef.current <= 0 && occupied < PAD_COUNT + 4) {
+      if (spawnTimerRef.current <= 0 && occupied < PAD_COUNT + 7) {
         simRef.current.queue.push(spawnShip());
-        spawnTimerRef.current = 2.5 + Math.random() * 3;
+        spawnTimerRef.current = 1.6 + Math.random() * 2.4;
       }
 
       // advance sim (ms)
@@ -288,17 +288,41 @@ export default function DockCameraScreen() {
       ctx.fillStyle = '#ff8800';
       ctx.fillRect(w / 2 - 2, groundY - 46, 4, 4);
 
-      // pads
+      // pads — visible landing platforms
       const padW = w / PAD_COUNT;
       for (let i = 0; i < PAD_COUNT; i++) {
         const px = i * padW + padW / 2;
-        const occupied = res.pads[i]?.ship;
-        ctx.strokeStyle = occupied ? '#ff8800' : 'rgba(255,136,0,0.4)';
+        const ship = res.pads[i]?.ship;
+        const occupied = !!ship;
+        const docked = ship && ship.state === 'docked';
+        const padCol = docked ? '#44ff88' : occupied ? '#ff8800' : 'rgba(255,136,0,0.55)';
+        // platform deck
+        ctx.fillStyle = occupied ? 'rgba(255,136,0,0.12)' : 'rgba(255,136,0,0.05)';
+        ctx.fillRect(px - padW / 2 + 5, groundY, padW - 10, 10);
+        ctx.strokeStyle = padCol;
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(px - padW / 2 + 5, groundY, padW - 10, 10);
+        // landing zone ring
+        ctx.strokeStyle = padCol;
         ctx.lineWidth = 1;
-        ctx.strokeRect(px - padW / 2 + 4, groundY - 4, padW - 8, 4);
-        ctx.fillStyle = 'rgba(255,136,0,0.5)';
-        ctx.font = '8px "Courier New", monospace';
-        ctx.fillText('P' + (i + 1), px - 7, groundY + 12);
+        ctx.beginPath();
+        ctx.arc(px, groundY + 5, 9, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(px - 5, groundY + 5); ctx.lineTo(px + 5, groundY + 5);
+        ctx.moveTo(px, groundY); ctx.lineTo(px, groundY + 10);
+        ctx.stroke();
+        // glow when in use
+        if (occupied) {
+          ctx.fillStyle = docked ? 'rgba(68,255,136,0.12)' : 'rgba(255,136,0,0.12)';
+          ctx.beginPath();
+          ctx.arc(px, groundY + 5, 16, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        // placard number
+        ctx.fillStyle = padCol;
+        ctx.font = 'bold 9px "Courier New", monospace';
+        ctx.fillText('P' + (i + 1), px - 7, groundY - 6);
       }
 
       // ships

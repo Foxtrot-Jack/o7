@@ -9,11 +9,12 @@ import { getRandomFounderName, getContributorCount } from './contributors';
 const NPC_FIRST = ['Vex', 'Korra', 'Dax', 'Rima', 'Solon', 'Tova', 'Nyx', 'Orin', 'Pax', 'Lira', 'Mira', 'Garr', 'Sable', 'Wren', 'Cade', 'Iolo', 'Rusk', 'Hela', 'Bram', 'Jovan', 'Sera', 'Kade', 'Nima', 'Roan'];
 const NPC_LAST = ['Vance', 'Okoro', 'Sund', 'Reza', 'Kell', 'Voss', 'Marr', 'Thane', 'Drake', 'Sol', 'Aza', 'Kor', 'Vell', 'Cross', 'Nimo', 'Hark', 'Falke', 'Orin', 'Bex', 'Sedgewick'];
 
+// Slowed down for a more leisurely, watchable dock scene.
 const DURATIONS = {
-  approaching: [3000, 6000],
-  docking: [2000, 4000],
-  docked: [8000, 18000],
-  departing: [2500, 4500],
+  approaching: [7000, 13000],
+  docking: [5000, 9000],
+  docked: [14000, 28000],
+  departing: [5500, 10000],
 };
 
 let _id = 0;
@@ -42,6 +43,8 @@ export function spawnShip() {
     shipClass: t.class || 1,
     pilot: pilot.name,
     founder: pilot.founder,
+    // Per-ship pace multiplier — some pilots fly briskly, others lumber.
+    speed: 0.6 + Math.random() * 0.9,
     state: 'holding',
     pad: null,
     timer: 0,
@@ -68,17 +71,17 @@ export function tickStarport(pads, queue, dt) {
     if (s.state === 'approaching' && s.timer >= s.duration) {
       s.state = 'docking';
       s.timer = 0;
-      s.duration = randDur(DURATIONS.docking);
+      s.duration = randDur(DURATIONS.docking) * (s.speed || 1);
       events.push({ line: `${s.shipName} (${s.pilot}) beginning landing sequence, pad ${pad.id}.`, founder: s.founder });
     } else if (s.state === 'docking' && s.timer >= s.duration) {
       s.state = 'docked';
       s.timer = 0;
-      s.duration = randDur(DURATIONS.docked);
+      s.duration = randDur(DURATIONS.docked) * (s.speed || 1);
       events.push({ line: `${s.shipName} (${s.pilot}) settled on pad ${pad.id}.`, founder: s.founder });
     } else if (s.state === 'docked' && s.timer >= s.duration) {
       s.state = 'departing';
       s.timer = 0;
-      s.duration = randDur(DURATIONS.departing);
+      s.duration = randDur(DURATIONS.departing) * (s.speed || 1);
       events.push({ line: `${s.shipName} (${s.pilot}) departing pad ${pad.id} — safe skies.`, founder: s.founder });
     } else if (s.state === 'departing' && s.timer >= s.duration) {
       pad.ship = null;
@@ -94,7 +97,7 @@ export function tickStarport(pads, queue, dt) {
       s.state = 'approaching';
       s.pad = free.id;
       s.timer = 0;
-      s.duration = randDur(DURATIONS.approaching);
+      s.duration = randDur(DURATIONS.approaching) * (s.speed || 1);
       free.ship = { ...s };
       events.push({ line: `${s.shipName} (${s.pilot}) cleared for approach, pad ${free.id}.`, founder: s.founder });
       newQueue.splice(i, 1);
