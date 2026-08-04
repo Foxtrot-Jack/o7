@@ -123,7 +123,7 @@ export function createInitialState() {
       },
       gestures: DEFAULT_GESTURE_SETTINGS,
       display: DEFAULT_DISPLAY_SETTINGS,
-      founders: { explorationEnabled: true, explorerSpeed: 50 },
+      founders: { explorationEnabled: true, explorerSpeed: 50, spawnSelfInGalaxy: false },
     },
     crew: [],
     powerPlay: null,

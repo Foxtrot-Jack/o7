@@ -11,9 +11,9 @@
 import { useCallback } from 'react';
 import { generateStarsInRange } from './galaxy';
 import { generateSystemFromStar } from './system';
-import { getFounderPilots } from './contributors';
+import { getFounderPilots, isFounderAlias, findFounderByAlias } from './contributors';
 
-export const DEFAULT_FOUNDER_SETTINGS = { explorationEnabled: true, explorerSpeed: 50 };
+export const DEFAULT_FOUNDER_SETTINGS = { explorationEnabled: true, explorerSpeed: 50, spawnSelfInGalaxy: false };
 
 const EXPLORER_BASE_MS = 12 * 3600 * 1000;    // 1 discovery / 12h at 100% speed
 const NONEXPLORER_BASE_MS = 6 * 3600 * 1000;  // 1 job / 6h
@@ -64,12 +64,15 @@ function nudgeBGS(founderBGS, seed, faction, delta) {
 export function useFounderSim(setState) {
   const tickFounders = useCallback((elapsedMs) => {
     setState(prev => {
-      const founders = getFounderPilots();
+      const cfg = { ...DEFAULT_FOUNDER_SETTINGS, ...(prev.settings?.founders || {}) };
+      const signedFounder = prev.commanderName && isFounderAlias(prev.commanderName) ? findFounderByAlias(prev.commanderName) : null;
+      const founders = signedFounder && !cfg.spawnSelfInGalaxy
+        ? getFounderPilots().filter(f => f.alias !== signedFounder.alias)
+        : getFounderPilots();
       const simPrev = prev.founderSim || { progress: {}, lastTick: Date.now() };
       if (founders.length === 0) {
         return { ...prev, founderSim: { progress: simPrev.progress || {}, lastTick: Date.now() } };
       }
-      const cfg = { ...DEFAULT_FOUNDER_SETTINGS, ...(prev.settings?.founders || {}) };
       const speed = Math.max(0, Math.min(100, cfg.explorerSpeed || 0)) / 100;
       const progress = { ...simPrev.progress };
       const discovered = { ...(prev.discoveredSystems || {}) };
