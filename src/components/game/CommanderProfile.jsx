@@ -2,9 +2,10 @@
 import React, { useState } from 'react';
 import { useGameState, SHIP_MAP } from '@/lib/gameState';
 import { SOL_SYSTEM, distance3D } from '@/lib/galaxy';
-import { User, Rocket, Ship, Map, Globe, DollarSign, Route, Trophy, Anchor, Clock, Zap, Telescope, Pickaxe, BookOpen, Gamepad2 } from 'lucide-react';
+import { User, Rocket, Ship, Map, Globe, DollarSign, Route, Trophy, Anchor, Clock, Zap, Telescope, Pickaxe, BookOpen, Gamepad2, Layers } from 'lucide-react';
 import BadgeDisplay from './BadgeDisplay';
 import EntertainmentHub from './EntertainmentHub';
+import CardBinder from './CardBinder';
 
 export default function CommanderProfile() {
   const { state, updateNotebook } = useGameState();
@@ -42,11 +43,18 @@ export default function CommanderProfile() {
       <div className="flex gap-1 border-b border-orange-900">
         <button onClick={() => setTab('career')} className={`px-3 py-1.5 text-xs uppercase border-b-2 ${tab === 'career' ? 'border-orange-500 text-orange-300' : 'border-transparent text-orange-700 hover:text-orange-500'}`}>Career</button>
         <button onClick={() => setTab('entertainment')} className={`px-3 py-1.5 text-xs uppercase border-b-2 flex items-center gap-1 ${tab === 'entertainment' ? 'border-orange-500 text-orange-300' : 'border-transparent text-orange-700 hover:text-orange-500'}`}><Gamepad2 className="w-3 h-3" /> Entertainment</button>
+        <button onClick={() => setTab('cards')} className={`px-3 py-1.5 text-xs uppercase border-b-2 flex items-center gap-1 ${tab === 'cards' ? 'border-orange-500 text-orange-300' : 'border-transparent text-orange-700 hover:text-orange-500'}`}><Layers className="w-3 h-3" /> Cards</button>
       </div>
 
       {tab === 'entertainment' && (
         <div className="h-[68vh] border border-orange-900">
           <EntertainmentHub embedded />
+        </div>
+      )}
+
+      {tab === 'cards' && (
+        <div className="h-[72vh] border border-orange-900">
+          <CardBinder />
         </div>
       )}
 

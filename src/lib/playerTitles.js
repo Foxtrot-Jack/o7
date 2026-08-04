@@ -1,5 +1,7 @@
 // Player Titles — cosmetic titles earned from gameplay milestones
 
+import { isMfrDeckComplete } from './cardDeck';
+
 export const TITLES = [
   { id: 'none', name: 'No Title', desc: 'Default — no title equipped.', condition: () => true },
   { id: 'starfarer', name: 'Starfarer', desc: 'Make your first hyperspace jump.', condition: (s) => s.totalJumps >= 1 },
@@ -17,6 +19,14 @@ export const TITLES = [
   { id: 'elite_explorer', name: 'Elite Explorer', desc: 'Reach Elite exploration rank.', condition: (s) => s.rank?.exploration?.rank >= 8 },
   { id: 'station_owner', name: 'Station Magnate', desc: 'Build your own orbital station.', condition: (s) => (s.ownedStations || []).length >= 1 },
   { id: 'wing_leader', name: 'Wing Leader', desc: 'Hire 2 or more wingmates.', condition: (s) => (s.wingmates || []).length >= 2 },
+  { id: 'mfr_drake_voss', name: 'Master of Drake-Voss', desc: 'Complete the Drake-Voss 100-card deck.', condition: (s) => isMfrDeckComplete(s.cards?.owned || {}, 'Drake-Voss') },
+  { id: 'mfr_orion_heavy', name: 'Master of Orion Heavy', desc: 'Complete the Orion Heavy 100-card deck.', condition: (s) => isMfrDeckComplete(s.cards?.owned || {}, 'Orion Heavy') },
+  { id: 'mfr_sentinel_forge', name: 'Master of Sentinel Forge', desc: 'Complete the Sentinel Forge 100-card deck.', condition: (s) => isMfrDeckComplete(s.cards?.owned || {}, 'Sentinel Forge') },
+  { id: 'mfr_kepler', name: 'Master of Kepler Aeroworks', desc: 'Complete the Kepler Aeroworks 100-card deck.', condition: (s) => isMfrDeckComplete(s.cards?.owned || {}, 'Kepler Aeroworks') },
+  { id: 'mfr_meridian', name: 'Master of Meridian Luxe', desc: 'Complete the Meridian Luxe 100-card deck.', condition: (s) => isMfrDeckComplete(s.cards?.owned || {}, 'Meridian Luxe') },
+  { id: 'mfr_solaris', name: 'Master of Solaris Dynasty', desc: 'Complete the Solaris Dynasty 100-card deck.', condition: (s) => isMfrDeckComplete(s.cards?.owned || {}, 'Solaris Dynasty') },
+  { id: 'mfr_proxima', name: 'Master of Proxima Corp', desc: 'Complete the Proxima Corp 100-card deck.', condition: (s) => isMfrDeckComplete(s.cards?.owned || {}, 'Proxima Corp') },
+  { id: 'mfr_omega', name: 'Master of Omega Corp', desc: 'Complete the Omega Corp 100-card deck.', condition: (s) => isMfrDeckComplete(s.cards?.owned || {}, 'Omega Corp') },
 ];
 
 export function getEarnedTitles(state) {

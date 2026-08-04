@@ -86,11 +86,14 @@ import { inputSystem } from '@/lib/inputSystem';
 import { soundEngine } from '@/lib/soundEngine';
 import { SCREEN_CONTEXTS } from '@/lib/soundPresets';
 import { getScreenTextStyle } from '@/lib/uiTextCategories';
+import { useCardSystem } from '@/lib/useCardSystem';
+import { isMfrDeckComplete, DECK_REWARD_CREDITS, DECK_TITLE_BY_MFR } from '@/lib/cardDeck';
 
 const STATION_ONLY_SCREENS = ['station', 'market', 'outfitting', 'materialtrader', 'synthesis', 'crew', 'blackmarket', 'engineering', 'bountyboard', 'passengers', 'multicrew', 'cartography', 'maintenance', 'dockcam'];
 
 function GameContent() {
   const { state, update, manualSave } = useGameState();
+  const { grantStationCard } = useCardSystem();
   const [screen, setScreen] = useState('system');
   const [showSelfDestruct, setShowSelfDestruct] = useState(false);
   const [saveFlash, setSaveFlash] = useState(false);
@@ -205,6 +208,42 @@ function GameContent() {
       setScreen('system');
     }
   }, [screen, state.currentLocation]);
+
+  // Card collection — grant one themed card the first time a station is visited.
+  const [cardFlash, setCardFlash] = useState(null);
+  useEffect(() => {
+    if (state.currentLocation !== 'station' || !state.lastVisitedStation) return;
+    const card = grantStationCard(state.lastVisitedStation);
+    if (card) {
+      soundEngine.play('select');
+      setCardFlash(card);
+      const t = setTimeout(() => setCardFlash(null), 4000);
+      return () => clearTimeout(t);
+    }
+  }, [state.currentLocation, state.lastVisitedStation?.systemSeed, state.lastVisitedStation?.stationId]);
+
+  // Card deck completion — grant title + credit reward when a full manufacturer deck is collected.
+  useEffect(() => {
+    const owned = state.cards?.owned || {};
+    const rewarded = state.cards?.deckRewards || {};
+    const completions = Object.keys(DECK_TITLE_BY_MFR).filter(k => !rewarded[k] && isMfrDeckComplete(owned, k));
+    if (!completions.length) return;
+    update(prev => {
+      const cards = prev.cards || { owned: {}, drawnStations: {}, deckRewards: {} };
+      const deckRewards = { ...(cards.deckRewards || {}) };
+      let credits = prev.credits, lifetime = prev.lifetimeEarnings || 0;
+      const milestones = { ...(prev.achievements?.milestones || {}) };
+      let title = prev.playerTitle;
+      for (const key of completions) {
+        if (deckRewards[key]) continue;
+        deckRewards[key] = true;
+        credits += DECK_REWARD_CREDITS; lifetime += DECK_REWARD_CREDITS;
+        milestones[`deck_${key}`] = { date: Date.now() };
+        title = DECK_TITLE_BY_MFR[key];
+      }
+      return { credits, lifetimeEarnings: lifetime, playerTitle: title, achievements: { ...prev.achievements, milestones }, cards: { ...cards, deckRewards } };
+    });
+  }, [state.cards]);
 
   // Tutorial queue — checks each category's trigger against the previous state.
   // Fires the first un-seen category whose milestone was just reached.
@@ -417,6 +456,13 @@ function GameContent() {
             </div>
           </div>
           {state.activeEncounter && <EncounterScreen />}
+          {cardFlash && (
+            <div className="fixed top-20 right-4 z-[400] border border-cyan-600 bg-black/95 p-3 max-w-[15rem]">
+              <div className="text-cyan-400 text-[10px] uppercase font-bold">Card Acquired</div>
+              <div className="text-orange-300 text-sm font-bold">{cardFlash.name}</div>
+              <div className="text-orange-700 text-[9px]">{cardFlash.manufacturer} · {cardFlash.rarity}</div>
+            </div>
+          )}
           {/* Self-destruct overlay */}
           {showSelfDestruct && <SelfDestructScreen onCancel={() => setShowSelfDestruct(false)} />}
           {/* Rebuy screen overlay (ship destroyed) */}

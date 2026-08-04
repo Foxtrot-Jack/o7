@@ -10,7 +10,7 @@ export const ACHIEVEMENT_ICONS = {
   pickaxe: 'Pickaxe', trophy: 'Trophy', planet: 'Globe', comet: 'Star',
   gem: 'Award', atom: 'Star', crown: 'Trophy', target: 'Map', compass: 'Compass',
   layers: 'Layers', scan: 'Telescope', shield: 'Award', sword: 'Award',
-  briefcase: 'Briefcase', palette: 'Palette',
+  briefcase: 'Briefcase', palette: 'Palette', cards: 'Layers',
 };
 
 // Helper to create count-based milestones
@@ -190,6 +190,16 @@ export const ACHIEVEMENT_DEFS = [
   { id: 'first_station_built', name: 'Station Architect', desc: 'Built your first orbital station', section: 'milestones', icon: 'hammer' },
   { id: 'first_fighter', name: 'Fighter Pilot', desc: 'Constructed your first ship-launched fighter', section: 'milestones', icon: 'rocket' },
   { id: 'first_exobiology', name: 'Xenobiologist', desc: 'Completed your first exobiology analysis', section: 'milestones', icon: 'flask' },
+
+  // ===== CARD DECK MILESTONES (8) =====
+  { id: 'deck_drake_voss', name: 'Drake-Voss Deck Complete', desc: 'Collect all 100 Drake-Voss cards', section: 'milestones', icon: 'cards' },
+  { id: 'deck_orion_heavy', name: 'Orion Heavy Deck Complete', desc: 'Collect all 100 Orion Heavy cards', section: 'milestones', icon: 'cards' },
+  { id: 'deck_sentinel_forge', name: 'Sentinel Forge Deck Complete', desc: 'Collect all 100 Sentinel Forge cards', section: 'milestones', icon: 'cards' },
+  { id: 'deck_kepler', name: 'Kepler Aeroworks Deck Complete', desc: 'Collect all 100 Kepler Aeroworks cards', section: 'milestones', icon: 'cards' },
+  { id: 'deck_meridian', name: 'Meridian Luxe Deck Complete', desc: 'Collect all 100 Meridian Luxe cards', section: 'milestones', icon: 'cards' },
+  { id: 'deck_solaris', name: 'Solaris Dynasty Deck Complete', desc: 'Collect all 100 Solaris Dynasty cards', section: 'milestones', icon: 'cards' },
+  { id: 'deck_proxima', name: 'Proxima Corp Deck Complete', desc: 'Collect all 100 Proxima Corp cards', section: 'milestones', icon: 'cards' },
+  { id: 'deck_omega', name: 'Omega Corp Deck Complete', desc: 'Collect all 100 Omega Corp cards', section: 'milestones', icon: 'cards' },
 
   // ===== LIFETIME EARNINGS MILESTONES (4) =====
   milestone('earnings_1m', 'First Million Earned', 'Earn 1,000,000 credits total', 'coins', s => num(s.lifetimeEarnings), 1000000),
