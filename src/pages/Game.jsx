@@ -459,14 +459,8 @@ function GameContent() {
 export default function Game() {
   const [saveSlot, setSaveSlot] = useState(null);
 
-  useEffect(() => {
-    const active = localStorage.getItem('starfarer_active_save');
-    if (active === 'normal' || active === 'sandbox') setSaveSlot(active);
-  }, []);
-
   if (!saveSlot) {
     return <SaveSelect onSelect={(slot) => {
-      localStorage.setItem('starfarer_active_save', slot);
       setSaveSlot(slot);
     }} />;
   }
