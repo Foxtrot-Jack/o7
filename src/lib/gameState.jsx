@@ -1042,10 +1042,17 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     setState(prev => ({ ...prev, currentLocation: 'system', currentSurfaceBody: null, lastOrbitBodyId: prev.currentSurfaceBody }));
   }, []);
 
-  // Reset game — the ONLY sanctioned path to permanent data loss
+  // Reset game — the ONLY sanctioned path to permanent data loss.
+  // Progress is wiped, but global personalization (theme/display/audio/controls)
+  // is re-applied so resetting one save slot never resets the other slot's
+  // settings — preferences persist across sandbox and commander until changed.
   const resetGame = useCallback(() => {
     clearSave(storageKey);
-    setState(saveSlot === 'sandbox' ? createSandboxState() : createInitialState());
+    setState(prev => {
+      const fresh = saveSlot === 'sandbox' ? createSandboxState() : createInitialState();
+      fresh.settings = applyGlobalSettings(fresh.settings);
+      return fresh;
+    });
   }, [storageKey, saveSlot]);
 
   // Switch to a different save slot

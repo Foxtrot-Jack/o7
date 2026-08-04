@@ -354,7 +354,7 @@ export default function NavBar({ currentScreen, onNavigate, location, tutorialTa
                         >
                           <span className={`inline-block w-2 text-center transition-transform ${folderOpen ? 'rotate-90' : ''}`}>&#9656;</span>
                           <span>{folder.label}</span>
-                          <span className="ml-auto text-orange-800">{folder.items.length}</span>
+                          <span className="ml-auto text-orange-800">{folder.items.filter(item => !(item.id === 'cheats' && !state.cheats?.unlocked)).length}</span>
                         </button>
                         {folderOpen && (
                           <div className="bg-black/50">
