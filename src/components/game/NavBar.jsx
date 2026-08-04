@@ -1,13 +1,13 @@
 // Navigation bar — ED4-style six-tab menu flow (Internal, External, Cons, Role, Misc, Settings)
 import React, { useState, useRef, useEffect } from 'react';
-import { Package, Crosshair, Users, User, LayoutGrid, Settings, Map, Compass, Telescope, Radio, MapPin, Store, ScrollText, Wrench, FlaskConical, ArrowLeftRight, Anchor, Route, LayoutDashboard, Hammer, DoorOpen, Layers, Plane, ClipboardList, ListChecks, TrendingUp, Brain, Briefcase, Skull, UserCheck, Newspaper, Activity, Crown, AlertTriangle, Target, Calendar, Zap, BookOpen, Sparkles, Medal, Palette, Award, Trophy, Pickaxe, Rocket, Building, Network, Fish, Leaf, Eye, Gamepad2, ChevronDown, Lock, Save, Swords, Gem } from 'lucide-react';
+import { Package, Crosshair, Users, User, LayoutGrid, Settings, Cpu, Radar, Boxes, Map, Compass, Telescope, Radio, MapPin, Store, ScrollText, Wrench, FlaskConical, ArrowLeftRight, Anchor, Route, LayoutDashboard, Hammer, DoorOpen, Layers, Plane, ClipboardList, ListChecks, TrendingUp, Brain, Briefcase, Skull, UserCheck, Newspaper, Activity, Crown, AlertTriangle, Target, Calendar, Zap, BookOpen, Sparkles, Medal, Palette, Award, Trophy, Pickaxe, Rocket, Building, Network, Fish, Leaf, Eye, Gamepad2, ChevronDown, Lock, Save, Swords, Gem } from 'lucide-react';
 import { useGameState } from '@/lib/gameState';
 import { soundEngine } from '@/lib/soundEngine';
 import { getNavGroupStyle } from '@/components/game/MenuTextStyleSettings';
 
 const NAV_TABS = [
   {
-    id: 'internal', label: 'Internal', icon: Package, align: 'left',
+    id: 'internal', label: 'Internal', icon: Cpu, align: 'left',
     folders: [
       {
         label: 'Navigation', items: [
@@ -40,7 +40,7 @@ const NAV_TABS = [
     ],
   },
   {
-    id: 'external', label: 'External', icon: Crosshair, align: 'left',
+    id: 'external', label: 'External', icon: Radar, align: 'left',
     folders: [
       {
         label: 'Deployed', items: [
@@ -74,7 +74,7 @@ const NAV_TABS = [
     ],
   },
   {
-    id: 'cons', label: 'Cons', icon: Users, align: 'left',
+    id: 'cons', label: 'Cons', icon: Store, align: 'left',
     items: [
       { id: 'station', label: 'Station Services', icon: Store },
     ],
@@ -110,7 +110,7 @@ const NAV_TABS = [
     ],
   },
   {
-    id: 'role', label: 'Role', icon: User, align: 'right',
+    id: 'role', label: 'Role', icon: Medal, align: 'right',
     folders: [
       {
         label: 'Identity', items: [
@@ -135,7 +135,7 @@ const NAV_TABS = [
     ],
   },
   {
-    id: 'misc', label: 'Misc', icon: LayoutGrid, align: 'right',
+    id: 'misc', label: 'Misc', icon: Boxes, align: 'right',
     folders: [
       {
         label: 'Colonization', items: [

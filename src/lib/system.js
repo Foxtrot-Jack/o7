@@ -611,6 +611,11 @@ function generateStations(rng, seed, bodies, population = 0) {
     ? Math.min(suitableBodies.length, Math.max(1, randInt(rng, 1, 4)))
     : Math.min(suitableBodies.length, randInt(rng, 0, 2));
 
+  // The starting system's primary station always carries full services so the
+  // opening tutorial — which references Outfitting, Market, Station Services,
+  // Missions, and Cartographics — is fully accessible to a brand-new commander.
+  const isStartingSystem = seed === STARTING_SYSTEM.seed;
+
   for (let i = 0; i < stationCount; i++) {
     const body = suitableBodies[i];
     const stationType = pickWeighted(rng, [
@@ -621,6 +626,7 @@ function generateStations(rng, seed, bodies, population = 0) {
         { value: 'megaship', weight: 5 },
         { value: 'asteroid', weight: 5 },
       ]);
+    const fullService = isStartingSystem && i === 0;
     stations.push({
       id: `station_${i}`,
       name: generateStationName(seed, i),
@@ -633,15 +639,15 @@ function generateStations(rng, seed, bodies, population = 0) {
       economy: pickWeighted(rng, ECONOMY_TYPES.map(e => ({ value: e, weight: 1 }))),
       services: {
         market: true,
-        refuel: rng() < 0.8,
-        repair: rng() < 0.7,
-        rearm: rng() < 0.5,
-        shipyard: rng() < 0.3,
-        outfitting: rng() < 0.4,
+        refuel: fullService || rng() < 0.8,
+        repair: fullService || rng() < 0.7,
+        rearm: fullService || rng() < 0.5,
+        shipyard: fullService || rng() < 0.3,
+        outfitting: fullService || rng() < 0.4,
         missions: true,
-        exploration: rng() < 0.6,
-        cartographics: rng() < 0.5,
-        contact: rng() < 0.3,
+        exploration: fullService || rng() < 0.6,
+        cartographics: fullService || rng() < 0.5,
+        contact: fullService || rng() < 0.3,
       },
     });
   }
