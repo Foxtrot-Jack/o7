@@ -85,26 +85,31 @@ export default function DockCameraScreen() {
   };
 
   const computePos = (ship, pad) => {
-    const meta = metaRef.current[ship.id] || (metaRef.current[ship.id] = { lastState: ship.state, orbitAngle: Math.random() * Math.PI * 2, startX: 0, startY: 0 });
+    const meta = metaRef.current[ship.id] || (metaRef.current[ship.id] = { lastState: ship.state, orbitAngle: Math.random() * Math.PI * 2, startX: 0, startY: 0, dir: 1 });
     const { w, h } = sizeRef.current;
-    const groundY = h - 56;
-    const padX = pad ? (pad.id / PAD_COUNT) * w - (w / PAD_COUNT) / 2 + 24 : w / 2;
+    const groundY = Math.floor(h * 0.74);
+    const padY = groundY - 7;
+    const approachAlt = groundY - 44;
+    const padW = w / PAD_COUNT;
+    const padX = pad ? (pad.id - 0.5) * padW : w / 2;
 
-    // detect state transition — record start anchor
+    // detect state transition — record start anchor + travel direction
     if (meta.lastState !== ship.state) {
       if (ship.state === 'approaching') {
-        const op = orbitPoint(meta.orbitAngle);
-        meta.startX = op.x; meta.startY = op.y;
+        meta.dir = Math.random() < 0.5 ? 1 : -1; // enter from left or right
+        meta.startX = meta.dir > 0 ? -24 : w + 24;
+        meta.startY = approachAlt;
       } else if (ship.state === 'docking') {
-        meta.startX = padX; meta.startY = groundY - 22;
+        meta.startX = padX; meta.startY = approachAlt;
       } else if (ship.state === 'departing') {
-        meta.startX = padX; meta.startY = groundY - 6;
+        meta.dir = padX < w / 2 ? -1 : 1; // exit toward nearest edge
+        meta.startX = padX; meta.startY = padY;
       }
       meta.lastState = ship.state;
     }
 
     const p = ship.duration > 0 ? Math.min(1, ship.timer / ship.duration) : 1;
-    const e = smooth(p);
+    const hdng = meta.dir > 0 ? 0 : Math.PI; // ships point left/right, not up/down
     let x, y, heading;
     switch (ship.state) {
       case 'holding': {
@@ -115,33 +120,40 @@ export default function DockCameraScreen() {
         break;
       }
       case 'approaching': {
-        x = lerp(meta.startX, padX, e);
-        y = lerp(meta.startY, groundY - 22, e);
-        heading = Math.atan2(groundY - 22 - meta.startY, padX - meta.startX);
+        // horizontal glide at cruise altitude to above the pad
+        x = lerp(meta.startX, padX, smooth(p));
+        y = approachAlt;
+        heading = hdng;
         break;
       }
       case 'docking': {
-        x = lerp(meta.startX, padX, e);
-        y = lerp(meta.startY, groundY - 6, e);
-        heading = Math.PI / 2;
+        // vertical descent onto the pad
+        x = padX;
+        y = lerp(meta.startY, padY, smooth(p));
+        heading = hdng;
         break;
       }
       case 'docked': {
-        x = padX; y = groundY - 6;
-        heading = -Math.PI / 2;
+        x = padX; y = padY;
+        heading = hdng;
         break;
       }
       case 'departing': {
-        const dir = padX < w / 2 ? -1 : 1;
-        const endX = padX + dir * w * 0.25;
-        const endY = -40;
-        x = lerp(meta.startX, endX, e);
-        y = lerp(meta.startY, endY, e);
-        heading = Math.atan2(endY - meta.startY, endX - meta.startX);
+        const exitX = meta.dir > 0 ? w + 24 : -24;
+        if (p < 0.4) {
+          // vertical lift off the pad
+          x = padX;
+          y = lerp(padY, approachAlt, smooth(p / 0.4));
+        } else {
+          // horizontal exit to the edge
+          x = lerp(padX, exitX, smooth((p - 0.4) / 0.6));
+          y = approachAlt;
+        }
+        heading = hdng;
         break;
       }
       default:
-        x = w / 2; y = groundY - 6; heading = -Math.PI / 2;
+        x = padX; y = padY; heading = hdng;
     }
     return { x, y, heading };
   };
@@ -246,7 +258,7 @@ export default function DockCameraScreen() {
 
       // ---- render ----
       const { w, h } = sizeRef.current;
-      const groundY = h - 56;
+      const groundY = Math.floor(h * 0.74);
       ctx.clearRect(0, 0, w, h);
       // sky
       ctx.fillStyle = '#000';
@@ -267,28 +279,47 @@ export default function DockCameraScreen() {
       ctx.stroke();
       ctx.setLineDash([]);
 
-      // ground
+      // station landing deck — bottom quarter of the screen
+      const deckH = h - groundY;
+      ctx.fillStyle = 'rgba(255,136,0,0.06)';
+      ctx.fillRect(0, groundY, w, deckH);
+      // deck top edge
       ctx.strokeStyle = '#ff8800';
       ctx.lineWidth = 2;
       ctx.beginPath(); ctx.moveTo(0, groundY); ctx.lineTo(w, groundY); ctx.stroke();
-      ctx.fillStyle = 'rgba(255,136,0,0.08)';
-      ctx.fillRect(0, groundY, w, h - groundY);
+      // structural ribs
+      ctx.strokeStyle = 'rgba(255,136,0,0.28)';
+      ctx.lineWidth = 1;
+      for (let i = 1; i < 5; i++) {
+        const yy = groundY + (deckH / 5) * i;
+        ctx.beginPath(); ctx.moveTo(0, yy); ctx.lineTo(w, yy); ctx.stroke();
+      }
+      // hangar bays along the deck face
+      for (let i = 0; i < 10; i++) {
+        const bx = (i + 0.5) * (w / 10);
+        ctx.strokeStyle = 'rgba(255,136,0,0.4)';
+        ctx.strokeRect(bx - 12, groundY + 8, 24, deckH - 16);
+      }
 
-      // station structure (center)
+      // control tower (left side of deck)
       ctx.strokeStyle = '#ff8800';
       ctx.lineWidth = 1.5;
       ctx.beginPath();
-      ctx.moveTo(w / 2 - 40, groundY); ctx.lineTo(w / 2 - 30, groundY - 30);
-      ctx.lineTo(w / 2 + 30, groundY - 30); ctx.lineTo(w / 2 + 40, groundY);
-      ctx.stroke();
+      ctx.moveTo(w * 0.04, groundY); ctx.lineTo(w * 0.04, groundY - 28);
+      ctx.lineTo(w * 0.075, groundY - 34); ctx.lineTo(w * 0.11, groundY - 28);
+      ctx.lineTo(w * 0.11, groundY); ctx.stroke();
       ctx.fillStyle = 'rgba(255,136,0,0.12)';
       ctx.fill();
-      // antenna
-      ctx.beginPath(); ctx.moveTo(w / 2, groundY - 30); ctx.lineTo(w / 2, groundY - 44); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(w * 0.075, groundY - 34); ctx.lineTo(w * 0.075, groundY - 48); ctx.stroke();
       ctx.fillStyle = '#ff8800';
-      ctx.fillRect(w / 2 - 2, groundY - 46, 4, 4);
+      ctx.fillRect(w * 0.075 - 2, groundY - 50, 4, 4);
 
-      // pads — visible landing platforms
+      // station name placard on the deck
+      ctx.fillStyle = 'rgba(255,136,0,0.65)';
+      ctx.font = 'bold 11px "Courier New", monospace';
+      ctx.fillText(stationName.toUpperCase(), w * 0.14, groundY - 8);
+
+      // pads — landing plates on the deck surface
       const padW = w / PAD_COUNT;
       for (let i = 0; i < PAD_COUNT; i++) {
         const px = i * padW + padW / 2;
@@ -296,33 +327,29 @@ export default function DockCameraScreen() {
         const occupied = !!ship;
         const docked = ship && ship.state === 'docked';
         const padCol = docked ? '#44ff88' : occupied ? '#ff8800' : 'rgba(255,136,0,0.55)';
-        // platform deck
-        ctx.fillStyle = occupied ? 'rgba(255,136,0,0.12)' : 'rgba(255,136,0,0.05)';
-        ctx.fillRect(px - padW / 2 + 5, groundY, padW - 10, 10);
+        // pad plate
+        ctx.fillStyle = occupied ? 'rgba(255,136,0,0.14)' : 'rgba(255,136,0,0.05)';
+        ctx.fillRect(px - padW / 2 + 6, groundY - 3, padW - 12, 16);
         ctx.strokeStyle = padCol;
         ctx.lineWidth = 1.5;
-        ctx.strokeRect(px - padW / 2 + 5, groundY, padW - 10, 10);
-        // landing zone ring
+        ctx.strokeRect(px - padW / 2 + 6, groundY - 3, padW - 12, 16);
+        // landing zone ring + crosshair
         ctx.strokeStyle = padCol;
         ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.arc(px, groundY + 5, 8, 0, Math.PI * 2); ctx.stroke();
         ctx.beginPath();
-        ctx.arc(px, groundY + 5, 9, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(px - 5, groundY + 5); ctx.lineTo(px + 5, groundY + 5);
-        ctx.moveTo(px, groundY); ctx.lineTo(px, groundY + 10);
+        ctx.moveTo(px - 4, groundY + 5); ctx.lineTo(px + 4, groundY + 5);
+        ctx.moveTo(px, groundY + 1); ctx.lineTo(px, groundY + 9);
         ctx.stroke();
         // glow when in use
         if (occupied) {
           ctx.fillStyle = docked ? 'rgba(68,255,136,0.12)' : 'rgba(255,136,0,0.12)';
-          ctx.beginPath();
-          ctx.arc(px, groundY + 5, 16, 0, Math.PI * 2);
-          ctx.fill();
+          ctx.beginPath(); ctx.arc(px, groundY + 5, 15, 0, Math.PI * 2); ctx.fill();
         }
         // placard number
         ctx.fillStyle = padCol;
         ctx.font = 'bold 9px "Courier New", monospace';
-        ctx.fillText('P' + (i + 1), px - 7, groundY - 6);
+        ctx.fillText('P' + (i + 1), px - 7, groundY - 7);
       }
 
       // ships
@@ -338,12 +365,17 @@ export default function DockCameraScreen() {
         ctx.beginPath(); ctx.moveTo(-10, 0); ctx.lineTo(-2, 0); ctx.stroke();
         // hull (triangle)
         ctx.fillStyle = color;
+        // elongated hull pointing in travel direction (left/right)
         ctx.beginPath();
-        ctx.moveTo(7, 0); ctx.lineTo(-5, -4); ctx.lineTo(-5, 4); ctx.closePath();
+        ctx.moveTo(10, 0); ctx.lineTo(-2, -5); ctx.lineTo(-7, -3); ctx.lineTo(-5, 0);
+        ctx.lineTo(-7, 3); ctx.lineTo(-2, 5); ctx.closePath();
         ctx.fill();
         ctx.strokeStyle = '#000';
         ctx.lineWidth = 0.5;
         ctx.stroke();
+        // engine glow
+        ctx.fillStyle = ship.founder ? 'rgba(68,255,136,0.8)' : 'rgba(255,170,68,0.8)';
+        ctx.fillRect(-7, -1.5, 2, 3);
         ctx.restore();
         // selection ring
         if (sel) {
@@ -418,17 +450,6 @@ export default function DockCameraScreen() {
       <div className="relative flex-1 flex overflow-hidden">
         <div className="relative flex-1 overflow-hidden">
           <canvas ref={canvasRef} className="absolute inset-0 touch-none" />
-          <div className="absolute bottom-2 left-2 right-2 border border-orange-900/50 bg-black/80 p-1.5 text-[10px] space-y-0.5 max-h-24 overflow-hidden pointer-events-none">
-            <div className="flex items-center gap-1 text-orange-700 text-[8px] uppercase border-b border-orange-950/50 pb-0.5 mb-0.5">
-              <Radio className="w-2.5 h-2.5" /> Live Traffic Comms
-            </div>
-            {chatter.slice(-4).map((c) => (
-              <div key={c.id} className={c.founder ? 'text-green-400 truncate' : 'text-orange-500 truncate'}>
-                {c.founder && <span className="text-green-600 text-[8px]">[FOUNDER] </span>}
-                {c.line}
-              </div>
-            ))}
-          </div>
         </div>
 
         {/* Selection panel */}
@@ -463,6 +484,19 @@ export default function DockCameraScreen() {
             </div>
           </div>
         )}
+      </div>
+
+      {/* Live traffic comms — below the landing deck */}
+      <div className="border-t border-orange-900/60 bg-black/90 px-3 py-1.5 text-[10px] space-y-0.5 max-h-28 overflow-hidden">
+        <div className="flex items-center gap-1 text-orange-700 text-[8px] uppercase border-b border-orange-950/50 pb-0.5 mb-0.5">
+          <Radio className="w-2.5 h-2.5" /> Live Traffic Comms
+        </div>
+        {chatter.slice(-5).map((c) => (
+          <div key={c.id} className={c.founder ? 'text-green-400 truncate' : 'text-orange-500 truncate'}>
+            {c.founder && <span className="text-green-600 text-[8px]">[FOUNDER] </span>}
+            {c.line}
+          </div>
+        ))}
       </div>
     </div>
   );
