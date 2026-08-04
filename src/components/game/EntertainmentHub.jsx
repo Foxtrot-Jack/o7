@@ -11,13 +11,21 @@ import HackingMinigame from './HackingMinigame';
 import SurfaceScannerMinigame from './SurfaceScannerMinigame';
 import FSDTuningGame from './FSDTuningGame';
 import SignalDecryptGame from './SignalDecryptGame';
-import { Gamepad2, BookOpen, Newspaper, StickyNote, ScrollText, Play, X, Zap, Radio, Terminal, Radar, Clock } from 'lucide-react';
+import BrickBreakerGame from './BrickBreakerGame';
+import SpaceBattleshipGame from './SpaceBattleshipGame';
+import SudokuGame from './SudokuGame';
+import SolitaireGame from './SolitaireGame';
+import { Gamepad2, BookOpen, Newspaper, StickyNote, ScrollText, Play, X, Zap, Radio, Terminal, Radar, Clock, Square, Crosshair, LayoutGrid, Layers } from 'lucide-react';
 
 const GAMES = [
   { id: 'fsd', name: 'FSD Tuning', desc: 'Stop the resonance marker in the green zone to charge your drive.', Comp: FSDTuningGame, icon: Zap },
   { id: 'signal', name: 'Signal Decrypt', desc: 'Watch the alien transmission, then repeat the pattern.', Comp: SignalDecryptGame, icon: Radio },
   { id: 'hack', name: 'Data Terminal Hack', desc: 'Crack a 4-symbol access code before lockout.', Comp: HackingMinigame, icon: Terminal },
   { id: 'probe', name: 'Surface Probe Scan', desc: 'Triangulate a surface signal before probes run out.', Comp: SurfaceScannerMinigame, icon: Radar },
+  { id: 'brick', name: 'Brick Breaker', desc: 'Arcade classic — bounce the ball, clear every brick before you lose all lives.', Comp: BrickBreakerGame, icon: Square },
+  { id: 'battleship', name: 'Voidstrike', desc: 'Space-themed fleet duel. Deploy ships, then hunt the enemy fleet across the grid.', Comp: SpaceBattleshipGame, icon: Crosshair },
+  { id: 'sudoku', name: 'Sudoku', desc: 'Fill the 9×9 grid so every row, column, and box holds 1–9 with no repeats.', Comp: SudokuGame, icon: LayoutGrid },
+  { id: 'solitaire', name: 'Solitaire', desc: 'Klondike — build the four foundations up by suit, A through K, to win.', Comp: SolitaireGame, icon: Layers },
 ];
 
 const TABS = [
