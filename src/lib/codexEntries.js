@@ -946,9 +946,12 @@ These stats are tracked in Commander mode. Sandbox mode starts with elevated sta
         title: 'Player Reputation',
         body: `Track your standing with five galactic factions (Federation, Empire, Alliance, Independent, Pirate Syndicates). Reputation ranges from -100 (Hostile) to +100 (Allied ★).
 
-Donate credits to improve standing. High reputation unlocks better missions, station discounts, and exclusive services. Low reputation restricts docking access.
+Each generated system belongs to a controlling superpower (shown at the top of the Reputation screen). Standing changes through gameplay:
+• Completing missions and passenger contracts raises the controlling faction (+2 to +3).
+• Cashing a bounty raises the controlling faction (+5) and lowers Pirate Syndicates (−3).
+• Piracy, smuggling, hacking, and ship destruction raise Pirate Syndicates (+2 to +4) and lower the controlling faction (−3 to −6).
 
-Betray the Pirate Syndicates to lose their favor — useful if you want to go straight.`,
+You can also donate credits to improve standing, or betray the Pirate Syndicates to lose their favor — useful if you want to go straight.`,
       },
       {
         title: 'Player Titles',

@@ -29,3 +29,28 @@ export function adjustRep(factionRep, factionId, amount) {
   const current = factionRep?.[factionId] || 0;
   return Math.max(-100, Math.min(100, current + amount));
 }
+
+// Deterministic superpower allegiance for a generated system, derived from its
+// seed (and security for anarchy → pirate weighting). This is what mission,
+// bounty, and crime reputation gains are credited against when a mission does
+// not name a specific faction.
+function hashSeed(seed) {
+  let h = 2166136261;
+  const s = String(seed);
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return (h >>> 0) / 4294967296;
+}
+
+export function getSystemAllegiance(star) {
+  if (!star || star.seed == null) return 'independent';
+  const r = hashSeed(star.seed);
+  if (star.security === 'anarchy' && r < 0.25) return 'pirate';
+  if (r < 0.30) return 'federation';
+  if (r < 0.55) return 'empire';
+  if (r < 0.75) return 'alliance';
+  return 'independent';
+}
+
+export function getAllegianceName(factionId) {
+  return getFaction(factionId)?.name || 'Independent';
+}

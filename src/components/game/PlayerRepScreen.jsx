@@ -1,7 +1,7 @@
 // Player Reputation — per-faction standing
 import React from 'react';
 import { useGameState } from '@/lib/gameState';
-import { FACTIONS, getRepLevel, adjustRep } from '@/lib/playerRep';
+import { FACTIONS, getRepLevel, adjustRep, getSystemAllegiance, getAllegianceName } from '@/lib/playerRep';
 import { Award, Coins, Handshake, UserX } from 'lucide-react';
 
 export default function PlayerRepScreen() {
@@ -27,6 +27,10 @@ export default function PlayerRepScreen() {
           <h2 className="text-orange-300 font-bold uppercase">Faction Reputation</h2>
         </div>
         <div className="text-[10px] text-orange-600 mt-1">Your standing with each galactic faction. High reputation unlocks better missions and station discounts. Low reputation restricts access.</div>
+        <div className="text-[10px] text-orange-500 mt-1">
+          Current system allegiance: <span className="text-orange-300 font-bold">{getAllegianceName(getSystemAllegiance(state.currentSystem))}</span>
+          <span className="text-orange-700"> — completing missions & bounties here raises this faction's standing; piracy & violence lower it.</span>
+        </div>
       </div>
 
       {/* Faction cards */}

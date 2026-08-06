@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { soundEngine } from './soundEngine';
 import { STARTING_SYSTEM, distance3D, generateStarsInRange, SOL_SYSTEM } from './galaxy';
+import { getSystemAllegiance, adjustRep as adjustFactionRep } from './playerRep';
 import { GATE_CREDIT_COST, GATE_MATERIAL_COST } from './warpGates';
 import { computeCockpitCost } from './cockpitParts';
 import { SOL_CHEATS } from './solSystem';
@@ -778,16 +779,35 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     }));
   }, []);
 
+  // Adjust standing with a faction (clamped −100..+100). Central entry point for
+  // all reputation changes earned through gameplay.
+  const changeFactionRep = useCallback((factionId, amount) => {
+    if (!factionId || !amount) return;
+    setState(prev => ({
+      ...prev,
+      factionRep: { ...prev.factionRep, [factionId]: adjustFactionRep(prev.factionRep, factionId, amount) },
+    }));
+  }, []);
+
+  // Resolve which faction a mission's reputation should credit — explicit
+  // mission faction, else the current system's controlling superpower.
+  const missionFaction = useCallback((mission, prev) => {
+    if (mission?.factionId) return mission.factionId;
+    return getSystemAllegiance(prev.currentSystem);
+  }, []);
+
   // Complete a mission
   const completeMission = useCallback((missionId) => {
     setState(prev => {
       const mission = prev.activeMissions.find(m => m.id === missionId);
       if (!mission) return prev;
+      const repFaction = missionFaction(mission, prev);
       const newState = {
         ...prev,
         activeMissions: prev.activeMissions.filter(m => m.id !== missionId),
         credits: prev.credits + (mission.reward || 0),
         lifetimeEarnings: (prev.lifetimeEarnings || 0) + (mission.reward || 0),
+        factionRep: { ...prev.factionRep, [repFaction]: adjustFactionRep(prev.factionRep, repFaction, 3) },
         rank: {
           ...prev.rank,
           trade: updateRank(prev.rank.trade, mission.reward || 0),
@@ -1992,8 +2012,20 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
       const crimeDef = CRIME_TYPES[typeId];
       if (!crimeDef) return prev;
       const crime = prev.crime || { notoriety: 0, bounty: 0, crimes: [], lastCrime: 0 };
+      // Violent / syndicate crimes shift standing: piracy and murder boost your
+      // standing with pirate syndicates while angering the system's controllers.
+      const ctrl = getSystemAllegiance(prev.currentSystem);
+      let factionRep = prev.factionRep;
+      if (typeId === 'piracy' || typeId === 'murder' || typeId === 'hacking' || typeId === 'smuggling') {
+        factionRep = {
+          ...factionRep,
+          pirate: adjustFactionRep(factionRep, 'pirate', typeId === 'murder' ? 4 : 2),
+          [ctrl]: adjustFactionRep(factionRep, ctrl, -(typeId === 'murder' ? 6 : 3)),
+        };
+      }
       return {
         ...prev,
+        factionRep,
         crime: {
           notoriety: crime.notoriety + crimeDef.notoriety,
           bounty: crime.bounty + crimeDef.baseBounty,
@@ -2027,11 +2059,17 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     setState(prev => {
       const mission = (prev.bountyMissions || []).find(m => m.id === missionId);
       if (!mission) return prev;
+      const ctrl = getSystemAllegiance(prev.currentSystem);
       return {
         ...prev,
         bountyMissions: prev.bountyMissions.filter(m => m.id !== missionId),
         credits: prev.credits + mission.reward,
         lifetimeEarnings: (prev.lifetimeEarnings || 0) + mission.reward,
+        factionRep: {
+          ...prev.factionRep,
+          [ctrl]: adjustFactionRep(prev.factionRep, ctrl, 5),
+          pirate: adjustFactionRep(prev.factionRep, 'pirate', -3),
+        },
       };
     });
   }, []);
@@ -2064,11 +2102,13 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     setState(prev => {
       const mission = (prev.passengerMissions || []).find(m => m.id === missionId);
       if (!mission) return prev;
+      const ctrl = getSystemAllegiance(prev.currentSystem);
       return {
         ...prev,
         passengerMissions: prev.passengerMissions.filter(m => m.id !== missionId),
         credits: prev.credits + mission.reward,
         lifetimeEarnings: (prev.lifetimeEarnings || 0) + mission.reward,
+        factionRep: { ...prev.factionRep, [ctrl]: adjustFactionRep(prev.factionRep, ctrl, 2) },
         rank: { ...prev.rank, trade: updateRank(prev.rank.trade, mission.reward) },
       };
     });
@@ -2339,6 +2379,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     updateNotebook,
     lockSurfaceMap,
     unlockSurfaceMaps,
+    changeFactionRep,
     buildWarpGate,
     warpJump,
     saveCockpitDecoration,
