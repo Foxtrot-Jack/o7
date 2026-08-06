@@ -40,7 +40,7 @@ export default function CharacterCreator() {
               value={callsign}
               onChange={e => setCallsign(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && begin()}
-              placeholder="Foxtrot_Jack"
+              placeholder="Enter callsign"
               className="flex-1 bg-transparent text-orange-300 text-sm px-2 py-2 outline-none"
             />
           </div>
