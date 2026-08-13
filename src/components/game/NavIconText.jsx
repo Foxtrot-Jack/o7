@@ -1,19 +1,26 @@
 // Renders a text string containing [[token]] markers as inline lucide nav-tab
 // icons, so tutorials and codex can refer to nav panels by their actual icon
-// instead of the word label (Internal / External / Cons / Role / Misc / Settings).
+// (Navigation / External / Deploy / Comms / Settings / Docked bar).
 import React from 'react';
-import { Cpu, Radar, Store, Medal, Boxes, Settings } from 'lucide-react';
+import { Map, Package, Cpu, MessageSquare, Settings, Anchor } from 'lucide-react';
 
 const NAV_ICONS = {
-  internal: Cpu,
-  external: Radar,
-  cons: Store,
-  role: Medal,
-  misc: Boxes,
+  // New 5-tab structure + docked bar
+  nav: Map,
+  external: Package,
+  deploy: Cpu,
+  comms: MessageSquare,
   settings: Settings,
+  docked: Anchor,
+  // Legacy tokens — mapped to the new tab they now live under, so any
+  // not-yet-updated reference still renders a sensible icon.
+  internal: Package,
+  cons: Anchor,
+  role: Package,
+  misc: Package,
 };
 
-const TOKEN_RE = /(\[\[(?:internal|external|cons|role|misc|settings)\]\])/g;
+const TOKEN_RE = /(\[\[(?:nav|external|deploy|comms|settings|docked|internal|cons|role|misc)\]\])/g;
 
 export default function NavIconText({ text, className }) {
   if (!text) return null;
@@ -21,7 +28,7 @@ export default function NavIconText({ text, className }) {
   return (
     <span className={className}>
       {parts.map((part, i) => {
-        const m = part.match(/^\[\[(internal|external|cons|role|misc|settings)\]\]$/);
+        const m = part.match(/^\[\[(nav|external|deploy|comms|settings|docked|internal|cons|role|misc)\]\]$/);
         if (m) {
           const Icon = NAV_ICONS[m[1]];
           if (Icon) {

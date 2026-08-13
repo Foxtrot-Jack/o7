@@ -328,7 +328,7 @@ function GameContent() {
   const renderScreen = () => {
     switch (screen) {
       case 'galaxy':
-        return <GalaxyMap onJumpToSystem={() => setScreen('system')} />;
+        return <GalaxyMap onJumpToSystem={() => setScreen('system')} onNavigate={handleNavigate} />;
       case 'system':
         return <SystemOrrery onNavigate={handleNavigate} />;
       case 'exploration':

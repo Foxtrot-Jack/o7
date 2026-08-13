@@ -117,6 +117,8 @@ const NAV_TABS = [
           { id: 'sessionlog', label: 'Session Log', icon: ClipboardList, dev: true },
           { label: 'Finance', icon: Briefcase, children: [
             { id: 'company', label: 'Company', icon: Briefcase },
+            { id: 'marketai', label: 'Market Analysis', icon: BarChart3 },
+            { id: 'trade', label: 'Trade Tools', icon: Map },
             { id: 'stationbuilder', label: 'Infrastructure', icon: Building },
           ]},
         ],

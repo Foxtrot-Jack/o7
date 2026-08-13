@@ -1137,6 +1137,14 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
           playerStructures={playerStructures}
           onSelectPlayerStructure={handleSelectPlayerStructure}
         />
+        {state.currentLocation !== 'station' && (
+          <button
+            onClick={() => onNavigate && onNavigate('fss')}
+            className="w-full mt-2 py-1 border border-cyan-700 text-cyan-400 hover:bg-cyan-950/30 text-[9px] font-bold"
+          >
+            ⊞ FSS SCANNER
+          </button>
+        )}
       </div>
       )}
 
@@ -1469,6 +1477,14 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
                           </span>
                         ))}
                       </div>
+                    )}
+                    {orbitingBodyId === selectedBody.id && selectedBody.surfaceSignals?.some(s => s.type === 'biological') && (
+                      <button
+                        onClick={() => onNavigate && onNavigate('exobiology')}
+                        className="w-full py-1.5 border border-green-700 text-green-400 hover:bg-green-950/30 text-[10px] font-bold"
+                      >
+                        🧬 EXOBIOLOGY SCANNER
+                      </button>
                     )}
                     {orbitingBodyId === selectedBody.id ? (
                       <button

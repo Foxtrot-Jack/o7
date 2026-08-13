@@ -11,7 +11,7 @@ import SystemPreview from './SystemPreview';
 import GalaxyOrreryViewer from './GalaxyOrreryViewer';
 import { colorEnabledFor, monoUIActive, desaturateColor, effectiveTheme } from '@/lib/monoColor';
 
-export default function GalaxyMap({ onJumpToSystem }) {
+export default function GalaxyMap({ onJumpToSystem, onNavigate }) {
   const mountRef = useRef(null);
   const sceneRef = useRef(null);
   const rendererRef = useRef(null);
@@ -1098,6 +1098,12 @@ export default function GalaxyMap({ onJumpToSystem }) {
             className="w-full py-1.5 border border-yellow-700 text-yellow-400 hover:bg-yellow-950/30 text-xs font-bold"
           >
             {state.bookmarkedSystems?.find(s => s.seed === selectedStar.seed) ? '★ REMOVE BOOKMARK' : '☆ BOOKMARK SYSTEM'}
+          </button>
+          <button
+            onClick={() => onNavigate && onNavigate('journey')}
+            className="w-full py-1.5 border border-purple-700 text-purple-400 hover:bg-purple-950/30 text-xs font-bold"
+          >
+            ⚭ JOURNEY LOG
           </button>
           <button
             onClick={handleJump}
