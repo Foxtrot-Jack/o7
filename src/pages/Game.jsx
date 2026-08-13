@@ -82,6 +82,26 @@ import CanisStellaScreen from '@/components/game/CanisStellaScreen';
 import RebuyScreen from '@/components/game/RebuyScreen';
 import SelfDestructScreen from '@/components/game/SelfDestructScreen';
 import TutorialOverlay from '@/components/game/TutorialOverlay';
+import DockedBar from '@/components/game/DockedBar';
+import DevStub from '@/components/game/DevStub';
+import HomeDashboard from '@/components/game/HomeDashboard';
+import RanksScreen from '@/components/game/RanksScreen';
+import ModulesManager from '@/components/game/ModulesManager';
+import FireGroups from '@/components/game/FireGroups';
+import ShipFunctions from '@/components/game/ShipFunctions';
+import FlightAssistant from '@/components/game/FlightAssistant';
+import PilotPreferences from '@/components/game/PilotPreferences';
+import ShipStatistics from '@/components/game/ShipStatistics';
+import ContactsScreen from '@/components/game/ContactsScreen';
+import CommsLog from '@/components/game/CommsLog';
+import FeaturesInProgress from '@/components/game/FeaturesInProgress';
+import PlannedFeatures from '@/components/game/PlannedFeatures';
+import Livery from '@/components/game/Livery';
+import AdvancedMaintenance from '@/components/game/AdvancedMaintenance';
+import MissionBoard from '@/components/game/MissionBoard';
+import StationContacts from '@/components/game/StationContacts';
+import CargoScreen from '@/components/game/CargoScreen';
+import MaterialsLocker from '@/components/game/MaterialsLocker';
 import { TUTORIAL_CATEGORIES, TUTORIAL_CATEGORY_LIST } from '@/lib/tutorialSteps';
 import { inputSystem } from '@/lib/inputSystem';
 import { soundEngine } from '@/lib/soundEngine';
@@ -90,7 +110,7 @@ import { getScreenTextStyle } from '@/lib/uiTextCategories';
 import { useCardSystem } from '@/lib/useCardSystem';
 import { isMfrDeckComplete, DECK_REWARD_CREDITS, DECK_REWARD_BY_KEY, DECK_TITLE_BY_MFR, earnedAchievementIds, makeCardGrant } from '@/lib/cardDeck';
 
-const STATION_ONLY_SCREENS = ['station', 'market', 'outfitting', 'materialtrader', 'synthesis', 'crew', 'blackmarket', 'engineering', 'bountyboard', 'passengers', 'multicrew', 'cartography', 'maintenance', 'dockcam'];
+const STATION_ONLY_SCREENS = ['station', 'market', 'outfitting', 'materialtrader', 'crew', 'blackmarket', 'engineering', 'bountyboard', 'passengers', 'multicrew', 'cartography', 'maintenance', 'dockcam', 'missionboard', 'stationcontacts', 'livery', 'advmaintenance', 'colonization'];
 
 function GameContent() {
   const { state, update, manualSave } = useGameState();
@@ -147,7 +167,7 @@ function GameContent() {
 
   // Physical input system — keyboard + gamepad navigation and screen hotkeys
   useEffect(() => {
-    const STATION_ONLY = ['station', 'market', 'outfitting', 'materialtrader', 'synthesis', 'crew', 'blackmarket', 'engineering', 'bountyboard', 'passengers', 'multicrew', 'cartography', 'maintenance', 'dockcam'];
+    const STATION_ONLY = ['station', 'market', 'outfitting', 'materialtrader', 'crew', 'blackmarket', 'engineering', 'bountyboard', 'passengers', 'multicrew', 'cartography', 'maintenance', 'dockcam', 'missionboard', 'stationcontacts', 'livery', 'advmaintenance', 'colonization'];
     const CARRIER_REQUIRED = ['carriercreator'];
 
     const focusElement = (direction) => {
@@ -449,6 +469,58 @@ function GameContent() {
         return <ControllerConfigScreen />;
       case 'canisstella':
         return <CanisStellaScreen />;
+      // ---- New nav screens ----
+      case 'home':
+        return <HomeDashboard onNavigate={handleNavigate} />;
+      case 'ranks':
+        return <RanksScreen />;
+      case 'modules':
+        return <ModulesManager />;
+      case 'firegroups':
+        return <FireGroups />;
+      case 'shipfunctions':
+        return <ShipFunctions />;
+      case 'flightassist':
+        return <FlightAssistant />;
+      case 'pilotprefs':
+        return <PilotPreferences />;
+      case 'shipstats':
+        return <ShipStatistics />;
+      case 'contacts':
+        return <ContactsScreen onNavigate={handleNavigate} />;
+      case 'comms':
+        return <CommsLog />;
+      case 'devfeatures':
+        return <FeaturesInProgress />;
+      case 'plannedfeatures':
+        return <PlannedFeatures />;
+      case 'livery':
+        return <Livery />;
+      case 'advmaintenance':
+        return <AdvancedMaintenance />;
+      case 'missionboard':
+        return <MissionBoard onNavigate={handleNavigate} />;
+      case 'stationcontacts':
+        return <StationContacts onNavigate={handleNavigate} />;
+      case 'cargo':
+        return <CargoScreen />;
+      case 'materialslocker':
+        return <MaterialsLocker />;
+      // ---- In-development stubs ----
+      case 'factionassignments':
+        return <DevStub title="Faction Assignments" description="Faction-specific assignment contracts are being developed. Check back in a future update." />;
+      case 'refinery':
+        return <DevStub title="Refinery" description="Mined material refinery processing view is in development." />;
+      case 'sessionlog':
+        return <DevStub title="Session Log" description="Per-session activity history is in development." />;
+      case 'disembark':
+        return <DevStub title="Commander Disembarkment" description="On-foot commander exploration is in development." />;
+      case 'administration':
+        return <DevStub title="Administration" description="Station administration services are in development." />;
+      case 'combatbonds':
+        return <DevStub title="Combat Bonds" description="Combat bond redemption is in development. Use the Bounty Board for now." />;
+      case 'searchrescue':
+        return <DevStub title="Search & Rescue" description="Search and rescue transactions are in development." />;
       default:
         return <SystemOrrery />;
     }
@@ -476,6 +548,7 @@ function GameContent() {
               location={state.currentLocation}
               tutorialTarget={tutorialTarget}
             />
+            <DockedBar onNavigate={handleNavigate} />
           </div>
           <div data-game-content className={`flex-1 relative z-0 ${isFullScreen ? 'overflow-hidden' : 'overflow-auto'} ${!isFullScreen && monoUI ? 'crt-mono-ui' : ''}`}>
             <div style={getScreenTextStyle(state.settings?.uiTextStyles, screen) || undefined} className="w-full h-full">
