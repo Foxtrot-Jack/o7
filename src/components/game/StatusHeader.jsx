@@ -58,7 +58,20 @@ export default function StatusHeader() {
         <div className="flex flex-col">
           <span className="text-orange-700 text-[10px] uppercase">Location</span>
           <span className="text-orange-400">
-            {state.currentLocation === 'station' ? `Docked — ${state.lastVisitedStation?.stationName || 'Station'}` : 'In Flight'}
+            {(() => {
+              if (state.currentLocation === 'station') return `Docked — ${state.lastVisitedStation?.stationName || 'Station'}`;
+              if (state.currentLocation === 'surface') {
+                const sysData = state.currentSystemData;
+                const body = sysData?.bodies?.find(b => b.id === state.currentSurfaceBody);
+                return `Surface — ${body?.name || body?.designation || 'Unknown'}`;
+              }
+              if (state.lastOrbitBodyId) {
+                const sysData = state.currentSystemData;
+                const body = sysData?.bodies?.find(b => b.id === state.lastOrbitBodyId);
+                if (body) return `In Orbit — ${body.name || body.designation}`;
+              }
+              return 'In Flight';
+            })()}
           </span>
         </div>
       </div>

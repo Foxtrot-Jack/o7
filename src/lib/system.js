@@ -637,18 +637,22 @@ function generateStations(rng, seed, bodies, population = 0) {
       stationOrbitRadius: stationType !== 'planetary' ? randFloat(rng, 2, 5) * (body.radius + 1) : 0,
       distanceFromStar: body.orbitRadius,
       economy: pickWeighted(rng, ECONOMY_TYPES.map(e => ({ value: e, weight: 1 }))),
-      services: {
-        market: true,
-        refuel: fullService || rng() < 0.8,
-        repair: fullService || rng() < 0.7,
-        rearm: fullService || rng() < 0.5,
-        shipyard: fullService || rng() < 0.3,
-        outfitting: fullService || rng() < 0.4,
-        missions: true,
-        exploration: fullService || rng() < 0.6,
-        cartographics: fullService || rng() < 0.5,
-        contact: fullService || rng() < 0.3,
-      },
+      services: (() => {
+        const hasShipyard = fullService || rng() < 0.3;
+        return {
+          market: true,
+          refuel: fullService || rng() < 0.8,
+          repair: fullService || rng() < 0.7,
+          rearm: fullService || rng() < 0.5,
+          shipyard: hasShipyard,
+          // Any station with a shipyard also has outfitting available
+          outfitting: fullService || hasShipyard || rng() < 0.4,
+          missions: true,
+          exploration: fullService || rng() < 0.6,
+          cartographics: fullService || rng() < 0.5,
+          contact: fullService || rng() < 0.3,
+        };
+      })(),
     });
   }
 

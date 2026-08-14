@@ -31,7 +31,9 @@ export default function ContactsScreen({ onNavigate }) {
   const flyTo = (ship) => {
     if (confirmId !== ship.id && !confirmOff) { setConfirmId(ship.id); return; }
     setConfirmId(null);
+    // Pull the player ship to the combat location and start combat immediately
     startCombat({ name: ship.shipName, pilot: ship.pilot, hull: 100 + ship.shipClass * 50, damage: 10 + ship.shipClass * 5 }, 'contact');
+    onNavigate('system');
   };
 
   return (

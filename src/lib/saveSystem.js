@@ -58,6 +58,21 @@ export function safeWriteSave(key, state) {
   }
 }
 
+// Migrate a loaded save to the current version. Each migration step patches
+// the save in place so old saves are always forward-compatible — players never
+// lose progress from an update unless the save itself is corrupt.
+const LATEST_SAVE_VERSION = 2;
+export function migrateSave(parsed) {
+  if (!parsed || typeof parsed !== 'object') return parsed;
+  const v = parsed.version || 0;
+  // Version 0→1: saves without a version field — no structural change needed,
+  // the merge in GameStateProvider handles missing fields.
+  // Version 1→2: adds factionRep, missionChains, etc. — all defaulted by merge.
+  // Future migrations go here, each guarded by its version check.
+  parsed.version = LATEST_SAVE_VERSION;
+  return parsed;
+}
+
 // Load the best available save: main first, then backup. If the main is
 // invalid but the backup is good, the backup is restored to the main key so
 // subsequent loads are clean. Returns parsed state or null.
@@ -69,6 +84,7 @@ export function loadSave(key, expectedSaveMode) {
       let parsed = null;
       try { parsed = JSON.parse(raw); } catch (e) { parsed = null; }
       if (isValidSave(parsed, expectedSaveMode)) {
+        parsed = migrateSave(parsed);
         // Seed a backup if one doesn't exist yet.
         try {
           if (!localStorage.getItem(key + BACKUP_SUFFIX)) localStorage.setItem(key + BACKUP_SUFFIX, raw);
@@ -86,6 +102,7 @@ export function loadSave(key, expectedSaveMode) {
       let bakParsed = null;
       try { bakParsed = JSON.parse(bakRaw); } catch (e) { bakParsed = null; }
       if (isValidSave(bakParsed, expectedSaveMode)) {
+        bakParsed = migrateSave(bakParsed);
         // Restore the backup into the main slot.
         try { localStorage.setItem(key, bakRaw); } catch (e) {}
         console.info('Recovered save from backup.');

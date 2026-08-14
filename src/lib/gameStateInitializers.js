@@ -103,7 +103,7 @@ export function createInitialState() {
       miniScreen: false,
       colorTheme: 'elite',
       customColor: null,
-      fontFamily: 'courier',
+      fontFamily: 'inter',
       fontScale: 100,
       screenOrientation: 'landscape',
       orientationLocked: false,

@@ -371,14 +371,24 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     });
   }, []);
 
-  // Leave station
+  // Leave station — the ship stays orbiting the station's parent body so the
+  // player doesn't have to re-fly to where they just were. lastOrbitBodyId is
+  // set so the orrery anchors the ship at the same body on next render.
   const leaveStation = useCallback(() => {
     soundEngine.play('undock');
-    setState(prev => ({
-      ...prev,
-      currentLocation: 'system',
-      currentStationId: null,
-    }));
+    setState(prev => {
+      let lastOrbitBodyId = prev.lastOrbitBodyId;
+      if (prev.currentStationId && prev.currentSystemData) {
+        const station = prev.currentSystemData.stations?.find(s => s.id === prev.currentStationId);
+        if (station?.parentId) lastOrbitBodyId = station.parentId;
+      }
+      return {
+        ...prev,
+        currentLocation: 'system',
+        currentStationId: null,
+        lastOrbitBodyId,
+      };
+    });
   }, []);
 
   // Add credits

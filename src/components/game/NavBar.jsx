@@ -17,7 +17,6 @@ const NAV_TABS = [
     children: [
       {
         label: 'Navigation', icon: Compass, children: [
-          { id: 'system', label: 'Orrery Contact List', icon: Compass },
           { id: 'galaxy', label: 'Galaxy Map', icon: Map },
           { id: 'system', label: 'Orrery Viewer', icon: Eye },
         ],
@@ -45,7 +44,7 @@ const NAV_TABS = [
     children: [
       {
         label: 'Home', icon: LayoutDashboard, children: [
-          { id: 'home', label: 'Home', icon: LayoutDashboard },
+          { id: 'home', label: 'Main', icon: LayoutDashboard },
           { id: 'ranks', label: 'Ranks', icon: Trophy },
           { label: 'Player Identity', icon: User, children: [
             { id: 'profile', label: 'Player Profile', icon: User },
@@ -273,7 +272,7 @@ export default function NavBar({ currentScreen, onNavigate, location, tutorialTa
   };
 
   return (
-    <nav ref={navRef} className="relative z-[100] flex flex-col border-b border-orange-900/50 bg-black" style={{ zoom: (state.settings?.uiScale?.navPanel ?? 100) / 100, textShadow: navShadow, fontFamily: "var(--crt-font, 'Courier New', 'Lucida Console', monospace)" }}>
+    <nav ref={navRef} className="relative z-[120] flex flex-col border-b border-orange-900/50 bg-black" style={{ zoom: (state.settings?.uiScale?.navPanel ?? 100) / 100, textShadow: navShadow, fontFamily: "var(--crt-font, 'Inter', sans-serif)" }}>
       <div className="flex items-stretch overflow-visible">
         {NAV_TABS.map((tab) => {
           const Icon = tab.icon;
@@ -298,7 +297,7 @@ export default function NavBar({ currentScreen, onNavigate, location, tutorialTa
                 {!tab.direct && <ChevronDown className={`w-2.5 h-2.5 ml-0.5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />}
               </button>
               {isOpen && !tab.direct && (
-                <div className={`absolute top-full ${tab.align === 'right' ? 'right-0' : 'left-0'} mt-0.5 min-w-[200px] max-h-[70vh] overflow-y-auto border border-orange-800 bg-black z-[100] shadow-lg shadow-black`}>
+                <div className={`absolute top-full ${tab.align === 'right' ? 'right-0' : 'left-0'} mt-0.5 min-w-[200px] max-h-[70vh] overflow-y-auto border border-orange-800 bg-black z-[120] shadow-lg shadow-black`}>
                   {(tab.items || []).map(item => renderItem(item, 0))}
                   {(tab.children || []).map(node => renderNode(node, 0, tab.id))}
                 </div>

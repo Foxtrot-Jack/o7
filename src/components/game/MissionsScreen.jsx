@@ -69,6 +69,7 @@ const MISSION_TEMPLATES = {
 export default function MissionsScreen() {
   const { state, getSystemData, addMission, completeMission, addCargo, addCredits, removeCargo, lockSurfaceMap, unlockSurfaceMaps, update } = useGameState();
   const [acceptedFilter, setAcceptedFilter] = useState(false);
+  const [sortByType, setSortByType] = useState(false);
 
   const systemData = getSystemData();
   const station = systemData?.stations.find(s => s.id === state.currentStationId);
@@ -238,7 +239,8 @@ export default function MissionsScreen() {
 
   // Hide missions that have already been accepted from the available board.
   const acceptedIds = state.acceptedMissionIds || [];
-  const visibleMissions = availableMissions.filter(m => !acceptedIds.includes(m.id));
+  let visibleMissions = availableMissions.filter(m => !acceptedIds.includes(m.id));
+  if (sortByType) visibleMissions = [...visibleMissions].sort((a, b) => (a.type || '').localeCompare(b.type || ''));
 
   if (!station) {
     return (
@@ -302,7 +304,7 @@ export default function MissionsScreen() {
           <span className="text-orange-300 font-bold uppercase text-sm">Mission Board — {station.name}</span>
           <span className="text-orange-700 text-[10px] ml-2">JUMP RANGE: <span className="text-orange-400">{playerJumpRange} LY</span></span>
         </div>
-        <div className="flex gap-1">
+        <div className="flex gap-1 items-center">
           <button
             onClick={() => setAcceptedFilter(false)}
             className={`px-2 py-1 text-[10px] border ${!acceptedFilter ? 'border-orange-500 text-orange-300' : 'border-orange-900 text-orange-700'}`}
@@ -311,6 +313,10 @@ export default function MissionsScreen() {
             onClick={() => setAcceptedFilter(true)}
             className={`px-2 py-1 text-[10px] border ${acceptedFilter ? 'border-orange-500 text-orange-300' : 'border-orange-900 text-orange-700'}`}
           >ACCEPTED ({state.activeMissions.length})</button>
+          <button
+            onClick={() => setSortByType(s => !s)}
+            className={`px-2 py-1 text-[10px] border ${sortByType ? 'border-cyan-500 text-cyan-300' : 'border-orange-900 text-orange-700'}`}
+          >⇅ TYPE</button>
         </div>
       </div>
 
@@ -376,7 +382,7 @@ export default function MissionsScreen() {
           </div>
         )}
 
-        {acceptedFilter && state.activeMissions.map(mission => {
+        {acceptedFilter && (sortByType ? [...state.activeMissions].sort((a, b) => (a.type || '').localeCompare(b.type || '')) : state.activeMissions).map(mission => {
           const template = MISSION_TEMPLATES[mission.type];
           const Icon = template.icon;
           const cargoItem = mission.commodity ? state.ship.cargo.find(c => c.commodity === mission.commodity) : null;

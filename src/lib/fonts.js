@@ -1,6 +1,7 @@
-// Font options for the CRT interface.
+// Font options for the game interface.
 // Google Fonts are imported in src/index.css; system fonts need no import.
 export const FONTS = {
+  inter:      { name: 'Inter',           family: "'Inter', sans-serif",                          type: 'Readable' },
   courier:    { name: 'Courier New',     family: "'Courier New', 'Lucida Console', monospace",  type: 'System Mono' },
   monaco:     { name: 'Monaco',          family: "Monaco, Menlo, 'Courier New', monospace",      type: 'System Mono' },
   consolas:   { name: 'Consolas',        family: "Consolas, 'Courier New', monospace",           type: 'System Mono' },
@@ -14,4 +15,4 @@ export const FONTS = {
 
 export const FONT_LIST = Object.entries(FONTS).map(([id, f]) => ({ id, ...f }));
 
-export const DEFAULT_FONT = 'courier';
+export const DEFAULT_FONT = 'inter';

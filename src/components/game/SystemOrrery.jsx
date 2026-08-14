@@ -44,7 +44,7 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
   const lastTimeRef = useRef(0);
   const gridRef = useRef(null);
 
-  const { state, getSystemData, scanBody, dockAtStation, fssScanSystem, mapBody, landOnBody, refuel, addCargo, addMaterial } = useGameState();
+  const { state, getSystemData, scanBody, dockAtStation, fssScanSystem, mapBody, landOnBody, refuel, addCargo, addMaterial, update } = useGameState();
   const settings = state.settings || {};
   const effTheme = effectiveTheme(state);
   const monoUI = monoUIActive(settings);
@@ -1150,6 +1150,17 @@ export default function SystemOrrery({ onSelectBody, selectedBodyId, onNavigate 
 
       {/* Ship AI copilot + radio chatter — stacked above the info panel */}
       <div className="absolute bottom-2 left-2 right-44 sm:right-56 z-20 flex flex-col gap-1 max-h-[85vh] overflow-y-auto">
+      {/* Toggle buttons for copilot/comms panels */}
+      <div className="flex gap-1 shrink-0">
+        <button
+          onClick={() => state.settings && update({ settings: { ...state.settings, showShipCopilot: !showShipCopilot } })}
+          className={`px-2 py-0.5 text-[9px] border ${showShipCopilot ? 'border-orange-500 text-orange-300 bg-orange-950/30' : 'border-orange-900 text-orange-700'}`}
+        >🤖 AI</button>
+        <button
+          onClick={() => state.settings && update({ settings: { ...state.settings, showRadioChatter: !showRadioChatter } })}
+          className={`px-2 py-0.5 text-[9px] border ${showRadioChatter ? 'border-orange-500 text-orange-300 bg-orange-950/30' : 'border-orange-900 text-orange-700'}`}
+        >📡 COMMS</button>
+      </div>
       {(showShipCopilot || showRadioChatter) && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 shrink-0">
           {showShipCopilot && <ShipCopilot />}
