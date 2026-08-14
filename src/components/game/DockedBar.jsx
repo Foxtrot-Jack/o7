@@ -1,7 +1,7 @@
 // Docked quick-action bar — appears while docked at a station.
 // Starport Services (dropdown), Launch, Trade, Dock Camera.
 import React, { useState, useRef, useEffect } from 'react';
-import { Store, Rocket, ArrowLeftRight, Radar, ChevronDown, Wrench, FlaskConical, Users, ScrollText, Boxes, Palette, Hammer, ClipboardList, Building } from 'lucide-react';
+import { Store, Rocket, ArrowLeftRight, Radar, ChevronDown, Wrench, FlaskConical, Users, ScrollText, Boxes, Palette, Hammer, ClipboardList, Building, Ship } from 'lucide-react';
 import { useGameState } from '@/lib/gameState';
 import { soundEngine } from '@/lib/soundEngine';
 
@@ -12,6 +12,7 @@ const SERVICE_ITEMS = [
   { id: 'cartography', label: 'Universal Cartographics', icon: ScrollText },
   { id: 'crew', label: 'Crew Lounge', icon: Users },
   { id: 'outfitting', label: 'Outfitting', icon: Wrench },
+  { id: 'ship', label: 'Shipyard', icon: Ship },
   { id: 'livery', label: 'Livery', icon: Palette },
   { id: 'advmaintenance', label: 'Advanced Maintenance', icon: Wrench },
   { id: 'engineering', label: 'Engineers Workshop', icon: FlaskConical },

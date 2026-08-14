@@ -31,7 +31,7 @@ export default class GameErrorBoundary extends React.Component {
       return (
         <div className="w-full h-screen bg-black flex items-center justify-center p-8">
           <div className="max-w-md text-center space-y-4" style={{ fontFamily: 'Courier New, monospace' }}>
-            <div className="text-orange-500 text-2xl font-bold" style={{ textShadow: '0 0 6px rgba(255,136,0,0.4)' }}>
+            <div className="text-orange-500 text-2xl font-bold">
               ⚠ SYSTEM FAULT
             </div>
             <div className="text-orange-700 text-xs leading-relaxed">

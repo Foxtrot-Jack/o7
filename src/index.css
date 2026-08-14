@@ -93,11 +93,10 @@
   }
 }
 
-/* Starfarer CRT Theme */
+/* Starfarer Theme — clean, readable text (no glow/screen effects) */
 .crt-container,
 .crt-container * {
   font-family: var(--crt-font, 'Inter', sans-serif) !important;
-  text-shadow: 0 0 3px rgba(255, 136, 0, 0.8), 0 0 6px rgba(255, 136, 0, 0.4);
   line-height: 1.35;
   letter-spacing: 0.015em;
 }

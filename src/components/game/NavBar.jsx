@@ -163,9 +163,6 @@ export default function NavBar({ currentScreen, onNavigate, location, tutorialTa
   const navRef = useRef(null);
   const { state } = useGameState();
   const navTextRGB = state.settings?.navTextRGB || null;
-  const navShadow = navTextRGB
-    ? `0 0 3px rgba(${navTextRGB.r},${navTextRGB.g},${navTextRGB.b},0.8), 0 0 6px rgba(${navTextRGB.r},${navTextRGB.g},${navTextRGB.b},0.4)`
-    : undefined;
   const navGroupStyles = state.settings?.navGroupStyles || {};
 
   useEffect(() => {
@@ -272,7 +269,7 @@ export default function NavBar({ currentScreen, onNavigate, location, tutorialTa
   };
 
   return (
-    <nav ref={navRef} className="relative z-[120] flex flex-col border-b border-orange-900/50 bg-black" style={{ zoom: (state.settings?.uiScale?.navPanel ?? 100) / 100, textShadow: navShadow, fontFamily: "var(--crt-font, 'Inter', sans-serif)" }}>
+    <nav ref={navRef} className="relative z-[120] flex flex-col border-b border-orange-900/50 bg-black" style={{ zoom: (state.settings?.uiScale?.navPanel ?? 100) / 100, ...(navTextRGB ? { color: `rgb(${navTextRGB.r},${navTextRGB.g},${navTextRGB.b})` } : {}), fontFamily: "var(--crt-font, 'Inter', sans-serif)" }}>
       <div className="flex items-stretch overflow-visible">
         {NAV_TABS.map((tab) => {
           const Icon = tab.icon;
@@ -280,8 +277,7 @@ export default function NavBar({ currentScreen, onNavigate, location, tutorialTa
           const hasActive = allIds.includes(currentScreen);
           const isOpen = openTab === tab.id;
           const gs = getNavGroupStyle(navGroupStyles, tab.id);
-          const gsShadow = gs.rgb ? `0 0 3px rgba(${gs.rgb.r},${gs.rgb.g},${gs.rgb.b},0.8), 0 0 6px rgba(${gs.rgb.r},${gs.rgb.g},${gs.rgb.b},0.4)` : undefined;
-          const tabStyle = (gs.size !== 100 || gsShadow) ? { zoom: gs.size / 100, textShadow: gsShadow } : undefined;
+          const tabStyle = (gs.size !== 100 || gs.rgb) ? { zoom: gs.size / 100, ...(gs.rgb ? { color: `rgb(${gs.rgb.r},${gs.rgb.g},${gs.rgb.b})` } : {}) } : undefined;
           return (
             <div key={tab.id} className="relative flex-shrink-0" style={tabStyle}>
               <button

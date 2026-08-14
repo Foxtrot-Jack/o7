@@ -83,11 +83,8 @@ export function getScreenTextStyle(uiTextStyles, screenId) {
   if (!catId) return null;
   const { size, rgb } = getCategoryStyle(uiTextStyles, catId);
   if (size === 100 && !rgb) return null;
-  const shadow = rgb
-    ? `0 0 3px rgba(${rgb.r},${rgb.g},${rgb.b},0.8), 0 0 6px rgba(${rgb.r},${rgb.g},${rgb.b},0.4)`
-    : undefined;
   return {
     zoom: size / 100,
-    textShadow: shadow,
+    ...(rgb ? { color: `rgb(${rgb.r},${rgb.g},${rgb.b})` } : {}),
   };
 }

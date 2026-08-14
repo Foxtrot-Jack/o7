@@ -130,7 +130,7 @@ export default function ChessGame({ onClose, onComplete }) {
             return (
               <button key={`${r}-${c}`} onClick={() => select(r, c)}
                 className={`aspect-square flex items-center justify-center text-2xl ${dark ? 'bg-orange-950/60' : 'bg-black'} ${isSel ? 'ring-2 ring-cyan-400' : ''} ${isDest ? 'bg-cyan-900/50' : ''}`}>
-                {p && <span className={p.c === 'w' ? 'text-orange-100' : 'text-orange-900'} style={{ textShadow: p.c === 'w' ? '0 0 4px #ff8800' : 'none' }}>{SYM[p.t]}</span>}
+                {p && <span className={p.c === 'w' ? 'text-orange-100' : 'text-orange-900'}>{SYM[p.t]}</span>}
                 {isDest && !p && <span className="w-2 h-2 bg-cyan-500 rounded-full" />}
               </button>
             );

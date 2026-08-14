@@ -8,12 +8,9 @@ import GalacticTicker from '@/components/game/GalacticTicker';
 export default function StatusHeader() {
   const { state } = useGameState();
   const statusRGB = state.settings?.statusTextRGB || null;
-  const statusShadow = statusRGB
-    ? `0 0 3px rgba(${statusRGB.r},${statusRGB.g},${statusRGB.b},0.8), 0 0 6px rgba(${statusRGB.r},${statusRGB.g},${statusRGB.b},0.4)`
-    : undefined;
   const headerStyle = {
     zoom: (state.settings?.uiScale?.statusHeader ?? 100) / 100,
-    textShadow: statusShadow,
+    ...(statusRGB ? { color: `rgb(${statusRGB.r},${statusRGB.g},${statusRGB.b})` } : {}),
   };
 
   const cargoUsed = (state.ship?.cargo || []).reduce((sum, c) => sum + c.qty, 0);
