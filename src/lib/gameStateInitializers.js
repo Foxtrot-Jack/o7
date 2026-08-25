@@ -22,6 +22,7 @@ export function validateShip(ship, defaultShip) {
   if (typeof v.moduleWear !== 'number' || isNaN(v.moduleWear)) v.moduleWear = 0;
   if (!v.cockpitDecoration || typeof v.cockpitDecoration !== 'object') v.cockpitDecoration = { parts: {} };
   if (!v.cockpitDecoration.parts || typeof v.cockpitDecoration.parts !== 'object') v.cockpitDecoration.parts = {};
+  if (typeof v.hullFrameTier !== 'number' || isNaN(v.hullFrameTier)) v.hullFrameTier = 0;
   return v;
 }
 
@@ -41,6 +42,7 @@ export function createInitialState() {
       integrity: 100,
       moduleWear: 0,
       cockpitDecoration: { parts: {} },
+      hullFrameTier: 0,
     },
     currentSystem: STARTING_SYSTEM,
     currentLocation: 'station',
@@ -194,6 +196,7 @@ export function createSandboxState() {
       integrity: 100,
       moduleWear: 0,
       cockpitDecoration: { parts: {} },
+      hullFrameTier: 5,
     },
   };
 }

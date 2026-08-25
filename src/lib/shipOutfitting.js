@@ -4,6 +4,7 @@
 // ============================================================
 
 import { EXPANDED_SHIP_SLOTS } from './shipRosterExpanded';
+import { getHullFrame, getAdjustedShipSlots } from './hullFrames';
 
 const CLASS_MULT = { E: 0.7, D: 0.85, C: 1.0, B: 1.2, A: 1.5 };
 const CLASS_ORDER = ['E', 'D', 'C', 'B', 'A'];
@@ -374,9 +375,13 @@ export function getDefaultModules(shipTypeId) {
 }
 
 // ---- Compute ship stats from equipped modules ----
-export function computeShipStats(shipTypeId, modules) {
-  const slots = SHIP_SLOTS[shipTypeId];
-  if (!slots) return { cargoCapacity: 4, jumpRange: 8, shield: 0, power: 0, powerDraw: 0, mass: 10, totalDamage: 0 };
+// hullFrameTier (optional) applies frame bonuses to slots and base stats
+export function computeShipStats(shipTypeId, modules, hullFrameTier = 0) {
+  const baseSlots = SHIP_SLOTS[shipTypeId];
+  if (!baseSlots) return { cargoCapacity: 4, jumpRange: 8, shield: 0, power: 0, powerDraw: 0, mass: 10, totalDamage: 0 };
+  const slots = getAdjustedShipSlots(shipTypeId, hullFrameTier, SHIP_SLOTS) || baseSlots;
+  const frame = getHullFrame(hullFrameTier);
+  const fb = frame.bonuses;
 
   let cargoCapacity = 0;
   let jumpRangeBase = 8;
@@ -456,21 +461,28 @@ export function computeShipStats(shipTypeId, modules) {
     if (blueprint.stat === 'thrust') {} // visual only for now
   }
 
-  // Jump range: mass affects it
-  const jumpRange = Math.max(2, jumpRangeBase * (10 / Math.max(mass, 5)));
+  // Jump range: mass affects it, then hull frame multiplier
+  const jumpRange = Math.max(2, jumpRangeBase * (10 / Math.max(mass, 5)) * fb.jumpRangeMult);
 
   return {
-    cargoCapacity,
+    cargoCapacity: cargoCapacity + fb.cargoBonus,
     jumpRange: Math.round(jumpRange * 10) / 10,
-    shield: Math.round(shield),
+    shield: Math.round(shield * fb.shieldMult),
     power: Math.round(power * 10) / 10,
     powerDraw: Math.round(powerDraw * 10) / 10,
     mass: Math.round(mass * 10) / 10,
     totalDamage: Math.round(totalDamage),
-    fuelCapacity,
+    fuelCapacity: fuelCapacity + fb.fuelBonus,
     passengerCapacity,
     cabinClasses,
+    hullIntegrity: fb.hullIntegrity,
+    hullFrameTier: hullFrameTier,
   };
+}
+
+// ---- Get adjusted ship slots for a given hull frame tier ----
+export function getShipSlotsForTier(shipTypeId, hullFrameTier = 0) {
+  return getAdjustedShipSlots(shipTypeId, hullFrameTier, SHIP_SLOTS) || SHIP_SLOTS[shipTypeId];
 }
 
 // ---- Get available modules for a slot ----

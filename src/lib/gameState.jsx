@@ -11,6 +11,7 @@ import { generateSystem, generateSystemFromStar } from './system';
 import { COMMODITIES, COMMODITY_MAP, COMMODITY_CATEGORIES } from './commodities';
 import { computeCustomShipStats } from './shipParts';
 import { getDefaultModules, computeShipStats } from './shipOutfitting';
+import { canUpgradeHullFrame, getHullFrame, HULL_FRAME_TIERS } from './hullFrames';
 import { getCrewBonuses } from './crew';
 
 import { SYNTHESIS_MAP } from './synthesis';
@@ -498,6 +499,37 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
   }, []);
 
   // Switch to a stored ship (must be at same station or carrier in current system)
+  // Upgrade the persistent ship's hull frame tier at the Shipwright
+  const upgradeHullFrame = useCallback(() => {
+    setState(prev => {
+      if (prev.currentLocation !== 'station') return prev;
+      const currentTier = prev.ship?.hullFrameTier || 0;
+      const { canUpgrade, next } = canUpgradeHullFrame(prev);
+      if (!canUpgrade || !next) return prev;
+      const isSb = prev.saveMode === 'sandbox';
+      const newTier = next.tier;
+      const newStats = computeShipStats(prev.ship.type, prev.ship.modules, newTier);
+      return {
+        ...prev,
+        credits: prev.credits - (isSb ? 0 : next.cost),
+        ship: {
+          ...prev.ship,
+          hullFrameTier: newTier,
+          fuelCapacity: newStats.fuelCapacity,
+          cargoCapacity: newStats.cargoCapacity,
+          integrity: next.bonuses.hullIntegrity,
+        },
+        achievements: {
+          ...prev.achievements,
+          milestones: {
+            ...prev.achievements?.milestones,
+            [`hullFrame_${newTier}`]: { date: Date.now() },
+          },
+        },
+      };
+    });
+  }, []);
+
   const switchShip = useCallback((shipId) => {
     setState(prev => {
       const stored = prev.ownedShips.find(s => s.id === shipId);
@@ -2303,6 +2335,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
     removeCargo,
     refuel,
     buyShip,
+    upgradeHullFrame,
     scanBody,
     sellExplorationData,
     addMission,
