@@ -654,6 +654,7 @@ function GameContent() {
   );
 }
 
+// Boot wrapper — ensures commander exists before entering the game world
 function GameBootstrap() {
   const { state } = useGameState();
   if (!state.commanderName) return <CharacterCreator />;
