@@ -4,6 +4,7 @@ import { useGameState, SHIP_MAP } from '@/lib/gameState';
 import { generateStarsInRange, distance3D } from '@/lib/galaxy';
 import { generateSystem } from '@/lib/system';
 import { Rocket, Fuel, Banknote, Plus, Edit2, Check, Anchor, Trash2 } from 'lucide-react';
+import CarrierCrewPanel from './CarrierCrewPanel';
 
 const CARRIER_COST = 5000000000;
 const MAX_CARRIERS = 5;
@@ -175,6 +176,9 @@ export default function CarrierScreen({ onNavigate }) {
                     </div>
                   </div>
                 )}
+
+                {/* Crew & Economy */}
+                <CarrierCrewPanel carrier={c} />
 
                 {/* Decommission */}
                 <div className="border-t border-orange-900 pt-2">

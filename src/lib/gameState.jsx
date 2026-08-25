@@ -33,6 +33,7 @@ import { updateRank, getProbesRequired, hasCarrierVendor, getAvailableShipsAtSta
 import { safeWriteSave, loadSave, clearSave } from './saveSystem';
 import { applyGlobalSettings, saveGlobalSettings } from './globalSettings';
 import { useFounderSim } from './founderSim';
+import { useCarrierEconomy } from './useCarrierEconomy';
 // Re-export helpers that other modules import from gameState
 export { getProbesRequired, hasCarrierVendor, getAvailableShipsAtStation, getOutfittingLevel, OUTFITTING_LEVELS };
 
@@ -247,6 +248,7 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
   }, [flushSave]);
 
   const { tickFounders } = useFounderSim(setState);
+  const { tickCarrierEconomies } = useCarrierEconomy(setState);
 
   // Founder BGS simulation — advances founder pilots (explore/claim systems +
   // activity feed) on real elapsed time. The explorer-speed slider is the only
@@ -259,11 +261,12 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
       const elapsed = Date.now() - last;
       if (elapsed < 1000) return;
       tickFounders(elapsed);
+      tickCarrierEconomies(elapsed);
     };
     run();
     const id = setInterval(run, 60000);
     return () => clearInterval(id);
-  }, [loaded, tickFounders]);
+  }, [loaded, tickFounders, tickCarrierEconomies]);
 
   // Update function — ALWAYS merges into prev. A partial updater (returning
   // only e.g. { settings }) is merged rather than replacing the whole state,
@@ -591,6 +594,8 @@ export function GameStateProvider({ children, saveSlot = 'normal', onSwitchSave 
         services: { market: false, shipyard: false, outfitting: false, refuel: true, repair: true },
         orders: [],
         lastIncomeCollection: Date.now(),
+        pendingIncome: 0,
+        crew: [],
         interior: { roomItems: [], savedPlants: [], barTab: 0 },
         design: null,
         cockpitDecoration: { parts: {} },
