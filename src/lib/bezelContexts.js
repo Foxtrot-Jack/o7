@@ -34,7 +34,8 @@ export const BEZEL_ACTIONS = {
   fss: { id: 'fss', label: 'FSS Scanner', icon: Radar, screen: 'fss' },
 
   // ---- Station Services (station-only) ----
-  shipwright: { id: 'shipwright', label: 'Shipwright', icon: Wrench, screen: 'outfitting', stationOnly: true },
+  shipwright: { id: 'shipwright', label: 'Shipwright', icon: Wrench, screen: 'shipwright', stationOnly: true },
+  outfitting: { id: 'outfitting', label: 'Outfitting', icon: Cpu, screen: 'outfitting', stationOnly: true },
   market: { id: 'market', label: 'Market', icon: Store, screen: 'market', stationOnly: true },
   missionboard: { id: 'missionboard', label: 'Mission Board', icon: ClipboardList, screen: 'missionboard', stationOnly: true },
   crew: { id: 'crew', label: 'Crew Lounge', icon: Users, screen: 'crew', stationOnly: true },

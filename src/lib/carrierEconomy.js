@@ -9,6 +9,8 @@
 // Income is stored as `pendingIncome` per carrier and claimed manually from
 // the Carrier screen, so the player always sees the number grow.
 
+import { getFactionStateMultiplier, getCarrierSystemFactionState } from './bgs';
+
 // Income per hour per service, scaled by system population
 const SERVICE_BASE_INCOME = {
   market: 50000,      // 50k CR/h base
@@ -38,14 +40,19 @@ function populationMultiplier(population) {
   return 2.0; // capital systems
 }
 
-// Calculate per-hour income for a carrier given its services, system, and crew
-export function calculateCarrierIncomeRate(carrier, systemPopulation, crewBonuses = {}) {
+// Calculate per-hour income for a carrier given its services, system, and crew.
+// Income scales with system population, the controlling faction's BGS state,
+// and crew efficiency.
+export function calculateCarrierIncomeRate(carrier, systemPopulation, crewBonuses = {}, factionState = null) {
   let rate = 0;
   for (const [service, enabled] of Object.entries(carrier.services || {})) {
     if (!enabled) continue;
     const base = SERVICE_BASE_INCOME[service] || 0;
     rate += base * populationMultiplier(systemPopulation);
   }
+  // BGS faction state multiplier (boom boosts, war/bust depresses)
+  const stateMult = getFactionStateMultiplier(factionState || getCarrierSystemFactionState(carrier));
+  rate *= stateMult;
   // Crew efficiency bonus (0-50% based on crew morale + level)
   const efficiencyMult = 1 + (crewBonuses.efficiency || 0);
   return Math.round(rate * efficiencyMult);
@@ -71,8 +78,9 @@ export function tickCarrierEconomy(carrier, elapsedMs, crewBonuses = {}) {
 
   const system = carrier.system || {};
   const population = system.population || 0;
+  const factionState = getCarrierSystemFactionState(carrier);
 
-  const incomeRate = calculateCarrierIncomeRate(carrier, population, crewBonuses);
+  const incomeRate = calculateCarrierIncomeRate(carrier, population, crewBonuses, factionState);
   const tritiumUpkeep = calculateCarrierTritiumUpkeep(carrier, crewBonuses);
 
   const incomeEarned = Math.round(incomeRate * hours);

@@ -75,3 +75,27 @@ export function applyInfluenceChange(factions, factionName, amount) {
   }
   return [...factions];
 }
+
+// Income multiplier for carrier economy based on the controlling faction's state.
+// Boom boosts trade traffic; war/civilwar disrupt services; bust depresses income.
+export function getFactionStateMultiplier(stateId) {
+  switch (stateId) {
+    case 'boom': return 1.4;
+    case 'expansion': return 1.15;
+    case 'war': return 0.6;
+    case 'civilwar': return 0.5;
+    case 'bust': return 0.7;
+    case 'retreat': return 0.85;
+    default: return 1.0; // stable / none
+  }
+}
+
+// Resolve the controlling faction's state for a carrier's parked system.
+// Returns the state id string (e.g. 'boom', 'war', 'none').
+export function getCarrierSystemFactionState(carrier, systemData) {
+  if (!carrier?.systemSeed) return 'none';
+  const factions = generateFactionStates(carrier.systemSeed, systemData || {});
+  if (!factions.length) return 'none';
+  const controlling = [...factions].sort((a, b) => b.influence - a.influence)[0];
+  return controlling?.state || 'none';
+}

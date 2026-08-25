@@ -88,6 +88,7 @@ export default function StationScreen({ onNavigate }) {
       label: 'Ships & Outfitting',
       services: [
         { icon: ShipIcon, label: 'Shipyard', available: true, nav: 'ship' },
+        { icon: Wrench, label: 'Shipwright', available: true, nav: 'shipwright' },
         { icon: Wrench, label: 'Outfitting', available: true, nav: 'outfitting' },
         { icon: FlaskConical, label: 'Engineering', available: !!engineer, note: engineer ? `${engineer.name} · G${engineer.maxGrade}` : null, nav: 'engineering' },
         { icon: ArrowLeftRight, label: 'Material Trader', available: true, nav: 'materialtrader' },

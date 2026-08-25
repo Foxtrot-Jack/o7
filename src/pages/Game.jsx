@@ -21,6 +21,7 @@ import CarrierScreen from '@/components/game/CarrierScreen';
 import AchievementsScreen from '@/components/game/AchievementsScreen';
 import SettingsScreen from '@/components/game/SettingsScreen';
 import OutfittingScreen from '@/components/game/OutfittingScreen';
+import ShipwrightScreen from '@/components/game/ShipwrightScreen';
 import SurfaceSurvey from '@/components/game/SurfaceSurvey';
 import TradeTools from '@/components/game/TradeTools';
 import CommanderProfile from '@/components/game/CommanderProfile';
@@ -391,6 +392,8 @@ function GameContent() {
         return <SettingsScreen />;
       case 'outfitting':
         return <OutfittingScreen />;
+      case 'shipwright':
+        return <ShipwrightScreen />;
       case 'survey':
         return <SurfaceSurvey onNavigate={handleNavigate} />;
       case 'trade':
