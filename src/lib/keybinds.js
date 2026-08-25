@@ -126,6 +126,16 @@ export const KEYBIND_CATEGORIES = [
       { id: 'screen_discoveries', label: 'Discoveries', defaults: [] },
     ],
   },
+  {
+    id: 'bezel',
+    label: 'Bezel Buttons',
+    icon: '🔘',
+    actions: Array.from({ length: 24 }, (_, i) => ({
+      id: `bezel_f${i + 1}`,
+      label: `Bezel F${i + 1}`,
+      defaults: [{ type: 'key', code: `F${i + 1}` }],
+    })),
+  },
 ];
 
 // Flat action lookup

@@ -114,6 +114,9 @@ export function createInitialState() {
       shipComms: true,
       showShipCopilot: true,
       showRadioChatter: true,
+      bezelVisible: true,
+      statusHeaderVisible: true,
+      bezelLayout: {},
       sound: {
         enabled: true,
         sfxVolume: 0.7,

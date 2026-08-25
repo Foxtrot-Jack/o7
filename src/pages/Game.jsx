@@ -1,11 +1,11 @@
 // Main Game Page — orchestrates all screens with persistent navigation
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { GameStateProvider, useGameState } from '@/lib/gameState';
 import CRTFrame from '@/components/game/CRTFrame';
 import SaveSelect from '@/components/game/SaveSelect';
 import CharacterCreator from '@/components/game/CharacterCreator';
-import NavBar from '@/components/game/NavBar';
 import StatusHeader from '@/components/game/StatusHeader';
+import BezelButtons from '@/components/game/BezelButtons';
 import GalaxyMap from '@/components/game/GalaxyMap';
 import SystemOrrery from '@/components/game/SystemOrrery';
 import StationScreen from '@/components/game/StationScreen';
@@ -82,7 +82,6 @@ import CanisStellaScreen from '@/components/game/CanisStellaScreen';
 import RebuyScreen from '@/components/game/RebuyScreen';
 import SelfDestructScreen from '@/components/game/SelfDestructScreen';
 import TutorialOverlay from '@/components/game/TutorialOverlay';
-import DockedBar from '@/components/game/DockedBar';
 import DevStub from '@/components/game/DevStub';
 import HomeDashboard from '@/components/game/HomeDashboard';
 import RanksScreen from '@/components/game/RanksScreen';
@@ -113,7 +112,7 @@ import { isMfrDeckComplete, DECK_REWARD_CREDITS, DECK_REWARD_BY_KEY, DECK_TITLE_
 const STATION_ONLY_SCREENS = ['station', 'market', 'outfitting', 'materialtrader', 'crew', 'blackmarket', 'engineering', 'bountyboard', 'passengers', 'multicrew', 'cartography', 'maintenance', 'dockcam', 'missionboard', 'stationcontacts', 'livery', 'advmaintenance', 'colonization'];
 
 function GameContent() {
-  const { state, update, manualSave } = useGameState();
+  const { state, update, manualSave, leaveStation } = useGameState();
   const { grantStationCard } = useCardSystem();
   const [screen, setScreen] = useState('system');
   const [showSelfDestruct, setShowSelfDestruct] = useState(false);
@@ -320,10 +319,29 @@ function GameContent() {
     setTutorialTarget(null);
   };
 
-  const handleNavigate = (target) => {
-    screenHistoryRef.current.push(screen);
+  const handleNavigate = useCallback((target) => {
+    screenHistoryRef.current.push(screenRef.current);
     setScreen(target);
-  };
+  }, []);
+
+  const handleBezelAction = useCallback((action) => {
+    switch (action) {
+      case 'launch':
+        soundEngine.play('dock');
+        leaveStation();
+        setScreen('system');
+        break;
+      case 'save':
+        { const ok = manualSave(); if (ok) { setSaveFlash(true); setTimeout(() => setSaveFlash(false), 1500); } }
+        break;
+      case 'selfdestruct':
+        setShowSelfDestruct(true);
+        break;
+      case 'back':
+        { const history = screenHistoryRef.current; if (history.length > 0) setScreen(history.pop()); else setScreen('system'); }
+        break;
+    }
+  }, [leaveStation, manualSave]);
 
   const renderScreen = () => {
     switch (screen) {
@@ -540,21 +558,29 @@ function GameContent() {
       <div className="w-full h-screen" style={state.settings?.displayScale && state.settings.displayScale !== 100 ? { zoom: state.settings.displayScale / 100 } : undefined}>
       <CRTFrame enabled={state.settings.crtEffect} brightness={state.settings.textBrightness || 100} theme={effectiveTheme} customColor={state.settings.customColor} textRGB={state.settings.textRGB} fontFamily={state.settings.fontFamily} fontScale={state.settings.fontScale} display={display}>
         <div className="flex flex-col h-full">
-          <div className={`relative z-[300] ${monoUI ? 'crt-mono-ui' : ''}`}>
-            <StatusHeader />
-            <NavBar
-              currentScreen={screen}
-              onNavigate={handleNavigate}
-              location={state.currentLocation}
-              tutorialTarget={tutorialTarget}
-            />
-            <DockedBar onNavigate={handleNavigate} />
-          </div>
-          <div data-game-content className={`flex-1 relative z-0 ${isFullScreen ? 'overflow-hidden' : 'overflow-auto'} ${!isFullScreen && monoUI ? 'crt-mono-ui' : ''}`}>
-            <div style={getScreenTextStyle(state.settings?.uiTextStyles, screen) || undefined} className="w-full h-full">
-              {renderScreen()}
+          {state.settings?.statusHeaderVisible !== false && (
+            <div className={`relative z-[300] ${monoUI ? 'crt-mono-ui' : ''}`}>
+              <StatusHeader />
             </div>
-          </div>
+          )}
+          <BezelButtons
+            screen={screen}
+            currentLocation={state.currentLocation}
+            bezelLayout={state.settings?.bezelLayout}
+            bezelVisible={state.settings?.bezelVisible}
+            fleetCarriersCount={(state.fleetCarriers || []).length}
+            cheatsUnlocked={state.cheats?.unlocked}
+            onNavigate={handleNavigate}
+            onAction={handleBezelAction}
+            tutorialTarget={tutorialTarget}
+            monoUI={monoUI}
+          >
+            <div data-game-content className={`flex-1 relative z-0 ${isFullScreen ? 'overflow-hidden' : 'overflow-auto'} ${!isFullScreen && monoUI ? 'crt-mono-ui' : ''}`}>
+              <div style={getScreenTextStyle(state.settings?.uiTextStyles, screen) || undefined} className="w-full h-full">
+                {renderScreen()}
+              </div>
+            </div>
+          </BezelButtons>
           {state.activeEncounter && <EncounterScreen />}
           {cardFlash && (
             <div className="fixed top-20 right-4 z-[400] border border-cyan-600 bg-black/95 p-3 max-w-[15rem]">
