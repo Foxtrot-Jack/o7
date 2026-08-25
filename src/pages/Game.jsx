@@ -4,6 +4,7 @@ import { GameStateProvider, useGameState } from '@/lib/gameState';
 import CRTFrame from '@/components/game/CRTFrame';
 import SaveSelect from '@/components/game/SaveSelect';
 import CharacterCreator from '@/components/game/CharacterCreator';
+import BootSequence from '@/components/game/BootSequence';
 import StatusHeader from '@/components/game/StatusHeader';
 import BezelButtons from '@/components/game/BezelButtons';
 import GalaxyMap from '@/components/game/GalaxyMap';
@@ -642,6 +643,11 @@ function GameBootstrap() {
 
 export default function Game() {
   const [saveSlot, setSaveSlot] = useState(null);
+  const [booted, setBooted] = useState(false);
+
+  if (!booted) {
+    return <BootSequence onComplete={() => setBooted(true)} />;
+  }
 
   if (!saveSlot) {
     return <SaveSelect onSelect={(slot) => {
