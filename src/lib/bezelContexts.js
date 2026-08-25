@@ -25,12 +25,12 @@ export const BEZEL_ACTIONS = {
   scanners: {
     id: 'scanners', label: 'Scanners', icon: Radar, isMain: true,
     subButtons: {
-      sys_scanner: { id: 'sys_scanner', label: 'System Scanner', icon: Radar, screen: 'fss' },
-      sig_scanner: { id: 'sig_scanner', label: 'Signal Scanner', icon: Radio, screen: 'fss' }, // Phase 4: separate
+      sys_scanner: { id: 'sys_scanner', label: 'System Scanner', icon: Radar, action: 'open_sys_scanner' },
+      sig_scanner: { id: 'sig_scanner', label: 'Signal Scanner', icon: Radio, action: 'open_sig_scanner' },
     },
   },
-  sys_scanner: { id: 'sys_scanner', label: 'System Scanner', icon: Radar, screen: 'fss' },
-  sig_scanner: { id: 'sig_scanner', label: 'Signal Scanner', icon: Radio, screen: 'fss' },
+  sys_scanner: { id: 'sys_scanner', label: 'System Scanner', icon: Radar, action: 'open_sys_scanner' },
+  sig_scanner: { id: 'sig_scanner', label: 'Signal Scanner', icon: Radio, action: 'open_sig_scanner' },
   fss: { id: 'fss', label: 'FSS Scanner', icon: Radar, screen: 'fss' },
 
   // ---- Station Services (station-only) ----

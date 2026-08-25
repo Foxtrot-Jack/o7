@@ -104,16 +104,22 @@ export function shouldTriggerEncounter(system) {
   return Math.random() < chance;
 }
 
-export function generateEncounter(system) {
+export function generateEncounter(system, forcedTypeId) {
   const security = system?.security || 'medium';
-  const weighted = [];
-  for (const enc of ENCOUNTER_TYPES) {
-    // Founder sightings only appear if there are contributors to name.
-    if (enc.id === 'founder_sighting' && getContributorCount() === 0) continue;
-    const w = enc.securityWeight[security] || 1;
-    for (let i = 0; i < w; i++) weighted.push(enc);
+  let chosen;
+  if (forcedTypeId) {
+    chosen = ENCOUNTER_TYPES.find(e => e.id === forcedTypeId);
   }
-  const chosen = weighted[Math.floor(Math.random() * weighted.length)];
+  if (!chosen) {
+    const weighted = [];
+    for (const enc of ENCOUNTER_TYPES) {
+      // Founder sightings only appear if there are contributors to name.
+      if (enc.id === 'founder_sighting' && getContributorCount() === 0) continue;
+      const w = enc.securityWeight[security] || 1;
+      for (let i = 0; i < w; i++) weighted.push(enc);
+    }
+    chosen = weighted[Math.floor(Math.random() * weighted.length)];
+  }
   const result = { ...chosen, systemName: system?.name || 'Unknown', timestamp: Date.now() };
   // Founder sighting — assign a founder alias as the pilot and customize text.
   if (chosen.id === 'founder_sighting') {

@@ -83,6 +83,8 @@ import CanisStellaScreen from '@/components/game/CanisStellaScreen';
 import RebuyScreen from '@/components/game/RebuyScreen';
 import SelfDestructScreen from '@/components/game/SelfDestructScreen';
 import TutorialOverlay from '@/components/game/TutorialOverlay';
+import SignalScannerPanel from '@/components/game/SignalScannerPanel';
+import SystemScannerPopout from '@/components/game/SystemScannerPopout';
 import DevStub from '@/components/game/DevStub';
 import HomeDashboard from '@/components/game/HomeDashboard';
 import RanksScreen from '@/components/game/RanksScreen';
@@ -120,6 +122,7 @@ function GameContent() {
   const [saveFlash, setSaveFlash] = useState(false);
   const [tutorialCategory, setTutorialCategory] = useState(null);
   const [tutorialTarget, setTutorialTarget] = useState(null);
+  const [scannerPopout, setScannerPopout] = useState(null); // 'sys' | 'sig' | null
   const prevStateRef = useRef(state);
 
   // Refs for input system — avoids stale closures in the useEffect[] subscription
@@ -337,6 +340,12 @@ function GameContent() {
         break;
       case 'selfdestruct':
         setShowSelfDestruct(true);
+        break;
+      case 'open_sys_scanner':
+        setScannerPopout(prev => prev === 'sys' ? null : 'sys');
+        break;
+      case 'open_sig_scanner':
+        setScannerPopout(prev => prev === 'sig' ? null : 'sig');
         break;
       case 'back':
         { const history = screenHistoryRef.current; if (history.length > 0) setScreen(history.pop()); else setScreen('system'); }
@@ -602,6 +611,13 @@ function GameContent() {
               onClose={closeTutorial}
               onTargetChange={setTutorialTarget}
             />
+          )}
+          {/* Pop-out scanner devices */}
+          {scannerPopout && (
+            <div className="fixed inset-0 z-[250] pointer-events-none">
+              {scannerPopout === 'sys' && <SystemScannerPopout onClose={() => setScannerPopout(null)} />}
+              {scannerPopout === 'sig' && <SignalScannerPanel onClose={() => setScannerPopout(null)} />}
+            </div>
           )}
           {/* Footer status bar */}
           <div className={`border-t border-orange-900/50 px-3 py-1 flex items-center justify-between text-[10px] text-orange-800 bg-black ${monoUI ? 'crt-mono-ui' : ''}`}>
