@@ -3,7 +3,7 @@
 // carrier's bank balance. Shown as an expandable section within the carrier card.
 import React, { useState } from 'react';
 import { useGameState } from '@/lib/gameState';
-import { CARRIER_CREW_ROLES, CARRIER_CREW_ROLE_MAP, getCarrierCrewLevel, createCarrierCrewMember, calculateCarrierCrewSalaryRate } from '@/lib/carrierCrew';
+import { CARRIER_CREW_ROLES, CARRIER_CREW_ROLE_MAP, getCarrierCrewLevel, getCarrierCrewBonuses, createCarrierCrewMember, calculateCarrierCrewSalaryRate } from '@/lib/carrierCrew';
 import { calculateCarrierIncomeRate, calculateCarrierTritiumUpkeep } from '@/lib/carrierEconomy';
 import { Users, Plus, Trash2, TrendingUp, Fuel, Wallet } from 'lucide-react';
 
@@ -16,16 +16,7 @@ export default function CarrierCrewPanel({ carrier }) {
   const population = carrier.system?.population || 0;
 
   // Calculate current economy stats
-  const crewBonuses = { efficiency: 0, tritiumSavings: 0, moraleBoost: 0 };
-  for (const member of crew) {
-    const role = CARRIER_CREW_ROLE_MAP[member.role];
-    if (!role) continue;
-    const level = getCarrierCrewLevel(member.xp || 0);
-    const moraleMult = 0.5 + (member.morale ?? 75) / 100;
-    for (const [key, val] of Object.entries(role.bonus)) {
-      crewBonuses[key] = (crewBonuses[key] || 0) + val * level.bonusMult * moraleMult;
-    }
-  }
+  const crewBonuses = getCarrierCrewBonuses(crew);
 
   const incomeRate = calculateCarrierIncomeRate(carrier, population, crewBonuses);
   const tritiumUpkeep = calculateCarrierTritiumUpkeep(carrier);

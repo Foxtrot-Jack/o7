@@ -51,14 +51,15 @@ export function calculateCarrierIncomeRate(carrier, systemPopulation, crewBonuse
   return Math.round(rate * efficiencyMult);
 }
 
-// Calculate per-hour tritium upkeep for a carrier
-export function calculateCarrierTritiumUpkeep(carrier) {
+// Calculate per-hour tritium upkeep for a carrier, reduced by crew tritiumSavings
+export function calculateCarrierTritiumUpkeep(carrier, crewBonuses = {}) {
   let upkeep = 0;
   for (const [service, enabled] of Object.entries(carrier.services || {})) {
     if (!enabled) continue;
     upkeep += SERVICE_TRITIUM_UPKEEP[service] || 0;
   }
-  return upkeep;
+  const savings = Math.min(0.5, crewBonuses.tritiumSavings || 0); // cap at 50% savings
+  return Math.max(1, Math.round(upkeep * (1 - savings)));
 }
 
 // Advance a single carrier's economy by elapsed milliseconds.
@@ -72,7 +73,7 @@ export function tickCarrierEconomy(carrier, elapsedMs, crewBonuses = {}) {
   const population = system.population || 0;
 
   const incomeRate = calculateCarrierIncomeRate(carrier, population, crewBonuses);
-  const tritiumUpkeep = calculateCarrierTritiumUpkeep(carrier);
+  const tritiumUpkeep = calculateCarrierTritiumUpkeep(carrier, crewBonuses);
 
   const incomeEarned = Math.round(incomeRate * hours);
   const tritiumConsumed = Math.round(tritiumUpkeep * hours);
